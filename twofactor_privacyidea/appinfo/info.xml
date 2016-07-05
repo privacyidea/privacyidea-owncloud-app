@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<info>
+	<id>twofactor_privacyidea</id>
+	<name>privacyIDEA Two Factor Authentication</name>
+	<description>Plugin to forward authentication requests to your own privacyIDEA Authentication System
+                     installation. privacyIDEA can manage many different kind of authentication devices.
+		Thus you can assign different authentication objects to your users as second factor. Users
+		can now authenticate against your ownCloud installation with Google Authenticator, Yubikey,
+		key fob, OTP display cards and much more.</description>
+	<licence>AGPL</licence>
+	<author>Cornelius Kölbel</author>
+	<version>0.0.1</version>
+	<namespace>TwoFactor_privacyIDEA</namespace>
+	<category>other</category>
+	<types>
+		<prelogin/>
+		<authentication/>
+	</types>
+
+	<two-factor-providers>
+		<provider>OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider</provider>
+	</two-factor-providers>
+
+	<dependencies>
+		<owncloud min-version="9.1" max-version="9.1" />
+	</dependencies>
+</info>
