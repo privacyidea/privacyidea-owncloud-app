@@ -25,7 +25,9 @@ use OCP\Template;
 use OCP\Http\Client\IClientService;
 use OCP\ILogger;
 use OCP\IConfig;
+use Exception;
 
+// TODO: Logging
 
 class TwoFactorPrivacyIDEAProvider implements IProvider {
 
@@ -33,7 +35,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	private $config;
 	private $logger;
 
-	public function __contruct(IClientService $httpClientService,
+	public function __construct(IClientService $httpClientService,
 					IConfig $config,
 					ILogger $logger) {
 		$this->httpClientService = $httpClientService;
@@ -82,13 +84,26 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 * @param string $challenge
 	 */
 	public function verifyChallenge(IUser $user, $challenge) {
-		$client = $this->httpClientService->newClient();
-		$res = $client->post('https://172.16.200.106/pi/validate/check',
-				['body' => ['user' => $user,
-					    'pass' => $challenge]]);
-		if ($challenge === 'passme') {
-			return true;
-		}
+		try {
+			$client = $this->httpClientService->newClient();
+			// TODO: Config and Realm
+			$res = $client->post('https://172.16.200.106/pi/validate/check',
+				['body' => ['user' => $user->getUID(),
+					    'pass' => $challenge],
+				 'verify' => false,
+                                 'debug' => true]);	
+			if ($res->getStatusCode() === 200) {
+				$body = $res->getBody();	
+				$body = json_decode($body);
+				if ($body->result->status === true) {
+					if ($body->result->value === true) {
+					return true;
+					}
+				}
+			}
+		} catch (Exception $e) {
+			// return code 400, user not found...
+		} 
 		return false;
 		
 	}
