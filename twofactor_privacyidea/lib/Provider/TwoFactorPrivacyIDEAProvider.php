@@ -114,7 +114,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 * @return boolean
 	 */
 	public function isTwoFactorAuthEnabledForUser(IUser $user) {
-		// 2FA is enforced for all users
-		return true;
+            // TODO: The app could configure users, who do not do 2FA
+            // 2FA is enforced for all users
+            return true;
 	}
 }
