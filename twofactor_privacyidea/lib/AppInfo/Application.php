@@ -20,11 +20,10 @@
 namespace OCA\TwoFactor_privacyIDEA\AppInfo;
 
 use OCP\TwoFactor_privacyIDEA\Controller\SettingsController;
-use OCP\AppFramework\App;
-use OCP\AppFramework\IAppContainer;
+use OCP\App;
 
 
-class Application extends App {
+class Application extends \OCP\AppFramework\App {
 	/**
 	 * @param array $urlParams
 	 */
@@ -34,14 +33,25 @@ class Application extends App {
                 /**
                 * Controllers
                 */               
-                $container->registerService('SettingsController',
-                        function(IAppContainer $c) {
-                            $server = $c->query('ServerContainer');
-                            return new SettingsController(
-                                    $c->getAppName(),
-                                    $server->getRequest(),
-                                    $server->getL10N('twofactor_privacyidea')
-                            );
-                        });
+                $container->registerService('SettingsController', function($c) {
+                    $server = $c->getServer();
+                    return new SettingsController(
+                            $c->getAppName(),
+                            $server->getRequest(),
+                            $server->getL10N($c->getAppName()),
+                            $server->getConfig()
+                    );
+                });
 	}
+        
+        /**
+         * register setting scripts
+         */
+        public function registerSettings() {
+                App::registerAdmin('twofactor_privacyidea',
+                        'settings/settings-admin');
+        }
+        
+      
+        
 }

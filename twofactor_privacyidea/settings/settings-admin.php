@@ -6,6 +6,5 @@
  * and open the template in the editor.
  */
 
-$app = new \OCA\TwoFactor_privacyIDEA\AppInfo\Application();
-$controller = $app->getContainer()->query('SettingsController');
-return $controller->displayAdminPanel()->render();
+$tmpl = new \OCP\Template('twofactor_privacyidea', 'settings-admin');
+return $tmpl->fetchPage();
