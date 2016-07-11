@@ -19,7 +19,7 @@
  */
 namespace OCA\TwoFactor_privacyIDEA\AppInfo;
 
-use OCP\TwoFactor_privacyIDEA\Controller\SettingsController;
+use OCA\TwoFactor_privacyIDEA\Controller\SettingsController;
 use OCP\App;
 
 

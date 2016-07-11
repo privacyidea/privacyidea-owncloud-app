@@ -16,13 +16,53 @@
  *
  */
 
+var BASE_URL = '/apps/twofactor_privacyidea/';
+
 $(document).ready(function () {
+    $.get(OC.generateUrl(BASE_URL + 'url')).done(
+            function(result) {
+                $("#piSettings #piurl").val(result);
+            }
+            );    
+    $.get(OC.generateUrl(BASE_URL + 'checkssl')).done(
+            function(result) {
+                $("#piSettings #checkssl").prop('checked', result === "1");
+            }
+            );    
+    
+    $.get(OC.generateUrl(BASE_URL + 'realm')).done(
+            function(result) {
+                $("#piSettings #pirealm").val(result);
+            }
+            );    
+    
         $("#piSettings #checkssl").change(function() {
                 $.post(
-                        OC.generateUrl('/apps/twofactor_privacyidea/setcheckssl'),
+                        OC.generateUrl(BASE_URL + 'checkssl'),
                         {
                             checkssl: $(this).is(":checked")
                         });
+        });
+        $("#piSettings #piurl").keyup(function() {
+            // We simple save the value always ;-)
+            console.log("pi: Saving URL");
+            var value = $("#piSettings #piurl").val();
+            console.log(value);
+            $.post(OC.generateUrl(BASE_URL + 'url'),
+            {
+                url: value
+            });                            
+        });
+        
+        $("#piSettings #pirealm").keyup(function() {
+            // We simple save the value always ;-)
+            console.log("pi: Saving Realm");
+            var value = $("#piSettings #pirealm").val();
+            console.log(value);
+            $.post(OC.generateUrl(BASE_URL + 'realm'),
+            {
+                realm: value
+            });                            
         });
 
 });

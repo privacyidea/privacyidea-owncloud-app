@@ -36,8 +36,12 @@ class SettingsController extends Controller {
          * @param bool $checkssl
          */
         public function setCheckSSL($checkssl) {
-                $value = $checkssl ? '1' : '0';
-                $this->config->setAppValue('twofactor_privacyidea', 'checkssl', $value);
+            $value = $checkssl ? '1' : '0';
+            $this->config->setAppValue('twofactor_privacyidea', 'checkssl', $value);
+        }
+        
+        public function getCheckSSL() {
+            return $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
         }
         
         /*
@@ -45,6 +49,21 @@ class SettingsController extends Controller {
          */
         public function setURL($url) {
             $this->config->setAppValue('twofactor_privacyidea', 'url', $url);
+        }
+        
+        public function getUrl() {
+            return $this->config->getAppValue('twofactor_privacyidea', 'url');
+        }
+        
+        /*
+         * We can define a realm other than the default realm
+         */
+        public function getRealm() {
+            return $this->config->getAppValue('twofactor_privacyidea', 'realm');
+        }
+        
+        public function setRealm($realm) {
+            $this->config->setAppValue('twofactor_privacyidea', 'realm', $realm);
         }
         
 }

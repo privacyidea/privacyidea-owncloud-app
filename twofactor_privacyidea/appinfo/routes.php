@@ -27,14 +27,36 @@ $application->registerRoutes(
                 'routes' => [
                         [
                                 'name' => 'Settings#setURL',
-                                'url' => '/seturl',
+                                'url' => '/url',
                                 'verb' => 'POST'
+                        ],
+                    [
+                                'name' => 'Settings#getURL',
+                                'url' => '/url',
+                                'verb' => 'GET'
                         ],
                         [
                                 'name' => 'Settings#setCheckSSL',
-                                'url' => '/setcheckssl',
+                                'url' => '/checkssl',
                                 'verb' => 'POST'
+                        ],
+                        [
+                                'name' => 'Settings#getCheckSSL',
+                                'url' => '/checkssl',
+                                'verb' => 'GET'
+                        ],
+                    [
+                                'name' => 'Settings#setRealm',
+                                'url' => '/realm',
+                                'verb' => 'POST'
+                        ],
+                        [
+                                'name' => 'Settings#getRealm',
+                                'url' => '/realm',
+                                'verb' => 'GET'
                         ],
                 ]
         ]
 );
+
+

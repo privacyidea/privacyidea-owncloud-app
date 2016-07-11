@@ -84,27 +84,32 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 * @param string $challenge
 	 */
 	public function verifyChallenge(IUser $user, $challenge) {
-		try {
-			$client = $this->httpClientService->newClient();
-			// TODO: Config and Realm
-			$res = $client->post('https://172.16.200.106/pi/validate/check',
-				['body' => ['user' => $user->getUID(),
-					    'pass' => $challenge],
-				 'verify' => false,
-                                 'debug' => true]);	
-			if ($res->getStatusCode() === 200) {
-				$body = $res->getBody();	
-				$body = json_decode($body);
-				if ($body->result->status === true) {
-					if ($body->result->value === true) {
-					return true;
-					}
-				}
-			}
-		} catch (Exception $e) {
-			// return code 400, user not found...
-		} 
-		return false;
+            // Read config
+            $url = $this->config->getAppValue('twofactor_privacyidea', 'url');
+            $checkssl = $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
+            $realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
+            try {
+                $client = $this->httpClientService->newClient();                    
+                $res = $client->post($url,
+                        ['body' => ['user' => $user->getUID(),
+                                    'pass' => $challenge,
+                                    'realm' => $realm],
+                         'verify' => $checkssl !== '0',
+                         'debug' => true]);	
+                if ($res->getStatusCode() === 200) {
+                        $body = $res->getBody();	
+                        $body = json_decode($body);
+                        if ($body->result->status === true) {
+                                if ($body->result->value === true) {
+                                return true;
+                                }
+                        }
+                }
+            } catch (Exception $e) {
+                $this->logger->logException($e, 
+                        ["message", "User failed to authenticate with privacyIDEA."]);
+            } 
+            return false;
 		
 	}
 	/**

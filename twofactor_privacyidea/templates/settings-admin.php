@@ -12,11 +12,22 @@ script('twofactor_privacyidea', 'settings-admin');
     </p>    
     <div id="piSettings">
         <p>
+        <label for="piurl">URL of the privacyIDEA Server</label>
+        <input id="piurl" size="60"/>
+        </p>
+        
+        <p>
         <input id="checkssl" type="checkbox" class="checkbox">
         <label for="checkssl">
             Verify the SSL certificate. 
             Do not uncheck this in productive environments!
         </label>
         </p>
+        
+        <p>
+            <label for="pirealm">User Realm in privacyIDEA (other than default)</label>
+            <input id="pirealm" size="40"/>
+        </p>
+        
     </div>
 </div>
