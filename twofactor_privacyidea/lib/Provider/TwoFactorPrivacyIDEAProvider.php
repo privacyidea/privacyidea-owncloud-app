@@ -94,6 +94,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
                         ['body' => ['user' => $user->getUID(),
                                     'pass' => $challenge,
                                     'realm' => $realm],
+                         'headers' => ['user-agent' => "ownCloud Plugin" ],
                          'verify' => $checkssl !== '0',
                          'debug' => true]);	
                 if ($res->getStatusCode() === 200) {

@@ -2,8 +2,12 @@
 script('twofactor_privacyidea', 'settings-admin');
 ?>
 
-<div class="section">
-    <h2><?php p($l->t('privacyIDEA 2FA')); ?></h2>
+<div class="section" id="privacyIDEA">
+    <h2><?php p($l->t('privacyIDEA 2FA')); ?>
+    <a target="_blank" rel="noreferrer" class="icon-info svg"
+       title="<?php p($l->t('Open documentation'));?>"
+       href="http://privacyidea.readthedocs.io"></a></h2>
+
     <p>
         <em>In a second step of authentication the user is asked to provide a one 
             time password. The users devices are managed in privacyIDEA. The 
@@ -12,8 +16,8 @@ script('twofactor_privacyidea', 'settings-admin');
     </p>    
     <div id="piSettings">
         <p>
-        <label for="piurl">URL of the privacyIDEA Server</label>
-        <input id="piurl" size="60"/>
+            <label for="piurl">URL of the privacyIDEA Server</label>
+            <input type="text" id="piurl" width="300px"/>
         </p>
         
         <p>
@@ -26,7 +30,7 @@ script('twofactor_privacyidea', 'settings-admin');
         
         <p>
             <label for="pirealm">User Realm in privacyIDEA (other than default)</label>
-            <input id="pirealm" size="40"/>
+            <input type="text" id="pirealm" size="40"/>
         </p>
         
     </div>

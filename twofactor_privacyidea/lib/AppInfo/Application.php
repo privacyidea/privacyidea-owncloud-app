@@ -23,35 +23,37 @@ use OCA\TwoFactor_privacyIDEA\Controller\SettingsController;
 use OCP\App;
 
 
-class Application extends \OCP\AppFramework\App {
-	/**
-	 * @param array $urlParams
-	 */
-	public function __construct(array $urlParams = array()) {
-		parent::__construct('twofactor_privacyidea', $urlParams);
-		$container = $this->getContainer();
-                /**
-                * Controllers
-                */               
-                $container->registerService('SettingsController', function($c) {
-                    $server = $c->getServer();
-                    return new SettingsController(
-                            $c->getAppName(),
-                            $server->getRequest(),
-                            $server->getL10N($c->getAppName()),
-                            $server->getConfig()
-                    );
-                });
-	}
-        
+class Application extends \OCP\AppFramework\App
+{
+    /**
+     * @param array $urlParams
+     */
+    public function __construct(array $urlParams = array())
+    {
+        parent::__construct('twofactor_privacyidea', $urlParams);
+        $container = $this->getContainer();
         /**
-         * register setting scripts
+         * Controllers
          */
-        public function registerSettings() {
-                App::registerAdmin('twofactor_privacyidea',
-                        'settings/settings-admin');
-        }
-        
-      
-        
+        $container->registerService('SettingsController', function ($c) {
+            $server = $c->getServer();
+            return new SettingsController(
+                $c->getAppName(),
+                $server->getRequest(),
+                $server->getL10N($c->getAppName()),
+                $server->getConfig()
+            );
+        });
+    }
+
+    /**
+     * register setting scripts
+     */
+    public function registerSettings()
+    {
+        App::registerAdmin('twofactor_privacyidea',
+            'settings/settings-admin');
+    }
+
+
 }
