@@ -19,15 +19,13 @@
  *
  */
 namespace OCA\TwoFactor_privacyIDEA\Provider;
-use OCP\Authentication\TwoFactorAuth\IProvider;
 use OCP\IUser;
 use OCP\Template;
 use OCP\Http\Client\IClientService;
 use OCP\ILogger;
 use OCP\IConfig;
 use Exception;
-
-// TODO: Logging
+use OCP\Authentication\TwoFactorAuth\IProvider;
 
 class TwoFactorPrivacyIDEAProvider implements IProvider {
 
