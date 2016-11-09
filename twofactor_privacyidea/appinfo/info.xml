@@ -8,8 +8,8 @@
 		can now authenticate against your ownCloud installation with Google Authenticator, Yubikey,
 		key fob, OTP display cards and much more.</description>
 	<licence>AGPL</licence>
-	<author>Cornelius Kölbel</author>
-	<version>0.0.1</version>
+	<author>NetKnights GmbH, Cornelius Kölbel</author>
+	<version>1.0.0</version>
 	<namespace>TwoFactor_privacyIDEA</namespace>
 	<category>other</category>
 	<types>
