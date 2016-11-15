@@ -24,21 +24,28 @@ use OCP\Template;
 use OCP\Http\Client\IClientService;
 use OCP\ILogger;
 use OCP\IConfig;
+// The TwoFactorException is introduced in Version 9.2
+use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 use Exception;
 use OCP\Authentication\TwoFactorAuth\IProvider;
+use OCP\IL10N;
+
 
 class TwoFactorPrivacyIDEAProvider implements IProvider {
 
 	private $httpClientService;
 	private $config;
 	private $logger;
+    private $trans;
 
 	public function __construct(IClientService $httpClientService,
 					IConfig $config,
-					ILogger $logger) {
+					ILogger $logger,
+                    IL10N $trans) {
 		$this->httpClientService = $httpClientService;
 		$this->config = $config;
 		$this->logger = $logger;
+        $this->trans = $trans;
 	}
 
 	/**
@@ -74,18 +81,21 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	public function getTemplate(IUser $user) {
 		return new Template('twofactor_privacyidea', 'challenge');
 	}
+
 	/**
 	 * Verify the given challenge.
 	 * In fact it is not a challenge but the OTP value!
 	 *
 	 * @param IUser $user
 	 * @param string $challenge
+     * @return Boolean, True in case of success
 	 */
 	public function verifyChallenge(IUser $user, $challenge) {
             // Read config
             $url = $this->config->getAppValue('twofactor_privacyidea', 'url');
             $checkssl = $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
             $realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
+            $error_message = "";
             try {
                 $client = $this->httpClientService->newClient();                    
                 $res = $client->post($url,
@@ -100,16 +110,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
                         $body = json_decode($body);
                         if ($body->result->status === true) {
                                 if ($body->result->value === true) {
-                                return true;
+                                    return true;
+                                } else {
+                                    $error_message = $this->trans->t("Failed to authenticate.");
                                 }
+                        } else {
+                            $error_message = $this->trans->t("Failed to authenticate. privacyIDEA error.");
                         }
+                } else {
+                    $error_message = $this->trans->t("Failed to authenticate. Wrong HTTP return code.");
                 }
             } catch (Exception $e) {
                 $this->logger->logException($e, 
-                        ["message", "User failed to authenticate with privacyIDEA."]);
-            } 
-            return false;
-		
+                        ["message", $e->getMessage()]);
+                $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
+            }
+
+            throw new TwoFactorException($error_message);
+            //return false;
 	}
 	/**
 	 * Decides whether 2FA is enabled for the given user
