@@ -27,6 +27,14 @@ script('twofactor_privacyidea', 'settings-admin');
             Do not uncheck this in productive environments!
         </label>
         </p>
+
+        <p>
+            <input id="noproxy" type="checkbox" class="checkbox">
+            <label for="noproxy">
+                Ignore the system wide proxy settings and send authentication
+                requests to privacyIDEA directly.
+            </label>
+        </p>
         
         <p>
             <label for="pirealm">User Realm in privacyIDEA (other than default)</label>

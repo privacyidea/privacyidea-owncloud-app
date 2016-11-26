@@ -43,7 +43,18 @@ class SettingsController extends Controller {
         public function getCheckSSL() {
             return $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
         }
-        
+
+        /*
+         * enable/disable no Proxy
+         */
+        public function setNoProxy($noproxy) {
+            $value = $noproxy ? '1' : '0';
+            $this->config->setAppValue('twofactor_privacyidea', 'noproxy', $value);
+        }
+        public function getNoProxy() {
+            return $this->config->getAppValue('twofactor_privacyidea', 'noproxy');
+        }
+
         /*
          * set the privacyIDEA URL
          */

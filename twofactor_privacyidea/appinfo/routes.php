@@ -45,7 +45,7 @@ $application->registerRoutes(
                                 'url' => '/checkssl',
                                 'verb' => 'GET'
                         ],
-                    [
+                        [
                                 'name' => 'Settings#setRealm',
                                 'url' => '/realm',
                                 'verb' => 'POST'
@@ -54,6 +54,16 @@ $application->registerRoutes(
                                 'name' => 'Settings#getRealm',
                                 'url' => '/realm',
                                 'verb' => 'GET'
+                        ],
+                        [
+                            'name' => 'Settings#setNoProxy',
+                            'url' => '/noproxy',
+                            'verb' => 'POST'
+                        ],
+                        [
+                            'name' => 'Settings#getNoProxy',
+                            'url' => '/noproxy',
+                            'verb' => 'GET'
                         ],
                 ]
         ]

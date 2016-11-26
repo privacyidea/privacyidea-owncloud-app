@@ -43,6 +43,11 @@ $(document).ready(function () {
                             checkssl: $(this).is(":checked")
                         });
         });
+        $("#piSettings #noproxy").change(function() {
+            $.post(OC.generateUrl(BASE_URL + 'noproxy'),{
+                noproxy: $(this).is(":checked")
+            });
+        });
         $("#piSettings #piurl").keyup(function() {
             // We simple save the value always ;-)
             console.log("pi: Saving URL");

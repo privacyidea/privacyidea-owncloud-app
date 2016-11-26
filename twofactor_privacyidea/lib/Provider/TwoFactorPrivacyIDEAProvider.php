@@ -95,16 +95,21 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
             $url = $this->config->getAppValue('twofactor_privacyidea', 'url');
             $checkssl = $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
             $realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
+            $noproxy = $this->config->getAppValue('twofactor_privacyidea', 'noproxy');
             $error_message = "";
-            try {
-                $client = $this->httpClientService->newClient();                    
-                $res = $client->post($url,
-                        ['body' => ['user' => $user->getUID(),
+            $options = ['body' => ['user' => $user->getUID(),
                                     'pass' => $challenge,
                                     'realm' => $realm],
-                         'headers' => ['user-agent' => "ownCloud Plugin" ],
-                         'verify' => $checkssl !== '0',
-                         'debug' => true]);	
+                        'headers' => ['user-agent' => "ownCloud Plugin" ],
+                        'verify' => $checkssl !== '0',
+                        'debug' => false
+            ];
+            if ($noproxy === "1") {
+                $options["proxy"] = ["https" => "", "http" => ""];
+            }
+            try {
+                $client = $this->httpClientService->newClient();
+                $res = $client->post($url, $options);
                 if ($res->getStatusCode() === 200) {
                         $body = $res->getBody();	
                         $body = json_decode($body);
