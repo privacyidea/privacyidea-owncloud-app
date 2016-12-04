@@ -1,0 +1,7 @@
+{ "translations": {
+    "Failed to authenticate." : "Tunnistautuminen epäonnistui.",
+    "Failed to authenticate. privacyIDEA error." : "Tunnistautuminen epäonnistui. privacyIDEA-virhe.",
+    "Failed to authenticate. Wrong HTTP return code." : "Tunnistautuminen epäonnistui. Väärä HTTP-paluukoodi.",
+    "Open documentation" : "Avaa dokumentaatio"
+},"pluralForm" :"nplurals=2; plural=(n != 1);"
+}
