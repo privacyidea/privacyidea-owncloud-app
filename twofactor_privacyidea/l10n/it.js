@@ -1,0 +1,10 @@
+OC.L10N.register(
+    "twofactor_privacyidea",
+    {
+    "Failed to authenticate." : "Autenticazione non riuscita.",
+    "Failed to authenticate. privacyIDEA error." : "Autenticazione non riuscita. Errore di privacyIDEA.",
+    "Failed to authenticate. Wrong HTTP return code." : "Autenticazione non riuscita. Codice di uscita HTTP errato.",
+    "privacyIDEA 2FA" : "2FA di privacyIDEA",
+    "Open documentation" : "Apri la documentazione"
+},
+"nplurals=2; plural=(n != 1);");
