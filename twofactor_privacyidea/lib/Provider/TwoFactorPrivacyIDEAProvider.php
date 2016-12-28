@@ -25,12 +25,8 @@ use OCP\Http\Client\IClientService;
 use OCP\ILogger;
 use OCP\IConfig;
 use Exception;
+// For OC < 9.2 the TwoFactorException does not exist. So we need to handle this in the method verifyChallenge
 use OCP\Authentication\TwoFactorAuth\TwoFactorException;
-// For OC < 9.2 the TwoFactorException does not exist. So we do a fallback
-// on normal exception.
-if (!class_exists("TwoFactorException")) {
-    class_alias('Exception','TwoFactorException');
-}
 use OCP\Authentication\TwoFactorAuth\IProvider;
 use OCP\IL10N;
 
@@ -134,9 +130,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
                         ["message", $e->getMessage()]);
                 $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
             }
-
-            throw new TwoFactorException($error_message);
-            //return false;
+            if (class_exists('TwoFactorException')) {
+                // This is the behaviour for OC >= 9.2
+                throw new TwoFactorException($error_message);
+            } else {
+                // This is the behaviour for OC == 9.1 and NC.
+                return false;
+            }
 	}
 	/**
 	 * Decides whether 2FA is enabled for the given user
