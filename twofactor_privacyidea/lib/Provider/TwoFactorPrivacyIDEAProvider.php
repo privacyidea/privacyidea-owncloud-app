@@ -24,9 +24,13 @@ use OCP\Template;
 use OCP\Http\Client\IClientService;
 use OCP\ILogger;
 use OCP\IConfig;
-// The TwoFactorException is introduced in Version 9.2
-use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 use Exception;
+use OCP\Authentication\TwoFactorAuth\TwoFactorException;
+// For OC < 9.2 the TwoFactorException does not exist. So we do a fallback
+// on normal exception.
+if (!class_exists("TwoFactorException")) {
+    class_alias('Exception','TwoFactorException');
+}
 use OCP\Authentication\TwoFactorAuth\IProvider;
 use OCP\IL10N;
 
