@@ -18,6 +18,10 @@ script('twofactor_privacyidea', 'settings-admin');
         <p>
             <label for="piurl">URL of the privacyIDEA Server</label>
             <input type="text" id="piurl" width="300px"/>
+            <em>
+                Please use the complete URL including the path of the REST API.
+                Usually this ends with /validate/check.
+            </em>
         </p>
         
         <p>
