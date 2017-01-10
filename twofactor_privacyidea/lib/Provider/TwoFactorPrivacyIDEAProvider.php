@@ -140,6 +140,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	}
 	/**
 	 * Decides whether 2FA is enabled for the given user
+     * This method is called after the user has successfully finished the first
+     * authentication step i.e.
+     * He authenticated with username and password.
 	 *
 	 * @param IUser $user
 	 * @return boolean
@@ -147,6 +150,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	public function isTwoFactorAuthEnabledForUser(IUser $user) {
             // TODO: The app could configure users, who do not do 2FA
             // 2FA is enforced for all users
+
+            // TODO: Here we can get an authtoken and call
+            // /validate/triggerchallenge
             return true;
 	}
 }
