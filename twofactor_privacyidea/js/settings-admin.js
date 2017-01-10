@@ -28,8 +28,13 @@ $(document).ready(function () {
             function(result) {
                 $("#piSettings #checkssl").prop('checked', result === "1");
             }
-            );    
-    
+            );
+    $.get(OC.generateUrl(BASE_URL + 'noproxy')).done(
+        function(result) {
+            $("#piSettings #noproxy").prop('checked', result === "1");
+        }
+    );
+
     $.get(OC.generateUrl(BASE_URL + 'realm')).done(
             function(result) {
                 $("#piSettings #pirealm").val(result);
