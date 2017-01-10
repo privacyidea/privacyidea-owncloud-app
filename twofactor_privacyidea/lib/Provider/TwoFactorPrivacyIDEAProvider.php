@@ -72,6 +72,21 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	public function getDescription() {
 		return 'privacyIDEA';
 	}
+
+	public function getBaseUrl() {
+		$url = $this->config->getAppValue('twofactor_privacyidea', 'url');
+		// Remove the "/validate/check" suffix of $url if it exists
+		$suffix = "/validate/check";
+		if(substr($url, -strlen($suffix)) === $suffix) {
+			$url = substr($url, 0, -strlen($suffix));
+		}
+		// Ensure that $url ends with a slash
+		if(substr($url, -1) !== "/") {
+			$url .= "/";
+		}
+		return $url;
+	}
+
 	/**
 	 * Get the template for rending the 2FA provider view
 	 *
@@ -79,7 +94,31 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 * @return Template
 	 */
 	public function getTemplate(IUser $user) {
+		$url = $this->getBaseUrl() . "validate/triggerchallenge";
+		$options = $this->getClientOptions();
+		$realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
+		$token = $this->fetchAuthToken("admin", "test");
+		try {
+			$client = $this->httpClientService->newClient();
+			$options["body"] = ["user" => $user->getUID(), "realm" => $realm];
+			$options["headers"] = ["PI-Authorization" => $token];
+			$result = $client->post($url, $options);
+		} catch(Exception $e) {
+			$this->logger->logException($e, ["message", $e->getMessage()]);
+		}
 		return new Template('twofactor_privacyidea', 'challenge');
+	}
+
+	private function getClientOptions() {
+		$checkssl = $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
+		$noproxy = $this->config->getAppValue('twofactor_privacyidea', 'noproxy');
+		$options = ['headers' => ['user-agent' => "ownCloud Plugin" ],
+					'verify' => $checkssl !== '0',
+					'debug' => false];
+		if ($noproxy === "1") {
+			$options["proxy"] = ["https" => "", "http" => ""];
+		}
+		return $options;
 	}
 
 	/**
@@ -92,7 +131,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 */
 	public function verifyChallenge(IUser $user, $challenge) {
             // Read config
-            $url = $this->config->getAppValue('twofactor_privacyidea', 'url');
+            $url = $this->getBaseUrl() . "validate/check";
             $checkssl = $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
             $realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
             $noproxy = $this->config->getAppValue('twofactor_privacyidea', 'noproxy');
@@ -111,7 +150,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
                 $client = $this->httpClientService->newClient();
                 $res = $client->post($url, $options);
                 if ($res->getStatusCode() === 200) {
-                        $body = $res->getBody();	
+                        $body = $res->getBody();
                         $body = json_decode($body);
                         if ($body->result->status === true) {
                                 if ($body->result->value === true) {
@@ -126,7 +165,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
                     $error_message = $this->trans->t("Failed to authenticate. Wrong HTTP return code.");
                 }
             } catch (Exception $e) {
-                $this->logger->logException($e, 
+                $this->logger->logException($e,
                         ["message", $e->getMessage()]);
                 $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
             }
@@ -148,11 +187,37 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 * @return boolean
 	 */
 	public function isTwoFactorAuthEnabledForUser(IUser $user) {
-            // TODO: The app could configure users, who do not do 2FA
-            // 2FA is enforced for all users
+		// TODO: The app could configure users, who do not do 2FA
+		// 2FA is enforced for all users
+		return true;
+	}
 
-            // TODO: Here we can get an authtoken and call
-            // /validate/triggerchallenge
-            return true;
+	public function fetchAuthToken($username, $password) {
+		$url = $this->getBaseUrl() . "auth";
+		$options = $this->getClientOptions();
+		try {
+			$client = $this->httpClientService->newClient();
+			$options["body"] = ["username" => $username, "password" => "$password"];
+			$result = $client->post($url, $options);
+			if($result->getStatusCode() === 200) {
+				$body = json_decode($result->getBody());
+				if($body->result->status === true) {
+					return $body->result->value->token;
+				} else {
+					/* TODO */
+				}
+			} else {
+				/* TODO */
+			}
+		} catch(ClientException $e) {
+			if($e->getCode() === 401) {
+				$this->logger->error("Could not authenticate " . $username . " against privacyIDEA");
+			} else {
+				$this->logger->logException($e, ["message", $e->getMessage()]);
+			}
+		} catch(Exception $e) {
+			$this->logger->logException($e, ["message", $e->getMessage()]);
+		}
+		return null;
 	}
 }
