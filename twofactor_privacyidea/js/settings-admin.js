@@ -16,10 +16,25 @@
  *
  */
 
-var APP_NAME = "twofactor_privacyidea";
+var BASE_URL = '/apps/twofactor_privacyidea/';
 
 $(document).ready(function () {
-    OC.AppConfig.getValue(APP_NAME, "url", function (url) {
+
+    var getValue = function (key, callback) {
+        $.get(OC.generateUrl(BASE_URL + 'getValue'), {key: key}).done(
+            function(result) {
+                callback(result);
+            }
+        );
+    };
+    var setValue = function (key, value) {
+        $.post(OC.generateUrl(BASE_URL + 'setValue'), {
+            key: key,
+            value: value
+        });
+    };
+
+    getValue("url", function (url) {
        $("#piSettings #piurl").val(url);
     });
     $("#piSettings #piurl").keyup(function() {
@@ -27,24 +42,24 @@ $(document).ready(function () {
         console.log("pi: Saving URL");
         var value = $("#piSettings #piurl").val();
         console.log(value);
-        OC.AppConfig.setValue(APP_NAME, "url", value);
+        setValue("url", value);
     });
 
-    OC.AppConfig.getValue(APP_NAME, "checkssl", function (checkssl) {
+    getValue("checkssl", function (checkssl) {
         $("#piSettings #checkssl").prop('checked', checkssl === "1");
     });
     $("#piSettings #checkssl").change(function() {
-        OC.AppConfig.setValue(APP_NAME, "checkssl", $(this).is(":checked") ? "1" : "0");
+        setValue("checkssl", $(this).is(":checked") ? "1" : "0");
     });
 
-    OC.AppConfig.getValue(APP_NAME, "noproxy", function (noproxy) {
+    getValue("noproxy", function (noproxy) {
         $("#piSettings #noproxy").prop('checked', noproxy === "1");
     });
     $("#piSettings #noproxy").change(function() {
-        OC.AppConfig.setValue(APP_NAME, "noproxy", $(this).is(":checked") ? "1" : "0");
+        setValue("noproxy", $(this).is(":checked") ? "1" : "0");
     });
 
-    OC.AppConfig.getValue(APP_NAME, "realm", function (realm) {
+    getValue("realm", function (realm) {
         $("#piSettings #pirealm").val(realm);
     });
     $("#piSettings #pirealm").keyup(function() {
@@ -52,7 +67,7 @@ $(document).ready(function () {
         console.log("pi: Saving Realm");
         var value = $("#piSettings #pirealm").val();
         console.log(value);
-        OC.AppConfig.setValue(APP_NAME, "realm", value);
+        setValue("realm", value);
     });
 
     var displayServerCredentials = function (show) {
@@ -63,7 +78,7 @@ $(document).ready(function () {
         };
     };
 
-    OC.AppConfig.getValue(APP_NAME, "triggerchallenges", function (trigger) {
+    getValue("triggerchallenges", function (trigger) {
         var value = (trigger === "1");
         $("#piSettings #triggerchallenges").prop('checked', value);
         displayServerCredentials(value);
@@ -71,27 +86,27 @@ $(document).ready(function () {
 
     $("#piSettings #triggerchallenges").change(function() {
         var checked = $(this).is(":checked");
-        OC.AppConfig.setValue(APP_NAME, "triggerchallenges", checked ? "1" : "0");
+        setValue("triggerchallenges", checked ? "1" : "0");
         displayServerCredentials(checked);
     });
 
-    OC.AppConfig.getValue(APP_NAME, "serveradmin_user", function (user) {
+    getValue("serveradmin_user", function (user) {
         $("#piSettings #piserveradmin_user").val(user);
     });
 
     $("#piSettings #piserveradmin_user").keyup(function () {
         console.log("pi: Saving Server Admin User");
         var value = $("#piSettings #piserveradmin_user").val();
-        OC.AppConfig.setValue(APP_NAME, "serveradmin_user", value);
+        setValue("serveradmin_user", value);
     });
 
-    OC.AppConfig.getValue(APP_NAME, "serveradmin_password", function (password) {
+    getValue("serveradmin_password", function (password) {
         $("#piSettings #piserveradmin_password").val(password);
     });
 
     $("#piSettings #piserveradmin_password").keyup(function () {
         console.log("pi: Saving Server Admin Password");
         var value = $("#piSettings #piserveradmin_password").val();
-        OC.AppConfig.setValue(APP_NAME, "serveradmin_password", value);
+        setValue("serveradmin_password", value);
     });
 });

@@ -29,4 +29,12 @@ class SettingsController extends Controller {
 		$this->l10n = $l10n;
                 $this->config = $config;
 	}
+
+	public function setValue($key, $value) {
+		$this->config->setAppValue("twofactor_privacyidea", $key, $value);
+	}
+
+	public function getValue($key) {
+		return $this->config->getAppValue("twofactor_privacyidea", $key);
+	}
 }

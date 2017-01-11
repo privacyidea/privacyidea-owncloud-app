@@ -24,7 +24,18 @@ $application = new \OCA\TwoFactor_privacyIDEA\AppInfo\Application();
 $application->registerRoutes(
         $this,
         [
-                'routes' => []
+                'routes' => [
+					[
+						'name' => 'Settings#setValue',
+						'url' => '/setValue',
+						'verb' => 'POST'
+					],
+					[
+						'name' => 'Settings#getValue',
+						'url' => '/getValue',
+						'verb' => 'GET'
+					]
+				]
 		]
 );
 
