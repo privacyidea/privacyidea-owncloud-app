@@ -16,76 +16,82 @@
  *
  */
 
-var BASE_URL = '/apps/twofactor_privacyidea/';
+var APP_NAME = "twofactor_privacyidea";
 
 $(document).ready(function () {
-    $.get(OC.generateUrl(BASE_URL + 'url')).done(
-            function(result) {
-                $("#piSettings #piurl").val(result);
-            }
-            );    
-    $.get(OC.generateUrl(BASE_URL + 'checkssl')).done(
-            function(result) {
-                $("#piSettings #checkssl").prop('checked', result === "1");
-            }
-            );
-    $.get(OC.generateUrl(BASE_URL + 'noproxy')).done(
-        function(result) {
-            $("#piSettings #noproxy").prop('checked', result === "1");
-        }
-    );
+    OC.AppConfig.getValue(APP_NAME, "url", function (url) {
+       $("#piSettings #piurl").val(url);
+    });
+    $("#piSettings #piurl").keyup(function() {
+        // We simple save the value always ;-)
+        console.log("pi: Saving URL");
+        var value = $("#piSettings #piurl").val();
+        console.log(value);
+        OC.AppConfig.setValue(APP_NAME, "url", value);
+    });
 
-    $.get(OC.generateUrl(BASE_URL + 'realm')).done(
-            function(result) {
-                $("#piSettings #pirealm").val(result);
-            }
-            );
+    OC.AppConfig.getValue(APP_NAME, "checkssl", function (checkssl) {
+        $("#piSettings #checkssl").prop('checked', checkssl === "1");
+    });
+    $("#piSettings #checkssl").change(function() {
+        OC.AppConfig.setValue(APP_NAME, "checkssl", $(this).is(":checked") ? "1" : "0");
+    });
 
-    $.get(OC.generateUrl(BASE_URL + 'triggerchallenges')).done(
-        function(result) {
-            $("#piSettings #triggerchallenges").prop('checked', result === "1");
-        }
-    );
-    
-        $("#piSettings #checkssl").change(function() {
-                $.post(
-                        OC.generateUrl(BASE_URL + 'checkssl'),
-                        {
-                            checkssl: $(this).is(":checked")
-                        });
-        });
-        $("#piSettings #noproxy").change(function() {
-            $.post(OC.generateUrl(BASE_URL + 'noproxy'),{
-                noproxy: $(this).is(":checked")
-            });
-        });
-        $("#piSettings #piurl").keyup(function() {
-            // We simple save the value always ;-)
-            console.log("pi: Saving URL");
-            var value = $("#piSettings #piurl").val();
-            console.log(value);
-            $.post(OC.generateUrl(BASE_URL + 'url'),
-            {
-                url: value
-            });                            
-        });
-        
-        $("#piSettings #pirealm").keyup(function() {
-            // We simple save the value always ;-)
-            console.log("pi: Saving Realm");
-            var value = $("#piSettings #pirealm").val();
-            console.log(value);
-            $.post(OC.generateUrl(BASE_URL + 'realm'),
-            {
-                realm: value
-            });                            
-        });
+    OC.AppConfig.getValue(APP_NAME, "noproxy", function (noproxy) {
+        $("#piSettings #noproxy").prop('checked', noproxy === "1");
+    });
+    $("#piSettings #noproxy").change(function() {
+        OC.AppConfig.setValue(APP_NAME, "noproxy", $(this).is(":checked") ? "1" : "0");
+    });
 
-        $("#piSettings #triggerchallenges").change(function() {
-            $.post(OC.generateUrl(BASE_URL + 'triggerchallenges'),
-                {
-                    triggerchallenges: $(this).is(":checked")
-                })
-        })
+    OC.AppConfig.getValue(APP_NAME, "realm", function (realm) {
+        $("#piSettings #pirealm").val(realm);
+    });
+    $("#piSettings #pirealm").keyup(function() {
+        // We simple save the value always ;-)
+        console.log("pi: Saving Realm");
+        var value = $("#piSettings #pirealm").val();
+        console.log(value);
+        OC.AppConfig.setValue(APP_NAME, "realm", value);
+    });
 
+    var displayServerCredentials = function (show) {
+        if(show) {
+            $("#piserveradmin_credentials").show();
+        } else {
+            $("#piserveradmin_credentials").hide();
+        };
+    };
+
+    OC.AppConfig.getValue(APP_NAME, "triggerchallenges", function (trigger) {
+        var value = (trigger === "1");
+        $("#piSettings #triggerchallenges").prop('checked', value);
+        displayServerCredentials(value);
+    });
+
+    $("#piSettings #triggerchallenges").change(function() {
+        var checked = $(this).is(":checked");
+        OC.AppConfig.setValue(APP_NAME, "triggerchallenges", checked ? "1" : "0");
+        displayServerCredentials(checked);
+    });
+
+    OC.AppConfig.getValue(APP_NAME, "serveradmin_user", function (user) {
+        $("#piSettings #piserveradmin_user").val(user);
+    });
+
+    $("#piSettings #piserveradmin_user").keyup(function () {
+        console.log("pi: Saving Server Admin User");
+        var value = $("#piSettings #piserveradmin_user").val();
+        OC.AppConfig.setValue(APP_NAME, "serveradmin_user", value);
+    });
+
+    OC.AppConfig.getValue(APP_NAME, "serveradmin_password", function (password) {
+        $("#piSettings #piserveradmin_password").val(password);
+    });
+
+    $("#piSettings #piserveradmin_password").keyup(function () {
+        console.log("pi: Saving Server Admin Password");
+        var value = $("#piSettings #piserveradmin_password").val();
+        OC.AppConfig.setValue(APP_NAME, "serveradmin_password", value);
+    });
 });

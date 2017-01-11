@@ -24,59 +24,8 @@ $application = new \OCA\TwoFactor_privacyIDEA\AppInfo\Application();
 $application->registerRoutes(
         $this,
         [
-                'routes' => [
-                        [
-                                'name' => 'Settings#setURL',
-                                'url' => '/url',
-                                'verb' => 'POST'
-                        ],
-                    [
-                                'name' => 'Settings#getURL',
-                                'url' => '/url',
-                                'verb' => 'GET'
-                        ],
-                        [
-                                'name' => 'Settings#setCheckSSL',
-                                'url' => '/checkssl',
-                                'verb' => 'POST'
-                        ],
-                        [
-                                'name' => 'Settings#getCheckSSL',
-                                'url' => '/checkssl',
-                                'verb' => 'GET'
-                        ],
-                        [
-                                'name' => 'Settings#setRealm',
-                                'url' => '/realm',
-                                'verb' => 'POST'
-                        ],
-                        [
-                                'name' => 'Settings#getRealm',
-                                'url' => '/realm',
-                                'verb' => 'GET'
-                        ],
-                        [
-                            'name' => 'Settings#setNoProxy',
-                            'url' => '/noproxy',
-                            'verb' => 'POST'
-                        ],
-                        [
-                            'name' => 'Settings#getNoProxy',
-                            'url' => '/noproxy',
-                            'verb' => 'GET'
-                        ],
-						[
-							'name' => 'Settings#setTriggerChallenges',
-							'url' => '/triggerchallenges',
-							'verb' => 'POST'
-						],
-						[
-							'name' => 'Settings#getTriggerChallenges',
-							'url' => '/triggerchallenges',
-							'verb' => 'GET'
-						]
-				]
-        ]
+                'routes' => []
+		]
 );
 
 

@@ -50,6 +50,16 @@ script('twofactor_privacyidea', 'settings-admin');
             <label for="triggerchallenges">
                 Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens.
             </label>
+            <div id="piserveradmin_credentials">
+                <p>
+                    <label for="piserveradmin_user">Username of privacyIDEA server admin</label>
+                    <input id="piserveradmin_user" type="text" size="40">
+                </p>
+                <p>
+                    <label for="piserveradmin_password">Password of privacyIDEA server admin</label>
+                    <input id="piserveradmin_password" type="text" size="40">
+                </p>
+            </div>
         </p>
     </div>
 </div>
