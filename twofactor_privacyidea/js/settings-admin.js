@@ -39,7 +39,13 @@ $(document).ready(function () {
             function(result) {
                 $("#piSettings #pirealm").val(result);
             }
-            );    
+            );
+
+    $.get(OC.generateUrl(BASE_URL + 'triggerchallenges')).done(
+        function(result) {
+            $("#piSettings #triggerchallenges").prop('checked', result === "1");
+        }
+    );
     
         $("#piSettings #checkssl").change(function() {
                 $.post(
@@ -74,5 +80,12 @@ $(document).ready(function () {
                 realm: value
             });                            
         });
+
+        $("#piSettings #triggerchallenges").change(function() {
+            $.post(OC.generateUrl(BASE_URL + 'triggerchallenges'),
+                {
+                    triggerchallenges: $(this).is(":checked")
+                })
+        })
 
 });

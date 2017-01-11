@@ -65,7 +65,17 @@ $application->registerRoutes(
                             'url' => '/noproxy',
                             'verb' => 'GET'
                         ],
-                ]
+						[
+							'name' => 'Settings#setTriggerChallenges',
+							'url' => '/triggerchallenges',
+							'verb' => 'POST'
+						],
+						[
+							'name' => 'Settings#getTriggerChallenges',
+							'url' => '/triggerchallenges',
+							'verb' => 'GET'
+						]
+				]
         ]
 );
 

@@ -78,5 +78,21 @@ class SettingsController extends Controller {
         public function setRealm($realm) {
             $this->config->setAppValue('twofactor_privacyidea', 'realm', $realm);
         }
+
+        /*
+         * Enable or disable challenge triggers
+         */
+		/**
+		 * @param bool $triggerchallenges
+		 */
+        public function setTriggerChallenges($triggerchallenges) {
+
+            $value = $triggerchallenges ? '1' : '0';
+            $this->config->setAppValue('twofactor_privacyidea', 'triggerchallenges', $value);
+        }
+
+        public function getTriggerChallenges() {
+            return $this->config->getAppvalue('twofactor_privacyidea', 'triggerchallenges');
+        }
         
 }

@@ -94,17 +94,19 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 * @return Template
 	 */
 	public function getTemplate(IUser $user) {
-		$url = $this->getBaseUrl() . "validate/triggerchallenge";
-		$options = $this->getClientOptions();
-		$realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
-		$token = $this->fetchAuthToken("admin", "test");
-		try {
-			$client = $this->httpClientService->newClient();
-			$options["body"] = ["user" => $user->getUID(), "realm" => $realm];
-			$options["headers"] = ["PI-Authorization" => $token];
-			$result = $client->post($url, $options);
-		} catch(Exception $e) {
-			$this->logger->logException($e, ["message", $e->getMessage()]);
+		if($this->config->getAppValue('twofactor_privacyidea', 'triggerchallenges') === '1') {
+			$url = $this->getBaseUrl() . "validate/triggerchallenge";
+			$options = $this->getClientOptions();
+			$realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
+			$token = $this->fetchAuthToken("admin", "test");
+			try {
+				$client = $this->httpClientService->newClient();
+				$options["body"] = ["user" => $user->getUID(), "realm" => $realm];
+				$options["headers"] = ["PI-Authorization" => $token];
+				$result = $client->post($url, $options);
+			} catch (Exception $e) {
+				$this->logger->logException($e, ["message", $e->getMessage()]);
+			}
 		}
 		return new Template('twofactor_privacyidea', 'challenge');
 	}
@@ -211,7 +213,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 			}
 		} catch(ClientException $e) {
 			if($e->getCode() === 401) {
-				$this->logger->error("Could not authenticate " . $username . " against privacyIDEA");
+				$this->logger->error("Could not authenticate " . $username . " against privacyIDEA: 401 Unauthorized");
 			} else {
 				$this->logger->logException($e, ["message", $e->getMessage()]);
 			}

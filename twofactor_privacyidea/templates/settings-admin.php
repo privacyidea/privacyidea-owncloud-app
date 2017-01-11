@@ -19,8 +19,8 @@ script('twofactor_privacyidea', 'settings-admin');
             <label for="piurl">URL of the privacyIDEA Server</label>
             <input type="text" id="piurl" width="300px"/>
             <em>
-                Please use the complete URL including the path of the REST API.
-                Usually this ends with /validate/check.
+                Please use the base URL of your privacyIDEA instance.
+                For compatibility reasons, you may also specify the URL of the /validate/check endpoint.
             </em>
         </p>
         
@@ -44,6 +44,12 @@ script('twofactor_privacyidea', 'settings-admin');
             <label for="pirealm">User Realm in privacyIDEA (other than default)</label>
             <input type="text" id="pirealm" size="40"/>
         </p>
-        
+
+        <p>
+            <input id="triggerchallenges" type="checkbox" class="checkbox">
+            <label for="triggerchallenges">
+                Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens.
+            </label>
+        </p>
     </div>
 </div>
