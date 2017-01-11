@@ -210,6 +210,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	}
 
 	public function fetchAuthToken($username, $password) {
+		$error_message = "";
 		$url = $this->getBaseUrl() . "auth";
 		$options = $this->getClientOptions();
 		try {
@@ -221,20 +222,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 				if($body->result->status === true) {
 					return $body->result->value->token;
 				} else {
-					/* TODO */
+					$error_message = $this->trans->t("Failed to trigger challenge.");
 				}
 			} else {
-				/* TODO */
+				$error_message = $this->trans->t("Failed to trigger challenge. Wrong HTTP return code.");
 			}
 		} catch(GuzzleHttp\Exception\ClientException $e) {
 			if($e->getCode() === 401) {
 				$this->logger->error("Could not authenticate " . $username . " against privacyIDEA: 401 Unauthorized");
 			} else {
 				$this->logger->logException($e, ["message", $e->getMessage()]);
+				$error_message = $this->trans->t("Failed to trigger challenge.") . " " . $e->getMessage();
 			}
 		} catch(Exception $e) {
 			$this->logger->logException($e, ["message", $e->getMessage()]);
+			$error_message = $this->trans->t("Failed to trigger challenge.") . " " . $e->getMessage();
 		}
+		/* TODO: Raise exception. */
 		return null;
 	}
 }
