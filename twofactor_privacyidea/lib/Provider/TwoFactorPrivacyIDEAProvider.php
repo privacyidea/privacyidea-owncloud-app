@@ -30,6 +30,7 @@ use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 use OCP\Authentication\TwoFactorAuth\IProvider;
 use OCP\IL10N;
 
+use GuzzleHttp;
 
 class TwoFactorPrivacyIDEAProvider implements IProvider {
 
@@ -73,8 +74,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		return 'privacyIDEA';
 	}
 
+	public function getAppValue($key) {
+		return $this->config->getAppValue('twofactor_privacyidea', $key);
+	}
+
+	public function setAppValue($key, $value) {
+		$this->config->setAppValue('twofactor_privacyidea', $key, $value);
+	}
+
 	public function getBaseUrl() {
-		$url = $this->config->getAppValue('twofactor_privacyidea', 'url');
+		$url = $this->getAppValue('url');
 		// Remove the "/validate/check" suffix of $url if it exists
 		$suffix = "/validate/check";
 		if(substr($url, -strlen($suffix)) === $suffix) {
@@ -87,6 +96,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		return $url;
 	}
 
+	private function triggerChallenges($username) {
+		$url = $this->getBaseUrl() . "validate/triggerchallenge";
+		$options = $this->getClientOptions();
+		$adminUser = $this->getAppValue('serveradmin_user');
+		$adminPassword = $this->getAppValue('serveradmin_password');
+		$realm = $this->getAppValue('realm');
+		$token = $this->fetchAuthToken($adminUser, $adminPassword);
+		try {
+			$client = $this->httpClientService->newClient();
+			$options["body"] = ["user" => $username, "realm" => $realm];
+			$options["headers"] = ["PI-Authorization" => $token];
+			$result = $client->post($url, $options);
+		} catch (Exception $e) {
+			$this->logger->logException($e, ["message", $e->getMessage()]);
+		}
+	}
+
 	/**
 	 * Get the template for rending the 2FA provider view
 	 *
@@ -94,26 +120,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 * @return Template
 	 */
 	public function getTemplate(IUser $user) {
-		if($this->config->getAppValue('twofactor_privacyidea', 'triggerchallenges') === '1') {
-			$url = $this->getBaseUrl() . "validate/triggerchallenge";
-			$options = $this->getClientOptions();
-			$realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
-			$token = $this->fetchAuthToken("admin", "test");
-			try {
-				$client = $this->httpClientService->newClient();
-				$options["body"] = ["user" => $user->getUID(), "realm" => $realm];
-				$options["headers"] = ["PI-Authorization" => $token];
-				$result = $client->post($url, $options);
-			} catch (Exception $e) {
-				$this->logger->logException($e, ["message", $e->getMessage()]);
-			}
+		if($this->getAppValue('triggerchallenges') === '1') {
+			$this->triggerChallenges($user->getUID());
 		}
 		return new Template('twofactor_privacyidea', 'challenge');
 	}
 
 	private function getClientOptions() {
-		$checkssl = $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
-		$noproxy = $this->config->getAppValue('twofactor_privacyidea', 'noproxy');
+		$checkssl = $this->getAppValue('checkssl');
+		$noproxy = $this->getAppValue('noproxy');
 		$options = ['headers' => ['user-agent' => "ownCloud Plugin" ],
 					'verify' => $checkssl !== '0',
 					'debug' => false];
@@ -211,7 +226,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 			} else {
 				/* TODO */
 			}
-		} catch(ClientException $e) {
+		} catch(GuzzleHttp\Exception\ClientException $e) {
 			if($e->getCode() === 401) {
 				$this->logger->error("Could not authenticate " . $username . " against privacyIDEA: 401 Unauthorized");
 			} else {
