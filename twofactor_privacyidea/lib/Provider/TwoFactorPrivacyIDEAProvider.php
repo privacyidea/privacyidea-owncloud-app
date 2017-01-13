@@ -207,7 +207,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		$options = $this->getClientOptions();
 		try {
 			$client = $this->httpClientService->newClient();
-			$options["body"] = ["username" => $username, "password" => "$password"];
+			$options["body"] = ["username" => $username, "password" => $password];
 			$result = $client->post($url, $options);
 			if($result->getStatusCode() === 200) {
 				$body = json_decode($result->getBody());
