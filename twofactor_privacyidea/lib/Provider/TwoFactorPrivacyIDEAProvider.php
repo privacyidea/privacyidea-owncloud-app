@@ -32,6 +32,14 @@ use OCP\IL10N;
 
 use GuzzleHttp;
 
+class AdminAuthException extends Exception {
+
+}
+
+class TriggerChallengesException extends Exception {
+
+}
+
 class TwoFactorPrivacyIDEAProvider implements IProvider {
 
 	private $httpClientService;
@@ -97,20 +105,35 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	}
 
 	private function triggerChallenges($username) {
+		$error_message = "";
 		$url = $this->getBaseUrl() . "validate/triggerchallenge";
 		$options = $this->getClientOptions();
 		$adminUser = $this->getAppValue('serveradmin_user');
 		$adminPassword = $this->getAppValue('serveradmin_password');
 		$realm = $this->getAppValue('realm');
-		$token = $this->fetchAuthToken($adminUser, $adminPassword);
 		try {
+			$token = $this->fetchAuthToken($adminUser, $adminPassword);
 			$client = $this->httpClientService->newClient();
 			$options["body"] = ["user" => $username, "realm" => $realm];
 			$options["headers"] = ["PI-Authorization" => $token];
 			$result = $client->post($url, $options);
+			if($result->getStatusCode() == 200) {
+				$body = json_decode($result->getBody());
+				if ($body->result->status === true) {
+					return $body->detail->messages;
+				} else {
+					$error_message = $this->trans->t("Failed to trigger challenges. privacyIDEA error.");
+				}
+			} else {
+				$error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code.");
+			}
+		} catch(AdminAuthException $e) {
+			$error_message = $e->getMessage();
 		} catch (Exception $e) {
 			$this->logger->logException($e, ["message", $e->getMessage()]);
+			$error_message = $this->trans->t("Failed to trigger challenges.");
 		}
+		throw new TriggerChallengesException($error_message);
 	}
 
 	/**
@@ -120,10 +143,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	 * @return Template
 	 */
 	public function getTemplate(IUser $user) {
+		$messages = [];
 		if($this->getAppValue('triggerchallenges') === '1') {
-			$this->triggerChallenges($user->getUID());
+			try {
+				$messages = $this->triggerChallenges($user->getUID());
+			} catch(TriggerChallengesException $e) {
+				$messages = [$e->getMessage()];
+			}
 		}
-		return new Template('twofactor_privacyidea', 'challenge');
+		$template = new Template('twofactor_privacyidea', 'challenge');
+		$template->assign("messages", array_unique($messages));
+		return $template;
 	}
 
 	private function getClientOptions() {
@@ -214,23 +244,19 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 				if($body->result->status === true) {
 					return $body->result->value->token;
 				} else {
-					$error_message = $this->trans->t("Failed to trigger challenge.");
+					$error_message = $this->trans->t("Failed to fetch authentication token. privacyIDEA error.");
 				}
 			} else {
-				$error_message = $this->trans->t("Failed to trigger challenge. Wrong HTTP return code.");
-			}
-		} catch(GuzzleHttp\Exception\ClientException $e) {
-			if($e->getCode() === 401) {
-				$this->logger->error("Could not authenticate " . $username . " against privacyIDEA: 401 Unauthorized");
-			} else {
-				$this->logger->logException($e, ["message", $e->getMessage()]);
-				$error_message = $this->trans->t("Failed to trigger challenge.") . " " . $e->getMessage();
+				$error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code.");
 			}
 		} catch(Exception $e) {
 			$this->logger->logException($e, ["message", $e->getMessage()]);
-			$error_message = $this->trans->t("Failed to trigger challenge.") . " " . $e->getMessage();
+			if($e instanceof GuzzleHttp\Exception\ClientException && $e->getCode() == 401) {
+				$error_message = $this->trans->t("Failed to fetch authentication token. Unauthorized.");
+			} else {
+				$error_message = $this->trans->t("Failed to fetch authentication token.");
+			}
 		}
-		/* TODO: Raise exception. */
-		return null;
+		throw new AdminAuthException($error_message);
 	}
 }
