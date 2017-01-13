@@ -149,20 +149,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 	public function verifyChallenge(IUser $user, $challenge) {
             // Read config
             $url = $this->getBaseUrl() . "validate/check";
-            $checkssl = $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
-            $realm = $this->config->getAppValue('twofactor_privacyidea', 'realm');
-            $noproxy = $this->config->getAppValue('twofactor_privacyidea', 'noproxy');
+            $realm = $this->getAppValue('realm');
             $error_message = "";
-            $options = ['body' => ['user' => $user->getUID(),
-                                    'pass' => $challenge,
-                                    'realm' => $realm],
-                        'headers' => ['user-agent' => "ownCloud Plugin" ],
-                        'verify' => $checkssl !== '0',
-                        'debug' => false
-            ];
-            if ($noproxy === "1") {
-                $options["proxy"] = ["https" => "", "http" => ""];
-            }
+            $options = $this->getClientOptions();
+            $options['body'] = ['user' => $user->getUID(),
+                                'pass' => $challenge,
+                                'realm' => $realm];
             try {
                 $client = $this->httpClientService->newClient();
                 $res = $client->post($url, $options);
