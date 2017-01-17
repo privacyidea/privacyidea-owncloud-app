@@ -57,7 +57,7 @@ script('twofactor_privacyidea', 'settings-admin');
                 </p>
                 <p>
                     <label for="piserviceaccount_password">Password of privacyIDEA service account</label>
-                    <input id="piserviceaccount_password" type="text" size="40">
+                    <input id="piserviceaccount_password" type="password" size="40">
                 </p>
             </div>
         </p>
