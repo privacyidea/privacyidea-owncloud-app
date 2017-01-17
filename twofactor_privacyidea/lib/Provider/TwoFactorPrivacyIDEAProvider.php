@@ -104,8 +104,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		$error_message = "";
 		$url = $this->getBaseUrl() . "validate/triggerchallenge";
 		$options = $this->getClientOptions();
-		$adminUser = $this->getAppValue('serveradmin_user');
-		$adminPassword = $this->getAppValue('serveradmin_password');
+		$adminUser = $this->getAppValue('serviceaccount_user');
+		$adminPassword = $this->getAppValue('serviceaccount_password');
 		$realm = $this->getAppValue('realm');
 		try {
 			$token = $this->fetchAuthToken($adminUser, $adminPassword);

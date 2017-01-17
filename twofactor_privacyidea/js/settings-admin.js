@@ -72,9 +72,9 @@ $(document).ready(function () {
 
     var displayServerCredentials = function (show) {
         if(show) {
-            $("#piserveradmin_credentials").show();
+            $("#piserviceaccount_credentials").show();
         } else {
-            $("#piserveradmin_credentials").hide();
+            $("#piserviceaccount_credentials").hide();
         };
     };
 
@@ -90,23 +90,23 @@ $(document).ready(function () {
         displayServerCredentials(checked);
     });
 
-    getValue("serveradmin_user", function (user) {
-        $("#piSettings #piserveradmin_user").val(user);
+    getValue("serviceaccount_user", function (user) {
+        $("#piSettings #piserviceaccount_user").val(user);
     });
 
-    $("#piSettings #piserveradmin_user").keyup(function () {
+    $("#piSettings #piserviceaccount_user").keyup(function () {
         console.log("pi: Saving Server Admin User");
-        var value = $("#piSettings #piserveradmin_user").val();
-        setValue("serveradmin_user", value);
+        var value = $("#piSettings #piserviceaccount_user").val();
+        setValue("serviceaccount_user", value);
     });
 
-    getValue("serveradmin_password", function (password) {
-        $("#piSettings #piserveradmin_password").val(password);
+    getValue("serviceaccount_password", function (password) {
+        $("#piSettings #piserviceaccount_password").val(password);
     });
 
-    $("#piSettings #piserveradmin_password").keyup(function () {
+    $("#piSettings #piserviceaccount_password").keyup(function () {
         console.log("pi: Saving Server Admin Password");
-        var value = $("#piSettings #piserveradmin_password").val();
-        setValue("serveradmin_password", value);
+        var value = $("#piSettings #piserviceaccount_password").val();
+        setValue("serviceaccount_password", value);
     });
 });
