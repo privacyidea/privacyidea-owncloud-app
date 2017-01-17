@@ -49,7 +49,8 @@ $(document).ready(function () {
 
     /* "Check SSL" checkbox */
     getValue("checkssl", function (checkssl) {
-        $("#piSettings #checkssl").prop('checked', checkssl === "1");
+        /* NOTE: We check for `!== "0"` instead of `=== "1"` here in order to be consistent with the Provider. */
+        $("#piSettings #checkssl").prop('checked', checkssl !== "0");
     });
     $("#piSettings #checkssl").change(function() {
         setValue("checkssl", $(this).is(":checked") ? "1" : "0");
