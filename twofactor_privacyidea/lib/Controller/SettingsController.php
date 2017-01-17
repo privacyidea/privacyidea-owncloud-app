@@ -30,10 +30,22 @@ class SettingsController extends Controller {
                 $this->config = $config;
 	}
 
+	/**
+	 * Set a configuration value in the twofactor_privacyidea app config.
+	 *
+	 * @param string $key configuration key
+	 * @param string $value configuration value
+	 */
 	public function setValue($key, $value) {
 		$this->config->setAppValue("twofactor_privacyidea", $key, $value);
 	}
 
+	/**
+	 * Retrive a configuration from the twofactor_privacyidea app config.
+	 *
+	 * @param string $key configuration key
+	 * @return string
+	 */
 	public function getValue($key) {
 		return $this->config->getAppValue("twofactor_privacyidea", $key);
 	}

@@ -82,10 +82,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		return 'privacyIDEA';
 	}
 
+	/**
+	 * Retrieve a value from the app's (twofactor_privacyidea) configuration store.
+	 *
+	 * @param string $key application config key
+	 * @return string
+	 */
 	private function getAppValue($key) {
 		return $this->config->getAppValue('twofactor_privacyidea', $key);
 	}
 
+	/**
+	 * Retrieve the privacyIDEA instance base URL from the app configuration.
+	 * In case the stored URL ends with '/validate/check', this suffix is removed.
+	 * The returned URL always ends with a slash.
+	 *
+	 * @return string
+	 */
 	private function getBaseUrl() {
 		$url = $this->getAppValue('url');
 		// Remove the "/validate/check" suffix of $url if it exists
@@ -100,6 +113,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		return $url;
 	}
 
+	/**
+	 * Ask privacyIDEA to trigger all challenges for a given username via
+	 * the /validate/triggerchallenge API request.
+	 * If the request was successful, return a list of messages from privacyIDEA's response.
+	 * If the request failed for any reason, a TriggerChallengesException is raised.
+	 *
+	 * @param string $username user for which privacyIDEA should trigger challenges
+	 * @return string[]
+	 * @throws TriggerChallengesException
+	 */
 	private function triggerChallenges($username) {
 		$error_message = "";
 		$url = $this->getBaseUrl() . "validate/triggerchallenge";
@@ -152,6 +175,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		return $template;
 	}
 
+	/**
+	 * Return an associative array that contains the options that should be passed to
+	 * the HTTP client service when creating HTTP requests.
+	 * @return array
+	 */
 	private function getClientOptions() {
 		$checkssl = $this->getAppValue('checkssl');
 		$noproxy = $this->getAppValue('noproxy');
@@ -227,6 +255,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		return true;
 	}
 
+	/**
+	 * Authenticate the service account against the privacyIDEA instance and return the generated JWT token.
+	 * In case authentication fails, an AdminAuthException is thrown.
+	 *
+	 * @param string $username service account username
+	 * @param string $password service account password
+	 * @return string JWT token
+	 * @throws AdminAuthException
+	 */
 	private function fetchAuthToken($username, $password) {
 		$error_message = "";
 		$url = $this->getBaseUrl() . "auth";
