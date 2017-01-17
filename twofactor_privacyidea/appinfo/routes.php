@@ -25,48 +25,18 @@ $application->registerRoutes(
         $this,
         [
                 'routes' => [
-                        [
-                                'name' => 'Settings#setURL',
-                                'url' => '/url',
-                                'verb' => 'POST'
-                        ],
-                    [
-                                'name' => 'Settings#getURL',
-                                'url' => '/url',
-                                'verb' => 'GET'
-                        ],
-                        [
-                                'name' => 'Settings#setCheckSSL',
-                                'url' => '/checkssl',
-                                'verb' => 'POST'
-                        ],
-                        [
-                                'name' => 'Settings#getCheckSSL',
-                                'url' => '/checkssl',
-                                'verb' => 'GET'
-                        ],
-                        [
-                                'name' => 'Settings#setRealm',
-                                'url' => '/realm',
-                                'verb' => 'POST'
-                        ],
-                        [
-                                'name' => 'Settings#getRealm',
-                                'url' => '/realm',
-                                'verb' => 'GET'
-                        ],
-                        [
-                            'name' => 'Settings#setNoProxy',
-                            'url' => '/noproxy',
-                            'verb' => 'POST'
-                        ],
-                        [
-                            'name' => 'Settings#getNoProxy',
-                            'url' => '/noproxy',
-                            'verb' => 'GET'
-                        ],
-                ]
-        ]
+					[
+						'name' => 'Settings#setValue',
+						'url' => '/setValue',
+						'verb' => 'POST'
+					],
+					[
+						'name' => 'Settings#getValue',
+						'url' => '/getValue',
+						'verb' => 'GET'
+					]
+				]
+		]
 );
 
 

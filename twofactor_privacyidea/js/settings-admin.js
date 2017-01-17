@@ -19,60 +19,103 @@
 var BASE_URL = '/apps/twofactor_privacyidea/';
 
 $(document).ready(function () {
-    $.get(OC.generateUrl(BASE_URL + 'url')).done(
+    /* Use the /getValue API call to retrieve a string value from the app config */
+    var getValue = function (key, callback) {
+        $.get(OC.generateUrl(BASE_URL + 'getValue'), {key: key}).done(
             function(result) {
-                $("#piSettings #piurl").val(result);
+                callback(result);
             }
-            );    
-    $.get(OC.generateUrl(BASE_URL + 'checkssl')).done(
-            function(result) {
-                $("#piSettings #checkssl").prop('checked', result === "1");
-            }
-            );
-    $.get(OC.generateUrl(BASE_URL + 'noproxy')).done(
-        function(result) {
-            $("#piSettings #noproxy").prop('checked', result === "1");
-        }
-    );
+        );
+    };
+    /* Use the /setValue API call to set a string value in the app config. */
+    var setValue = function (key, value) {
+        $.post(OC.generateUrl(BASE_URL + 'setValue'), {
+            key: key,
+            value: value
+        });
+    };
 
-    $.get(OC.generateUrl(BASE_URL + 'realm')).done(
-            function(result) {
-                $("#piSettings #pirealm").val(result);
-            }
-            );    
-    
-        $("#piSettings #checkssl").change(function() {
-                $.post(
-                        OC.generateUrl(BASE_URL + 'checkssl'),
-                        {
-                            checkssl: $(this).is(":checked")
-                        });
-        });
-        $("#piSettings #noproxy").change(function() {
-            $.post(OC.generateUrl(BASE_URL + 'noproxy'),{
-                noproxy: $(this).is(":checked")
-            });
-        });
-        $("#piSettings #piurl").keyup(function() {
-            // We simple save the value always ;-)
-            console.log("pi: Saving URL");
-            var value = $("#piSettings #piurl").val();
-            console.log(value);
-            $.post(OC.generateUrl(BASE_URL + 'url'),
-            {
-                url: value
-            });                            
-        });
-        
-        $("#piSettings #pirealm").keyup(function() {
-            // We simple save the value always ;-)
-            console.log("pi: Saving Realm");
-            var value = $("#piSettings #pirealm").val();
-            console.log(value);
-            $.post(OC.generateUrl(BASE_URL + 'realm'),
-            {
-                realm: value
-            });                            
-        });
+    /* privacyIDEA instance URL */
+    getValue("url", function (url) {
+       $("#piSettings #piurl").val(url);
+    });
+    $("#piSettings #piurl").keyup(function() {
+        // We simple save the value always ;-)
+        console.log("pi: Saving URL");
+        var value = $("#piSettings #piurl").val();
+        console.log(value);
+        setValue("url", value);
+    });
 
+    /* "Check SSL" checkbox */
+    getValue("checkssl", function (checkssl) {
+        /* NOTE: We check for `!== "0"` instead of `=== "1"` here in order to be consistent with the Provider. */
+        $("#piSettings #checkssl").prop('checked', checkssl !== "0");
+    });
+    $("#piSettings #checkssl").change(function() {
+        setValue("checkssl", $(this).is(":checked") ? "1" : "0");
+    });
+
+    /* "Bypass Proxy" checkbox */
+    getValue("noproxy", function (noproxy) {
+        $("#piSettings #noproxy").prop('checked', noproxy === "1");
+    });
+    $("#piSettings #noproxy").change(function() {
+        setValue("noproxy", $(this).is(":checked") ? "1" : "0");
+    });
+
+    /* privacyIDEA realm */
+    getValue("realm", function (realm) {
+        $("#piSettings #pirealm").val(realm);
+    });
+    $("#piSettings #pirealm").keyup(function() {
+        // We simple save the value always ;-)
+        console.log("pi: Saving Realm");
+        var value = $("#piSettings #pirealm").val();
+        console.log(value);
+        setValue("realm", value);
+    });
+
+    /* Enable/Disable challenge triggering */
+    var displayServerCredentials = function (show) {
+        if(show) {
+            $("#piserviceaccount_credentials").show();
+        } else {
+            $("#piserviceaccount_credentials").hide();
+        };
+    };
+
+    getValue("triggerchallenges", function (trigger) {
+        var value = (trigger === "1");
+        $("#piSettings #triggerchallenges").prop('checked', value);
+        displayServerCredentials(value);
+    });
+
+    $("#piSettings #triggerchallenges").change(function() {
+        var checked = $(this).is(":checked");
+        setValue("triggerchallenges", checked ? "1" : "0");
+        displayServerCredentials(checked);
+    });
+
+    /* privacyIDEA service account username */
+    getValue("serviceaccount_user", function (user) {
+        $("#piSettings #piserviceaccount_user").val(user);
+    });
+
+    $("#piSettings #piserviceaccount_user").keyup(function () {
+        console.log("pi: Saving Service Account User");
+        var value = $("#piSettings #piserviceaccount_user").val();
+        setValue("serviceaccount_user", value);
+    });
+
+    /* privacyIDEA service account password */
+    getValue("serviceaccount_password", function (password) {
+        $("#piSettings #piserviceaccount_password").val(password);
+    });
+
+    $("#piSettings #piserviceaccount_password").keyup(function () {
+        console.log("pi: Saving Service Account Password");
+        var value = $("#piSettings #piserviceaccount_password").val();
+        setValue("serviceaccount_password", value);
+    });
 });

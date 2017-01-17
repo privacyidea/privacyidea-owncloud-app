@@ -30,53 +30,23 @@ class SettingsController extends Controller {
                 $this->config = $config;
 	}
 
-        /**
-         * enable/disable SSL checking
-         *
-         * @param bool $checkssl
-         */
-        public function setCheckSSL($checkssl) {
-            $value = $checkssl ? '1' : '0';
-            $this->config->setAppValue('twofactor_privacyidea', 'checkssl', $value);
-        }
-        
-        public function getCheckSSL() {
-            return $this->config->getAppValue('twofactor_privacyidea', 'checkssl');
-        }
+	/**
+	 * Set a configuration value in the twofactor_privacyidea app config.
+	 *
+	 * @param string $key configuration key
+	 * @param string $value configuration value
+	 */
+	public function setValue($key, $value) {
+		$this->config->setAppValue("twofactor_privacyidea", $key, $value);
+	}
 
-        /**
-         * enable/disable no Proxy
-         *
-         * @param bool $noproxy
-         */
-        public function setNoProxy($noproxy) {
-            $value = $noproxy ? '1' : '0';
-            $this->config->setAppValue('twofactor_privacyidea', 'noproxy', $value);
-        }
-        public function getNoProxy() {
-            return $this->config->getAppValue('twofactor_privacyidea', 'noproxy');
-        }
-
-        /*
-         * set the privacyIDEA URL
-         */
-        public function setURL($url) {
-            $this->config->setAppValue('twofactor_privacyidea', 'url', $url);
-        }
-        
-        public function getUrl() {
-            return $this->config->getAppValue('twofactor_privacyidea', 'url');
-        }
-        
-        /*
-         * We can define a realm other than the default realm
-         */
-        public function getRealm() {
-            return $this->config->getAppValue('twofactor_privacyidea', 'realm');
-        }
-        
-        public function setRealm($realm) {
-            $this->config->setAppValue('twofactor_privacyidea', 'realm', $realm);
-        }
-        
+	/**
+	 * Retrive a configuration from the twofactor_privacyidea app config.
+	 *
+	 * @param string $key configuration key
+	 * @return string
+	 */
+	public function getValue($key) {
+		return $this->config->getAppValue("twofactor_privacyidea", $key);
+	}
 }
