@@ -82,15 +82,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		return 'privacyIDEA';
 	}
 
-	public function getAppValue($key) {
+	private function getAppValue($key) {
 		return $this->config->getAppValue('twofactor_privacyidea', $key);
 	}
 
-	public function setAppValue($key, $value) {
-		$this->config->setAppValue('twofactor_privacyidea', $key, $value);
-	}
-
-	public function getBaseUrl() {
+	private function getBaseUrl() {
 		$url = $this->getAppValue('url');
 		// Remove the "/validate/check" suffix of $url if it exists
 		$suffix = "/validate/check";
@@ -231,7 +227,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		return true;
 	}
 
-	public function fetchAuthToken($username, $password) {
+	private function fetchAuthToken($username, $password) {
 		$error_message = "";
 		$url = $this->getBaseUrl() . "auth";
 		$options = $this->getClientOptions();
