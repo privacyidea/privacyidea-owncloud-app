@@ -4,6 +4,10 @@ OC.L10N.register(
     "Failed to authenticate." : "Authentifizieren fehlgeschlagen.",
     "Failed to authenticate. privacyIDEA error." : "Authentifizieren fehlgeschlagen, privacyIDEA-Fehler.",
     "Failed to authenticate. Wrong HTTP return code." : "Authentifizieren fehlgeschlagen, falscher HTTP-Rückgabewert.",
+    "Failed to fetch authentication token. privacyIDEA error." : "Fehler beim Empfang des Authentifizierungs-Token, privacyIDEA-Fehler.",
+    "Failed to fetch authentication token. Wrong HTTP return code." : "Fehler beim Empfang des Authentifizierungs-Token, falscher HTTP-Rückgabewert.",
+    "Failed to fetch authentication token. Unauthorized." : "Fehler beim Empfang des Authentifizierungs-Token, nicht autorisiert.",
+    "Failed to fetch authentication token." : "Fehler beim Empfang des Authentifizierungs-Token.",
     "privacyIDEA 2FA" : "privacyIDEA-2FA",
     "Open documentation" : "Dokumentation öffnen"
 },
