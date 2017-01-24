@@ -1,6 +1,9 @@
 OC.L10N.register(
     "twofactor_privacyidea",
     {
+    "Failed to trigger challenges. privacyIDEA error." : "Fehler beim Auslösen der Aufgaben, privacyIDEA-Fehler.",
+    "Failed to trigger challenges. Wrong HTTP return code." : "Fehler beim Auslösen der Aufgaben, falscher HTTP-Rückgabewert.",
+    "Failed to trigger challenges." : "Fehler beim Auslösen der Aufgaben.",
     "Failed to authenticate." : "Authentifizieren fehlgeschlagen.",
     "Failed to authenticate. privacyIDEA error." : "Authentifizieren fehlgeschlagen, privacyIDEA-Fehler.",
     "Failed to authenticate. Wrong HTTP return code." : "Authentifizieren fehlgeschlagen, falscher HTTP-Rückgabewert.",
