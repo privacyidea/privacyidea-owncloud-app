@@ -24,6 +24,7 @@ use OCP\Template;
 use OCP\Http\Client\IClientService;
 use OCP\ILogger;
 use OCP\IConfig;
+use OCP\IRequest;
 use Exception;
 // For OC < 9.2 the TwoFactorException does not exist. So we need to handle this in the method verifyChallenge
 use OCP\Authentication\TwoFactorAuth\TwoFactorException;
@@ -49,12 +50,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 
 	public function __construct(IClientService $httpClientService,
 					IConfig $config,
-					ILogger $logger,
+					ILogger $logger, IRequest $request,
                     IL10N $trans) {
 		$this->httpClientService = $httpClientService;
 		$this->config = $config;
 		$this->logger = $logger;
         $this->trans = $trans;
+        $this->request = $request;
+        $this->hideOTPField = null;
+        $this->detail = Array();
+        $this->transactionId = null;
+        $this->u2fSignRequest = null;
 	}
 
 	/**
@@ -139,7 +145,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 			if($result->getStatusCode() == 200) {
 				$body = json_decode($result->getBody());
 				if ($body->result->status === true) {
-					return $body->detail->messages;
+                    $detail = $body->detail;
+                    $this->detail = $detail;
+                    if (property_exists($detail, "transaction_ids")) {
+                        // TODO: What should we do, if there was more than one transaction ID?
+                        $this->transactionId = $detail->transaction_ids[0];
+                    }
+                    if (property_exists($detail, "attributes")) {
+                        $attributes = $detail->attributes;
+                        $this->hideOTPField = $attributes->hideResponseInput;
+                        // check if this is a U2F Token
+                        if (property_exists($attributes, "u2fSignRequest")) {
+                            $this->u2fSignRequest = $attributes->u2fSignRequest;
+                        }
+                    } else {
+                        $this->hideOTPField = null;
+                        $this->u2fSignRequest = null;
+                    }
+					return $detail->messages;
 				} else {
 					$error_message = $this->trans->t("Failed to trigger challenges. privacyIDEA error.");
 				}
@@ -172,6 +195,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
 		}
 		$template = new Template('twofactor_privacyidea', 'challenge');
 		$template->assign("messages", array_unique($messages));
+        $template->assign("hideOTPField", $this->hideOTPField);
+        $template->assign("u2fSignRequest", $this->u2fSignRequest);
+        $template->assign("detail", $this->detail);
+        $template->assign("transactionId", $this->transactionId);
 		return $template;
 	}
 
@@ -211,6 +238,26 @@ class TwoFactorPrivacyIDEAProvider implements IProvider {
             $options['body'] = ['user' => $user->getUID(),
                                 'pass' => $challenge,
                                 'realm' => $realm];
+            // The verifyChallenge is called with additional parameters in case of challenge response:
+            $transaction_id = $this->request->getParam("transaction_id");
+            $signatureData = $this->request->getParam("signatureData");
+            $clientData = $this->request->getParam("clientData");
+            $this->logger->debug("transaction_id: " . $transaction_id);
+            $this->logger->debug("signatureData: " . $signatureData);
+            $this->logger->debug("clientData: " . $clientData);
+
+            if ($transaction_id) {
+                // add transaction ID in case of challenge response
+                $options['body']["transaction_id"] = $transaction_id;
+            }
+
+            if ($signatureData) {
+                $this->logger->debug('We are doing a U2F response.');
+                // here we add the signatureData and the clientData in case of U2F
+                $options['body']["signaturedata"] = $signatureData;
+                $options['body']["clientdata"] = $clientData;
+            }
+
             try {
                 $client = $this->httpClientService->newClient();
                 $res = $client->post($url, $options);
