@@ -26,9 +26,9 @@ if ($_["u2fSignRequest"]) {
 
     <!-- only necessary for U2F. These hidden parameters are used in the script u2f.js -->
     <?php if ($u2fSignRequest): ?>
-        <input type=hidden id="u2f_challenge" value="<?php p($u2fSignRequest->challenge);?>">
-        <input type=hidden id="u2f_keyHandle" value="<?php p($u2fSignRequest->keyHandle);?>">
-        <input type=hidden id="u2f_appId" value="<?php p($u2fSignRequest->appId);?>">
+        <input type="hidden" id="u2f_challenge" value="<?php p($u2fSignRequest->challenge);?>">
+        <input type="hidden" id="u2f_keyHandle" value="<?php p($u2fSignRequest->keyHandle);?>">
+        <input type="hidden" id="u2f_appId" value="<?php p($u2fSignRequest->appId);?>">
         <input type="hidden" id="signatureData" name="signatureData">
         <input type="hidden" id="clientData" name="clientData">
     <?php endif; ?>
