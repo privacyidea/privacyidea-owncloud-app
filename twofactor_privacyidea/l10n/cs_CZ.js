@@ -1,6 +1,9 @@
 OC.L10N.register(
     "twofactor_privacyidea",
     {
+    "Failed to trigger challenges. privacyIDEA error." : "Nepodařilo se spustit výzvy. Chyba privacyIDEA.",
+    "Failed to trigger challenges. Wrong HTTP return code." : "Nepodařilo se spustit výzvy. Špatný HTTP návratový kód.",
+    "Failed to trigger challenges." : "Nepodařilo se spustit výzvy.",
     "Failed to authenticate." : "Chyba ověření.",
     "Failed to authenticate. privacyIDEA error." : "Chyba ověření. Chyba privacyIDEA.",
     "Failed to authenticate. Wrong HTTP return code." : "Nepodařilo se ověřit. Chybný HTTP návratový kód.",
