@@ -56,6 +56,14 @@ $(document).ready(function () {
         setValue("checkssl", $(this).is(":checked") ? "1" : "0");
     });
 
+    /* Activate privacyIDEA */
+    getValue("piactive", function(piactive) {
+        $("#piSettings #piactive").prop('checked', piactive !== "0");
+    });
+    $('#piSettings #piactive').change(function() {
+       setValue("piactive", $(this).is(":checked") ? "1" : "0");
+    });
+
     /* "Bypass Proxy" checkbox */
     getValue("noproxy", function (noproxy) {
         $("#piSettings #noproxy").prop('checked', noproxy === "1");

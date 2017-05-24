@@ -319,9 +319,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function isTwoFactorAuthEnabledForUser(IUser $user)
     {
-        // TODO: The app could configure users, who do not do 2FA
-        // 2FA is enforced for all users
-        return true;
+        // TODO: We could exclude users from the necessity to do 2FA
+        // 2FA is enabled or disabled for all users
+        $piactive = $this->getAppValue('piactive');
+        if ($piactive === "1") {
+            return true;
+        }
+        return false;
     }
 
     /**

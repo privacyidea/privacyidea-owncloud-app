@@ -15,6 +15,12 @@ script('twofactor_privacyidea', 'settings-admin');
     </p>
     <div id="piSettings">
         <p>
+            <input id="piactive" type="checkbox" class="checkbox">
+            <label for="piactive">Activate two factor authentication with privacyIDEA.</label>
+            <em>Before activating two factor authentication with privacyIDEA, please asure, that the connection to
+                your privacyIDEA-server is configured correctly.</em>
+        </p>
+        <p>
             <label for="piurl">URL of the privacyIDEA Server</label>
             <input type="text" id="piurl" width="300px"/>
             <em>
