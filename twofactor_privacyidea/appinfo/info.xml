@@ -11,7 +11,7 @@
 	<author>NetKnights GmbH, Cornelius Kölbel</author>
 	<version>2.2.0</version>
 	<namespace>TwoFactor_privacyIDEA</namespace>
-	<category>other</category>
+	<category>Security</category>
 	<types>
 		<prelogin/>
 		<authentication/>
@@ -20,8 +20,8 @@
 	<two-factor-providers>
 		<provider>OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider</provider>
 	</two-factor-providers>
-
+        <screenshot>https://www.privacyidea.org/wp-content/uploads/2014/05/token.png</screenshot>
 	<dependencies>
-		<owncloud min-version="9.1" max-version="9.2" />
+		<owncloud min-version="9.1" max-version="10.0" />
 	</dependencies>
 </info>
