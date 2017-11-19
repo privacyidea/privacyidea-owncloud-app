@@ -104,6 +104,17 @@ $(document).ready(function () {
         setValue("triggerchallenges", checked ? "1" : "0");
         displayServerCredentials(checked);
     });
+    
+    /* exclude owncloud user groups */
+    getValue("piexcludegroups", function (excludegroups) {
+       $("#piSettings #piexcludegroups").val(excludegroups);
+    });
+
+    $("#piSettings #piexcludegroups").keyup(function () {
+       console.log("pi: Saving Excluse groups");
+       var value = $("#piSettings #piexcludegroups").val();
+       setValue("piexcludegroups", value);
+    });
 
     /* privacyIDEA service account username */
     getValue("serviceaccount_user", function (user) {

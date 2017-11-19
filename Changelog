@@ -1,3 +1,7 @@
+2.4.0
+
+* Allow 2FA to be disabled for specific user groups.
+
 2.3.0
 
 * Allow 2FA to be globally enabled or disabled.

@@ -21,6 +21,13 @@ script('twofactor_privacyidea', 'settings-admin');
                 your privacyIDEA-server is configured correctly.</em>
         </p>
         <p>
+            <label for="piexcludegroups">Exclude these groups from two factor authentication</label>
+            <input type="text" id="piexcludegroups" width="300px"/>
+            <em>
+                Users in the following groups will not need to do two factor authentication.
+                Please enter a comma separated list of group names.
+            </em>
+        <p>
             <label for="piurl">URL of the privacyIDEA Server</label>
             <input type="text" id="piurl" width="300px"/>
             <em>

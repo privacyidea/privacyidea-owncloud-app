@@ -11,9 +11,9 @@
 		<b>Note: You need a privacyIDEA authentication server in your network to manage all authentication devices of the users centrally.</b>
 		</p>
 	</description>
-	<licence>AGPL</licence>
+	<licence>AGPLv3</licence>
 	<author>NetKnights GmbH, Cornelius Kölbel</author>
-	<version>2.3.1</version>
+	<version>2.4</version>
 	<namespace>TwoFactor_privacyIDEA</namespace>
 	<category>Security</category>
 	<types>

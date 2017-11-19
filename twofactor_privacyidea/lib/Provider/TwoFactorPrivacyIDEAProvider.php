@@ -21,6 +21,7 @@
 namespace OCA\TwoFactor_privacyIDEA\Provider;
 
 use OCP\IUser;
+use OCP\IGroupManager;
 use OCP\Template;
 use OCP\Http\Client\IClientService;
 use OCP\ILogger;
@@ -55,6 +56,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     public function __construct(IClientService $httpClientService,
                                 IConfig $config,
                                 ILogger $logger, IRequest $request,
+                                IGroupManager $groupManager,
                                 IL10N $trans)
     {
         $this->httpClientService = $httpClientService;
@@ -66,6 +68,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->detail = array();
         $this->transactionId = null;
         $this->u2fSignRequest = null;
+        $this->groupManager = $groupManager;
     }
 
     /**
@@ -318,11 +321,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @return boolean
      */
     public function isTwoFactorAuthEnabledForUser(IUser $user)
-    {
-        // TODO: We could exclude users from the necessity to do 2FA
-        // 2FA is enabled or disabled for all users
+    {        
         $piactive = $this->getAppValue('piactive');
+        $piexcludegroups = $this->getAppValue('piexcludegroups');
         if ($piactive === "1") {
+            // 2FA is basically enabled
+            if ($piexcludegroups) {
+                $this->logger->debug("excluded Groups: " . $piexcludegroups);
+                // We can exclude groups from the 2FA
+                $groups = explode(",", $piexcludegroups);
+                foreach($groups as $group) {
+                    if ($this->groupManager->isInGroup($user->getUID(), trim($group))) {
+                        // The user is a group, that is allowed to pass with 1FA
+                        return false;
+                    };
+                };
+            };
             return true;
         }
         return false;
