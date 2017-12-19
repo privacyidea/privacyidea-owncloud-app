@@ -13,10 +13,6 @@ if ($_["u2fSignRequest"]) {
                 <li><?php p($message); ?></li>
             <?php endforeach; ?>
         </ul>
-        <!--
-        Debug:
-        <?php print_r($_); ?>
-        -->
     </fieldset>
 <?php endif; ?>
 
