@@ -3,6 +3,8 @@ if ($_["u2fSignRequest"]) {
     $u2fSignRequest = $_["u2fSignRequest"];
     script('twofactor_privacyidea', 'u2f-api');
     script('twofactor_privacyidea', 'u2f');
+} else {
+    $u2fSignRequest = false;
 }
 ?>
 
@@ -13,10 +15,6 @@ if ($_["u2fSignRequest"]) {
                 <li><?php p($message); ?></li>
             <?php endforeach; ?>
         </ul>
-        <!--
-        Debug:
-        <?php print_r($_); ?>
-        -->
     </fieldset>
 <?php endif; ?>
 
