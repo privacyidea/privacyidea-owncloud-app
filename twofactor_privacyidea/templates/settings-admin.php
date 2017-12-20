@@ -3,10 +3,10 @@ script('twofactor_privacyidea', 'settings-admin');
 ?>
 
 <div class="section" id="privacyIDEA">
-    <h2><?php p($l->t('privacyIDEA 2FA')); ?></h2>
+    <h2><?php p($l->t('privacyIDEA 2FA')); ?>
     <a target="_blank" rel="noreferrer" class="icon-info svg"
        title="<?php p($l->t('Open documentation')); ?>"
-       href="http://privacyidea.readthedocs.io"></a>
+       href="http://privacyidea.readthedocs.io"></a></h2>
     <span id="pi_settings_msg" class="msg"></span>
     <p>
         <em>In a second step of authentication the user is asked to provide a one
