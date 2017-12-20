@@ -29,9 +29,12 @@ $(document).ready(function () {
     };
     /* Use the /setValue API call to set a string value in the app config. */
     var setValue = function (key, value) {
+        OC.msg.startSaving('#pi_settings_msg');
         $.post(OC.generateUrl(BASE_URL + 'setValue'), {
             key: key,
             value: value
+        }, function (data) {
+            OC.msg.finishedSuccess('#pi_settings_msg', "Saved");
         });
     };
 
@@ -39,7 +42,7 @@ $(document).ready(function () {
     getValue("url", function (url) {
        $("#piSettings #piurl").val(url);
     });
-    $("#piSettings #piurl").keyup(function() {
+    $("#piSettings #piurl").change(function() {
         // We simple save the value always ;-)
         console.log("pi: Saving URL");
         var value = $("#piSettings #piurl").val();
@@ -76,7 +79,7 @@ $(document).ready(function () {
     getValue("realm", function (realm) {
         $("#piSettings #pirealm").val(realm);
     });
-    $("#piSettings #pirealm").keyup(function() {
+    $("#piSettings #pirealm").change(function() {
         // We simple save the value always ;-)
         console.log("pi: Saving Realm");
         var value = $("#piSettings #pirealm").val();
@@ -110,7 +113,7 @@ $(document).ready(function () {
        $("#piSettings #piexcludegroups").val(excludegroups);
     });
 
-    $("#piSettings #piexcludegroups").keyup(function () {
+    $("#piSettings #piexcludegroups").change(function () {
        console.log("pi: Saving Excluse groups");
        var value = $("#piSettings #piexcludegroups").val();
        setValue("piexcludegroups", value);
@@ -121,7 +124,7 @@ $(document).ready(function () {
         $("#piSettings #piserviceaccount_user").val(user);
     });
 
-    $("#piSettings #piserviceaccount_user").keyup(function () {
+    $("#piSettings #piserviceaccount_user").change(function () {
         console.log("pi: Saving Service Account User");
         var value = $("#piSettings #piserviceaccount_user").val();
         setValue("serviceaccount_user", value);
@@ -132,7 +135,7 @@ $(document).ready(function () {
         $("#piSettings #piserviceaccount_password").val(password);
     });
 
-    $("#piSettings #piserviceaccount_password").keyup(function () {
+    $("#piSettings #piserviceaccount_password").change(function () {
         console.log("pi: Saving Service Account Password");
         var value = $("#piSettings #piserviceaccount_password").val();
         setValue("serviceaccount_password", value);

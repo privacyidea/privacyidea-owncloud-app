@@ -3,10 +3,11 @@ script('twofactor_privacyidea', 'settings-admin');
 ?>
 
 <div class="section" id="privacyIDEA">
-    <h2><?php p($l->t('privacyIDEA 2FA')); ?></h2>
+    <h2 style="display: inline-block"><?php p($l->t('privacyIDEA 2FA')); ?>
     <a target="_blank" rel="noreferrer" class="icon-info svg"
        title="<?php p($l->t('Open documentation')); ?>"
-       href="http://privacyidea.readthedocs.io"></a>
+       href="http://privacyidea.readthedocs.io"></a></h2>
+    <span id="pi_settings_msg" class="msg"></span>
     <p>
         <em>In a second step of authentication the user is asked to provide a one
             time password. The users devices are managed in privacyIDEA. The
@@ -69,7 +70,7 @@ script('twofactor_privacyidea', 'settings-admin');
         </p>
         <p>
             <label for="piserviceaccount_password">Password of privacyIDEA service account</label>
-            <input id="piserviceaccount_password" type="password" size="40"/>
+            <input id="piserviceaccount_password" type="password" size="40" autocomplete="new-password" />
         </p>
     </div>
 </div>
