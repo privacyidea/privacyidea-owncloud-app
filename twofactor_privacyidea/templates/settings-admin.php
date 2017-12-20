@@ -7,6 +7,7 @@ script('twofactor_privacyidea', 'settings-admin');
     <a target="_blank" rel="noreferrer" class="icon-info svg"
        title="<?php p($l->t('Open documentation')); ?>"
        href="http://privacyidea.readthedocs.io"></a>
+    <span id="pi_settings_msg" class="msg"></span>
     <p>
         <em>In a second step of authentication the user is asked to provide a one
             time password. The users devices are managed in privacyIDEA. The

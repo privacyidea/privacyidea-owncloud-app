@@ -29,9 +29,12 @@ $(document).ready(function () {
     };
     /* Use the /setValue API call to set a string value in the app config. */
     var setValue = function (key, value) {
+        OC.msg.startSaving('#pi_settings_msg');
         $.post(OC.generateUrl(BASE_URL + 'setValue'), {
             key: key,
             value: value
+        }, function (data) {
+            OC.msg.finishedSuccess('#pi_settings_msg', "Saved");
         });
     };
 
