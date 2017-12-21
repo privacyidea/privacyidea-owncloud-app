@@ -3,7 +3,8 @@ script('twofactor_privacyidea', 'settings-admin');
 ?>
 
 <div class="section" id="privacyIDEA">
-    <h2 style="display: inline-block"><?php p($l->t('privacyIDEA 2FA')); ?>
+    <h2 style="display: inline-block">
+    <span style="float: left"><?php p($l->t('privacyIDEA 2FA')); ?></span>
     <a target="_blank" rel="noreferrer" class="icon-info svg"
        title="<?php p($l->t('Open documentation')); ?>"
        href="http://privacyidea.readthedocs.io"></a></h2>
