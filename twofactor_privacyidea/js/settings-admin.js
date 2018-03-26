@@ -37,6 +37,12 @@ $(document).ready(function () {
             OC.msg.finishedSuccess('#pi_settings_msg', "Saved");
         });
     };
+    var testAuthentication = function (user, pass, cb) {
+        $.post(OC.generateUrl(BASE_URL + 'testAuthentication'), {
+            user: user,
+            pass: pass
+        }, cb);
+    };
 
     /* privacyIDEA instance URL */
     getValue("url", function (url) {
@@ -139,5 +145,16 @@ $(document).ready(function () {
         console.log("pi: Saving Service Account Password");
         var value = $("#piSettings #piserviceaccount_password").val();
         setValue("serviceaccount_password", value);
+    });
+
+    /* Test Authentication button */
+    $("#piSettings #pitestauthentication").click(function (event) {
+        event.preventDefault();
+        var user = $("#piSettings #pitestauthentication_user").val();
+        var password = $("#piSettings #pitestauthentication_password").val();
+        OC.msg.startAction("#pitestauthentication_msg", "Authenticating ...");
+        testAuthentication(user, password, function (data) {
+            OC.msg.finishedAction("#pitestauthentication_msg", data);
+        });
     });
 });

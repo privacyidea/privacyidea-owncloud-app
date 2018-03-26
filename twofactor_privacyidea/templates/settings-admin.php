@@ -60,6 +60,18 @@ script('twofactor_privacyidea', 'settings-admin');
         </p>
 
         <p>
+            Test Authentication by supplying username and password that are checked against privacyIDEA:
+            <p>
+                <label for="pitestauthentication_user">User</label>
+                <input type="text" id="pitestauthentication_user" size="40" />
+                <label for="pitestauthentication_password">Password</label>
+                <input type="password" id="pitestauthentication_password" size="40" />
+                <input id="pitestauthentication" type="button" value="Test" />
+                <span id="pitestauthentication_msg" class="msg"></span>
+            </p>
+        </p>
+
+        <p>
             <input id="triggerchallenges" type="checkbox" class="checkbox">
             <label for="triggerchallenges">
                 Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens.
