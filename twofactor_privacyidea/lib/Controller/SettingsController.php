@@ -7,6 +7,7 @@
  */
 
 namespace OCA\TwoFactor_privacyIDEA\Controller;
+use OC;
 use OCP\AppFramework\Controller;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -48,5 +49,17 @@ class SettingsController extends Controller {
 	 */
 	public function getValue($key) {
 		return $this->config->getAppValue("twofactor_privacyidea", $key);
+	}
+
+	/**
+	 * Send a authentication request to privacyIDEA to check the connection.
+	 *
+	 * @param string $user user to send to privacyIDEA
+	 * @param string $password password to send to privacyIDEA
+	 */
+	public function testAuthentication($user, $pass) {
+		// instantiate our very own twofactor provider
+		$provider = OC::$server->query("OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider");
+		return $provider->authenticate($user, $pass);
 	}
 }

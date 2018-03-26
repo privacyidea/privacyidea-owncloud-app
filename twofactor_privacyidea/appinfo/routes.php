@@ -34,7 +34,12 @@ $application->registerRoutes(
 						'name' => 'Settings#getValue',
 						'url' => '/getValue',
 						'verb' => 'GET'
-					]
+					],
+					[
+						'name' => 'Settings#testAuthentication',
+						'url' => '/testAuthentication',
+						'verb' => 'POST'
+					],
 				]
 		]
 );
