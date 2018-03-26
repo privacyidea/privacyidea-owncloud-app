@@ -7,12 +7,13 @@
  */
 
 namespace OCA\TwoFactor_privacyIDEA\Controller;
+use Exception;
 use OC;
 use OCP\AppFramework\Controller;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IConfig;
-
+use OCP\AppFramework\Http\DataResponse;
 
 class SettingsController extends Controller {
 	/** @var IL10N */
@@ -60,6 +61,18 @@ class SettingsController extends Controller {
 	public function testAuthentication($user, $pass) {
 		// instantiate our very own twofactor provider
 		$provider = OC::$server->query("OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider");
-		return $provider->authenticate($user, $pass);
+		$status = "error";
+		try {
+			$result = $provider->authenticate($user, $pass);
+			if($result) {
+				$message = "Successfully authenticated!";
+				$status = "success";
+			} else {
+				$message = "Failed to authenticate.";
+			}
+		} catch (Exception $e) {
+			$message = $e->getMessage();
+		}
+		return new DataResponse(['status' => $status, 'data' => [ 'message' => $message ]]);
 	}
 }
