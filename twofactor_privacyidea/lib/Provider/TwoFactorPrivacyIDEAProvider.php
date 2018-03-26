@@ -302,7 +302,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 ["message", $e->getMessage()]);
             $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
         }
-        if (class_exists('TwoFactorException')) {
+        if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')) {
             // This is the behaviour for OC >= 9.2
             throw new TwoFactorException($error_message);
         } else {
