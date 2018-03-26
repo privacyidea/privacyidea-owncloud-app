@@ -234,7 +234,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             // NOTE: Here, we check for `!== '0'` instead of `=== '1'` in order to verify certificates
             // by default just after app installation.
             'verify' => $checkssl !== '0',
-            'debug' => false];
+            'debug' => false,
+            'exceptions' => false];
         if ($noproxy === "1") {
             $options["proxy"] = ["https" => "", "http" => ""];
         }
