@@ -150,11 +150,16 @@ $(document).ready(function () {
     /* Test Authentication button */
     $("#piSettings #pitestauthentication").click(function (event) {
         event.preventDefault();
-        var user = $("#piSettings #pitestauthentication_user").val();
-        var password = $("#piSettings #pitestauthentication_password").val();
-        OC.msg.startAction("#pitestauthentication_msg", "Authenticating ...");
-        testAuthentication(user, password, function (data) {
-            OC.msg.finishedAction("#pitestauthentication_msg", data);
-        });
+        // Use this trick to ensure that the `change` events of inputs
+        // are handled before we test the authentication, so that
+        // new values are already taken into account.
+        setTimeout(function () {
+            var user = $("#piSettings #pitestauthentication_user").val();
+            var password = $("#piSettings #pitestauthentication_password").val();
+            OC.msg.startAction("#pitestauthentication_msg", "Authenticating ...");
+            testAuthentication(user, password, function (data) {
+                OC.msg.finishedAction("#pitestauthentication_msg", data);
+            });
+        }, 0);
     });
 });
