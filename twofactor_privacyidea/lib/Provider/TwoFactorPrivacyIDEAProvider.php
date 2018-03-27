@@ -33,8 +33,6 @@ use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 use OCP\Authentication\TwoFactorAuth\IProvider;
 use OCP\IL10N;
 
-use GuzzleHttp;
-
 class AdminAuthException extends Exception
 {
 
@@ -380,16 +378,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 } else {
                     $error_message = $this->trans->t("Failed to fetch authentication token. privacyIDEA error.");
                 }
+            } else if ($result->getStatusCode() === 401) {
+                $error_message = $this->trans->t("Failed to fetch authentication token. Unauthorized.");
             } else {
                 $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code.");
             }
         } catch (Exception $e) {
             $this->logger->logException($e, ["message", $e->getMessage()]);
-            if ($e instanceof GuzzleHttp\Exception\ClientException && $e->getCode() == 401) {
-                $error_message = $this->trans->t("Failed to fetch authentication token. Unauthorized.");
-            } else {
-                $error_message = $this->trans->t("Failed to fetch authentication token.");
-            }
+            $error_message = $this->trans->t("Failed to fetch authentication token.");
         }
         throw new AdminAuthException($error_message);
     }
