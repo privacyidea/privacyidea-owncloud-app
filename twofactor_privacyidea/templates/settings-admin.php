@@ -83,5 +83,9 @@ script('twofactor_privacyidea', 'settings-admin');
             <label for="piserviceaccount_password">Password of privacyIDEA service account</label>
             <input id="piserviceaccount_password" type="password" size="40" autocomplete="new-password" />
         </p>
+        <p>
+            <input id="piserviceaccount_test" type="button" value="Check Credentials" />
+            <span id="piserviceaccount_msg" class="msg"></span>
+        </p>
     </div>
 </div>

@@ -75,4 +75,20 @@ class SettingsController extends Controller {
 		}
 		return new DataResponse(['status' => $status, 'data' => [ 'message' => $message ]]);
 	}
+
+	/**
+	 * Check if the configured service account credentials are correct.
+	 */
+	public function testServiceAccount($user, $pass) {
+		$provider = OC::$server->query("OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider");
+		$status = "error";
+		try {
+			$token = $provider->fetchAuthToken($user, $pass);
+			$message = "Credentials are correct!";
+			$status = "success";
+		} catch (Exception $e) {
+			$message = $e->getMessage();
+		}
+		return new DataResponse(['status' => $status, 'data' => [ 'message' => $message ]]);
+	}
 }

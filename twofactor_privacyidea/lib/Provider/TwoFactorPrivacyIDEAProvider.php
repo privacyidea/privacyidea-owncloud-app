@@ -364,7 +364,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @return string JWT token
      * @throws AdminAuthException
      */
-    private function fetchAuthToken($username, $password)
+    public function fetchAuthToken($username, $password)
     {
         $error_message = "";
         $url = $this->getBaseUrl() . "auth";
