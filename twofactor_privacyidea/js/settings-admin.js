@@ -67,7 +67,7 @@ $(document).ready(function () {
 
     /* Activate privacyIDEA */
     getValue("piactive", function(piactive) {
-        $("#piSettings #piactive").prop('checked', piactive !== "0");
+        $("#piSettings #piactive").prop('checked', piactive === "1");
     });
     $('#piSettings #piactive').change(function() {
        setValue("piactive", $(this).is(":checked") ? "1" : "0");

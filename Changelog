@@ -1,6 +1,7 @@
 2.4.0
 
 * Allow 2FA to be disabled for specific user groups.
+* Make the handling of the 2FA enable button consistent.
 
 2.3.0
 
