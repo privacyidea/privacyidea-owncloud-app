@@ -43,6 +43,12 @@ $(document).ready(function () {
             pass: pass
         }, cb);
     };
+    var testServiceAccount = function (user, pass, cb) {
+        $.post(OC.generateUrl(BASE_URL + 'testServiceAccount'), {
+            user: user,
+            pass: pass
+        }, cb);
+    };
 
     /* privacyIDEA instance URL */
     getValue("url", function (url) {
@@ -162,4 +168,22 @@ $(document).ready(function () {
             });
         }, 0);
     });
+
+    /* Test Service Account button */
+    $("#piSettings #piserviceaccount_test").click(function (event) {
+        event.preventDefault();
+        // Use this trick to ensure that the `change` events of inputs
+        // are handled before we test the authentication, so that
+        // new values are already taken into account.
+        setTimeout(function () {
+            var user = $("#piSettings #piserviceaccount_user").val();
+            var password = $("#piSettings #piserviceaccount_password").val();
+            OC.msg.startAction("#piserviceaccount_msg", "Checking credentials ...");
+            testServiceAccount(user, password, function (data) {
+                OC.msg.finishedAction("#piserviceaccount_msg", data);
+            });
+        }, 0);
+    });
+
+
 });

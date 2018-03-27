@@ -40,6 +40,11 @@ $application->registerRoutes(
 						'url' => '/testAuthentication',
 						'verb' => 'POST'
 					],
+					[
+						'name' => 'Settings#testServiceAccount',
+						'url' => '/testServiceAccount',
+						'verb' => 'POST'
+					],
 				]
 		]
 );
