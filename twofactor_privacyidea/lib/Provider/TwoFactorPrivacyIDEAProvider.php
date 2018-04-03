@@ -258,17 +258,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * Try to authenticate the given username with the given password.
      *
      * @param string $username
-     * @param string $challenge
+     * @param string $password
      * @return Boolean, True in case of success
      */
-    public function authenticate($username, $challenge) {
+    public function authenticate($username, $password) {
         // Read config
         $url = $this->getBaseUrl() . "validate/check";
         $realm = $this->getAppValue('realm');
         $error_message = "";
         $options = $this->getClientOptions();
         $options['body'] = ['user' => $username,
-            'pass' => $challenge,
+            'pass' => $password,
             'realm' => $realm];
         // The verifyChallenge is called with additional parameters in case of challenge response:
         $transaction_id = $this->request->getParam("transaction_id");
