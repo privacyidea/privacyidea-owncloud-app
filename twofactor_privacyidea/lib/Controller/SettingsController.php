@@ -14,6 +14,7 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IConfig;
 use OCP\AppFramework\Http\DataResponse;
+use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 
 class SettingsController extends Controller {
 	/** @var IL10N */
@@ -65,13 +66,22 @@ class SettingsController extends Controller {
 		try {
 			$result = $provider->authenticate($user, $pass);
 			if($result) {
-				$message = "Successfully authenticated!";
+				$message = "Communication to the privacyIDEA server succeeded. The user was successfully authenticated.";
 				$status = "success";
 			} else {
+				// only happens for OC==9 and NC. In this case, we cannot know why authentication failed.
 				$message = "Failed to authenticate.";
 			}
 		} catch (Exception $e) {
-			$message = $e->getMessage();
+			if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')
+			    && $e instanceof TwoFactorException
+			    && $e->getCode() == 1) {
+				// in this case, privacyIDEA worked correctly, but the password was wrong
+				$message = "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.";
+				$status = "success";
+			} else {
+				$message = $e->getMessage();
+			}
 		}
 		return new DataResponse(['status' => $status, 'data' => [ 'message' => $message ]]);
 	}

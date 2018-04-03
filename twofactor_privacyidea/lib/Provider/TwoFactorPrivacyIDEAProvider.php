@@ -259,7 +259,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      *
      * @param string $username
      * @param string $password
-     * @return Boolean, True in case of success
+     * @return Boolean, True in case of success. In case of failure, this raises
+     *         a TwoFactorException (for OC >= 9.2) with a descriptive error message.
+     *         If privacyIDEA returned a HTTP 200 and result->status=true, but
+     *         result->value=false, the exception has a code 1 (i.e. if the user
+     *         could be found, but the password was incorrect).
      */
     public function authenticate($username, $password) {
         // Read config
@@ -290,6 +294,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $options['body']["clientdata"] = $clientData;
         }
 
+        $errorCode = 0;
         try {
             $client = $this->httpClientService->newClient();
             $res = $client->post($url, $options);
@@ -301,6 +306,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         return true;
                     } else {
                         $error_message = $this->trans->t("Failed to authenticate.");
+                        $errorCode = 1;
                     }
                 } else {
                     $error_message = $this->trans->t("Failed to authenticate. privacyIDEA error.");
@@ -315,7 +321,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')) {
             // This is the behaviour for OC >= 9.2
-            throw new TwoFactorException($error_message);
+            throw new TwoFactorException($error_message, $errorCode);
         } else {
             // This is the behaviour for OC == 9.1 and NC.
             return false;
