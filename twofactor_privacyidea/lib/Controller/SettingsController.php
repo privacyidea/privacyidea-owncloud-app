@@ -66,18 +66,18 @@ class SettingsController extends Controller {
 		try {
 			$result = $provider->authenticate($user, $pass);
 			if($result) {
-				$message = "Communication to the privacyIDEA server succeeded. The user was successfully authenticated.";
+				$message = $this->l10n->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
 				$status = "success";
 			} else {
 				// only happens for OC==9 and NC. In this case, we cannot know why authentication failed.
-				$message = "Failed to authenticate.";
+				$message = $this->l10n->t("Failed to authenticate.");
 			}
 		} catch (Exception $e) {
 			if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')
 			    && $e instanceof TwoFactorException
 			    && $e->getCode() == 1) {
 				// in this case, privacyIDEA worked correctly, but the password was wrong
-				$message = "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.";
+				$message = $this->l10n->t("Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.");
 				$status = "success";
 			} else {
 				$message = $e->getMessage();
@@ -94,7 +94,7 @@ class SettingsController extends Controller {
 		$status = "error";
 		try {
 			$token = $provider->fetchAuthToken($user, $pass);
-			$message = "Credentials are correct!";
+			$message = $this->l10n->t("The service account credentials are correct!");
 			$status = "success";
 		} catch (Exception $e) {
 			$message = $e->getMessage();
