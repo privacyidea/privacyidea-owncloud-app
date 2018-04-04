@@ -18,19 +18,19 @@ use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 
 class SettingsController extends Controller {
 	/** @var IL10N */
-	private $l10n;
+	private $trans;
         /* configuration object */
         private $config;
 	/**
 	 * @param string $appName
 	 * @param IRequest $request
-	 * @param IL10N $l10n
+	 * @param IL10N $trans
 	 */
-	public function __construct($appName, IRequest $request, IL10N $l10n,
+	public function __construct($appName, IRequest $request, IL10N $trans,
                 IConfig $config) {
 		parent::__construct($appName, $request);
-		$this->l10n = $l10n;
-                $this->config = $config;
+		$this->trans = $trans;
+		$this->config = $config;
 	}
 
 	/**
@@ -66,18 +66,18 @@ class SettingsController extends Controller {
 		try {
 			$result = $provider->authenticate($user, $pass);
 			if($result) {
-				$message = $this->l10n->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
+				$message = $this->trans->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
 				$status = "success";
 			} else {
 				// only happens for OC==9 and NC. In this case, we cannot know why authentication failed.
-				$message = $this->l10n->t("Failed to authenticate.");
+				$message = $this->trans->t("Failed to authenticate.");
 			}
 		} catch (Exception $e) {
 			if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')
 			    && $e instanceof TwoFactorException
 			    && $e->getCode() == 1) {
 				// in this case, privacyIDEA worked correctly, but the password was wrong
-				$message = $this->l10n->t("Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.");
+				$message = $this->trans->t("Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.");
 				$status = "success";
 			} else {
 				$message = $e->getMessage();
@@ -94,7 +94,7 @@ class SettingsController extends Controller {
 		$status = "error";
 		try {
 			$token = $provider->fetchAuthToken($user, $pass);
-			$message = $this->l10n->t("The service account credentials are correct!");
+			$message = $this->trans->t("The service account credentials are correct!");
 			$status = "success";
 		} catch (Exception $e) {
 			$message = $e->getMessage();
