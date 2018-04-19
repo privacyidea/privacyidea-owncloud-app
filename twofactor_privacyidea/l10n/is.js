@@ -1,15 +1,15 @@
 OC.L10N.register(
     "twofactor_privacyidea",
     {
+    "Failed to authenticate." : "Mistókst að auðkenna.",
     "Failed to trigger challenges. privacyIDEA error." : "Tókst ekki að ræsa auðkenningarferli. Villa í privacyIDEA.",
     "Failed to trigger challenges. Wrong HTTP return code." : "Tókst ekki að ræsa auðkenningarferli. Rangur HTTP-svarkóði.",
     "Failed to trigger challenges." : "Tókst ekki að ræsa auðkenningarferli.",
-    "Failed to authenticate." : "Mistókst að auðkenna.",
     "Failed to authenticate. privacyIDEA error." : "Mistókst að auðkenna. Villa í privacyIDEA.",
     "Failed to authenticate. Wrong HTTP return code." : "Mistókst að auðkenna. Rangur HTTP-svarkóði..",
     "Failed to fetch authentication token. privacyIDEA error." : "Ekki tókst að sækja auðkennisteikn. Villa í privacyIDEA.",
-    "Failed to fetch authentication token. Wrong HTTP return code." : "Ekki tókst að sækja auðkennisteikn. Rangur HTTP-svarkóði.",
     "Failed to fetch authentication token. Unauthorized." : "Ekki tókst að sækja auðkennisteikn. Óheimilt.",
+    "Failed to fetch authentication token. Wrong HTTP return code." : "Ekki tókst að sækja auðkennisteikn. Rangur HTTP-svarkóði.",
     "Failed to fetch authentication token." : "Ekki tókst að sækja auðkennisteikn.",
     "privacyIDEA 2FA" : "privacyIDEA 2FA",
     "Open documentation" : "Opna hjálparskjöl"
