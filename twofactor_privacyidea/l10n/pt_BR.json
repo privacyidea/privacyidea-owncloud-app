@@ -1,5 +1,8 @@
 { "translations": {
+    "Communication to the privacyIDEA server succeeded. The user was successfully authenticated." : "Comunicação com o servidor privacyIDEA bem-sucedida. O usuário foi autenticado com sucesso.",
     "Failed to authenticate." : "Failed to authenticate.",
+    "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "Comunicação com o servidor privacyIDEA bem-sucedida. No entanto, o usuário não conseguiu autenticar.",
+    "The service account credentials are correct!" : "As credenciais da conta de serviço estão corretas!",
     "Failed to trigger challenges. privacyIDEA error." : "Falha ao ativar os desafios. PrivacyIDEA erro.",
     "Failed to trigger challenges. Wrong HTTP return code." : "Falha ao ativar os desafios. Código de retorno HTTP errado.",
     "Failed to trigger challenges." : "Falha ao ativar os desafios.",
