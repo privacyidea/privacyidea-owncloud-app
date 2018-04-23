@@ -2,6 +2,9 @@
 
 * Allow 2FA to be disabled for specific user groups.
 * Make the handling of the 2FA enable button consistent.
+* Improve translations
+* Add translation to config UI
+* Add possibility to test the configuration
 
 2.3.0
 
