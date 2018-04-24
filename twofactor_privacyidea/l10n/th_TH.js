@@ -15,6 +15,22 @@ OC.L10N.register(
     "Failed to fetch authentication token. Wrong HTTP return code." : "การส่งคืนรหัส HTTP ที่ไม่ถูกต้อง ไม่สามารถดึงข้อมูลการตรวจสอบสิทธิ์ของโทเค็น",
     "Failed to fetch authentication token." : "ไม่สามารถดึงข้อมูลการตรวจสอบสิทธิ์ของโทเค็น",
     "privacyIDEA 2FA" : "privacyIDEA 2FA",
-    "Open documentation" : "เปิดเอกสาร"
+    "Open documentation" : "เปิดเอกสาร",
+    "Configuration" : "การกำหนดค่า",
+    "Activate two factor authentication with privacyIDEA." : "เปิดใช้งานการพิสูจน์ตัวตนแบบสองขั้นตอนด้วย privacyIDEA",
+    "Exclude these groups from two factor authentication" : "ยกเว้นกลุ่มเหล่านี้จากการตรวจสอบสิทธิ์สองขั้นตอน",
+    "\n                    Users in the following groups will not need to do two factor authentication.\n                    Please enter a comma separated list of group names.\n                " : "\nผู้ใช้ในกลุ่มต่อไปนี้จะไม่ต้องทำการพิสูจน์ตัวตนสองขั้นตอน\nหากมีหลายกลุ่มให้คั่นด้วยเครื่องหมายจุลภาค\n ",
+    "URL of the privacyIDEA Server" : "URL ของเซิร์ฟเวอร์ privacyIDEA",
+    "\n                    Verify the SSL certificate.\n                    Do not uncheck this in productive environments!\n                " : "\nตรวจสอบใบรับรอง SSL\nอย่ายกเลิกตัวเลือกนี้เพื่อประสิทธิผลโดยรวม",
+    "User Realm in privacyIDEA (other than default)" : "ขอบเขตผู้ใช้ใน privacyIDEA (นอกเหนือจากค่าเริ่มต้น)",
+    "Test" : "ทดสอบ",
+    "Test Authentication by supplying username and password that are checked against privacyIDEA:" : "ทดสอบการตรวจสอบสิทธิ์โดยการระบุชื่อผู้ใช้และรหัสผ่านที่ได้รับการตรวจสอบกับ privacyIDEA:",
+    "User" : "ชื่อผู้ใช้",
+    "Password" : "รหัสผ่าน",
+    "Challenge Response" : "ทดสอบการตอบสนอง",
+    "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "เลือกตัวเลือกนี้หากคุณใช้โทเค็นทดสอบการตอบสนอง เช่น SMS หรืออีเมลโทเค็น",
+    "Username of privacyIDEA service account" : "ชื่อผู้ใช้ของบัญชีบริการ privacyIDEA",
+    "Password of privacyIDEA service account" : "รหัสผ่านของบัญชีบริการ privacyIDEA",
+    "Check Credentials" : "ตรวจสอบข้อมูลประจำตัว"
 },
 "nplurals=1; plural=0;");
