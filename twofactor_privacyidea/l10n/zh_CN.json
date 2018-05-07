@@ -1,5 +1,8 @@
 { "translations": {
+    "Communication to the privacyIDEA server succeeded. The user was successfully authenticated." : "连接privacyIDEA服务器成功。用户身份验证成功。",
     "Failed to authenticate." : "身份验证失败。",
+    "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "连接privacyIDEA服务器成功。用户身份验证失败。 ",
+    "The service account credentials are correct!" : "服务账号证书正确",
     "Failed to trigger challenges. privacyIDEA error." : "触发挑战失败，privacyIDEA 错误。",
     "Failed to trigger challenges. Wrong HTTP return code." : "触发质询失败，错误的HTTP返回码。",
     "Failed to trigger challenges." : "触发质询失败。",
@@ -10,6 +13,19 @@
     "Failed to fetch authentication token. Wrong HTTP return code." : "获取认证令牌失败，错误的HTTP返回码。",
     "Failed to fetch authentication token." : "获取认证令牌失败。",
     "privacyIDEA 2FA" : "privacyIDEA 两步验证",
-    "Open documentation" : "打开文档"
+    "Open documentation" : "打开文档",
+    "Configuration" : "配置",
+    "Activate two factor authentication with privacyIDEA." : "使用privacyIDEA激活两步验证",
+    "\n                    Before activating two factor authentication with privacyIDEA, please asure, that the connection to\n                    your privacyIDEA-server is configured correctly.\n                " : "\n使用privacyIDEA激活两步验证前，务必确认\n您的privacyIDEA服务器已正确配置连接。",
+    "Exclude these groups from two factor authentication" : "从两步验证中排除这些组",
+    "\n                    Users in the following groups will not need to do two factor authentication.\n                    Please enter a comma separated list of group names.\n                " : "\n下列组中的用户不需要开启两步验证。\n多个组请使用\",\"分割。",
+    "URL of the privacyIDEA Server" : "privacyIDEA服务器地址",
+    "\n                    Please use the base URL of your privacyIDEA instance.\n                    For compatibility reasons, you may also specify the URL of the /validate/check endpoint.\n                " : "\n请在privacyIDEA实例中使用基础网址。\n因为兼容性的原因，你需要在基础网址中以/validate/check结尾。",
+    "\n                    Verify the SSL certificate.\n                    Do not uncheck this in productive environments!\n                " : "\n校验SSL证书。\n在生产环境中请务必勾选。",
+    "User" : "用户",
+    "Password" : "密码",
+    "Username of privacyIDEA service account" : "privacyIDEA服务账户用户名",
+    "Password of privacyIDEA service account" : "privacyIDEA服务账户密码",
+    "Check Credentials" : "校验证书"
 },"pluralForm" :"nplurals=1; plural=0;"
 }
