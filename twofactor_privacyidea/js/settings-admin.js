@@ -120,7 +120,25 @@ $(document).ready(function () {
         displayServerCredentials(checked);
     });
     
-    /* exclude owncloud user groups */
+    /* in or exclude owncloud user groups */
+    radioinclude = document.getElementById('piinclude');
+    radioexclude = document.getElementById('piexclude');
+    getValue("piexclude", function (piexclude) {
+        $("#piSettings #piinclude").prop('checked', piexclude ==="0");
+        $("#piSettings #piexclude").prop('checked', piexclude ==="1");
+    })
+
+    $("#piSettings #piinclude").change(function () {
+        if(radioinclude.checked){
+            setValue("piexclude", "0");
+        }
+    })
+    $("#piSettings #piexclude").change(function () {
+        if(radioexclude.checked){
+            setValue("piexclude", "1");
+        }
+    })
+
     OC.Settings.setupGroupsSelect($('#piSettings #piexcludegroups'));
     getValue("piexcludegroups", function (excludegroups) {
        $("#piSettings #piexcludegroups").val(excludegroups);

@@ -34,12 +34,14 @@ script('twofactor_privacyidea', 'settings-admin');
             </em>
         </p>
         <p>
-            <label for="piexcludegroups"><?php p($l->t('Exclude these groups from two factor authentication')); ?></label>
-            <input type="text" id="piexcludegroups" width="300px"/>
+            <input type="radio" name="inexclude" id="piinclude"><?php p($l->t('Include or ')); ?>
+            <input type="radio" name="inexclude" id="piexclude"><?php p($l->t('Exclude')); ?>
+            <label for="piexcludegroups"><?php p($l->t(' these groups from two factor authentication')); ?></label>
+            <input type="text" id="piexcludegroups" width="300px"   />
             <em>
                 <?php p($l->t('
-                    Users in the following groups will not need to do two factor authentication.
-                    Please enter a comma separated list of group names.
+                    If Include is selected, just the groups in this field need to do 2FA.
+                    If you select Exclude, these groups can use 1FA (others need 2FA).
                 ')); ?>
             </em>
         <p>
