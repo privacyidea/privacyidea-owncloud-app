@@ -341,6 +341,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     {        
         $piactive = $this->getAppValue('piactive');
         $piexcludegroups = $this->getAppValue('piexcludegroups');
+        $piexclude= $this->getAppValue('piexclude');
         if ($piactive === "1") {
             // 2FA is basically enabled
             if ($piexcludegroups) {
@@ -349,7 +350,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
                 $groups = explode(",", $piexcludegroupsCSV);
                 foreach($groups as $group) {
-                    if ($this->groupManager->isInGroup($user->getUID(), trim($group))) {
+                    if (($this->groupManager->isInGroup($user->getUID(), trim($group)) && $piexclude !== "0")
+                    || (!($this->groupManager->isInGroup($user->getUID(), trim($group))) && $piexclude === "0")) {
                         // The user is a group, that is allowed to pass with 1FA
                         return false;
                     };
