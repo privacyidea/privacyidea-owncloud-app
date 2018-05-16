@@ -121,9 +121,9 @@ $(document).ready(function () {
     });
     
     /* exclude owncloud user groups */
-    OC.Settings.setupGroupsSelect($('#piSettings #piexcludegroups'));
     getValue("piexcludegroups", function (excludegroups) {
        $("#piSettings #piexcludegroups").val(excludegroups);
+        OC.Settings.setupGroupsSelect($('#piSettings #piexcludegroups'));
     });
 
     $("#piSettings #piexcludegroups").change(function () {
