@@ -41,7 +41,7 @@ script('twofactor_privacyidea', 'settings-admin');
             <em>
                 <?php p($l->t('
                     If Include is selected, just the groups in this field need to do 2FA.
-                    If you select Exclude, these groups can use 1FA (others need 2FA).
+                    If you select Exclude, these groups can use 1FA (all others need 2FA).
                 ')); ?>
             </em>
         <p>
