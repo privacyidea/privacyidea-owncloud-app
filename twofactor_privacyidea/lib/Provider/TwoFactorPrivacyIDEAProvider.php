@@ -105,9 +105,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @param string $key application config key
      * @return string
      */
-    private function getAppValue($key)
+    private function getAppValue($key, $default)
     {
-        return $this->config->getAppValue('twofactor_privacyidea', $key);
+        return $this->config->getAppValue('twofactor_privacyidea', $key, $default);
     }
 
     /**
@@ -119,7 +119,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function getBaseUrl()
     {
-        $url = $this->getAppValue('url');
+        $url = $this->getAppValue('url', '');
         // Remove the "/validate/check" suffix of $url if it exists
         $suffix = "/validate/check";
         if (substr($url, -strlen($suffix)) === $suffix) {
@@ -147,9 +147,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $error_message = "";
         $url = $this->getBaseUrl() . "validate/triggerchallenge";
         $options = $this->getClientOptions();
-        $adminUser = $this->getAppValue('serviceaccount_user');
-        $adminPassword = $this->getAppValue('serviceaccount_password');
-        $realm = $this->getAppValue('realm');
+        $adminUser = $this->getAppValue('serviceaccount_user', '');
+        $adminPassword = $this->getAppValue('serviceaccount_password', '');
+        $realm = $this->getAppValue('realm', '');
         try {
             $token = $this->fetchAuthToken($adminUser, $adminPassword);
             $client = $this->httpClientService->newClient();
@@ -203,7 +203,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     public function getTemplate(IUser $user)
     {
         $messages = [];
-        if ($this->getAppValue('triggerchallenges') === '1') {
+        if ($this->getAppValue('triggerchallenges', '') === '1') {
             try {
                 $messages = $this->triggerChallenges($user->getUID());
             } catch (TriggerChallengesException $e) {
@@ -226,8 +226,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function getClientOptions()
     {
-        $checkssl = $this->getAppValue('checkssl');
-        $noproxy = $this->getAppValue('noproxy');
+        $checkssl = $this->getAppValue('checkssl', '');
+        $noproxy = $this->getAppValue('noproxy', '');
         $options = ['headers' => ['user-agent' => "ownCloud Plugin"],
             // NOTE: Here, we check for `!== '0'` instead of `=== '1'` in order to verify certificates
             // by default just after app installation.
@@ -268,7 +268,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     public function authenticate($username, $password) {
         // Read config
         $url = $this->getBaseUrl() . "validate/check";
-        $realm = $this->getAppValue('realm');
+        $realm = $this->getAppValue('realm', '');
         $error_message = "";
         $options = $this->getClientOptions();
         $options['body'] = ['user' => $username,
@@ -339,9 +339,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function isTwoFactorAuthEnabledForUser(IUser $user)
     {        
-        $piactive = $this->getAppValue('piactive');
-        $piexcludegroups = $this->getAppValue('piexcludegroups');
-        $piexclude= $this->getAppValue('piexclude');
+        $piactive = $this->getAppValue('piactive', '');
+        $piexcludegroups = $this->getAppValue('piexcludegroups', '');
+        $piexclude= $this->getAppValue('piexclude', '1');
         if ($piactive === "1") {
             // 2FA is basically enabled
             if ($piexcludegroups) {
@@ -350,7 +350,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
                 $groups = explode(",", $piexcludegroupsCSV);
                 foreach($groups as $group) {
-                    if (($this->groupManager->isInGroup($user->getUID(), trim($group)) && $piexclude !== "0")
+                    if (($this->groupManager->isInGroup($user->getUID(), trim($group)) && $piexclude === "1")
                     || (!($this->groupManager->isInGroup($user->getUID(), trim($group))) && $piexclude === "0")) {
                         // The user is a group, that is allowed to pass with 1FA
                         return false;
