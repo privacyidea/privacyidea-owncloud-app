@@ -34,6 +34,15 @@ script('twofactor_privacyidea', 'settings-admin');
             </em>
         </p>
         <p>
+            <label for="pitimeout"><?php p($l->t('Timeout')); ?></label>
+            <input id="pitimeout" type="number" min="1" placeholder="<?php p($l->t('default is 5')); ?>">
+            <em>
+                <?php p($l->t('
+                    Sets timeout to privacyIDEA for login in seconds.
+                ')); ?>
+            </em>
+        </p>
+        <p>
             <input type="radio" name="inexclude" id="piinclude"><?php p($l->t('Include or ')); ?>
             <input type="radio" name="inexclude" id="piexclude"><?php p($l->t('Exclude')); ?>
             <label for="piexcludegroups"><?php p($l->t(' these groups from two factor authentication')); ?></label>

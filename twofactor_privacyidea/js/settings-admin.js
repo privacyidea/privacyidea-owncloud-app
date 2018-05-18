@@ -79,6 +79,15 @@ $(document).ready(function () {
        setValue("piactive", $(this).is(":checked") ? "1" : "0");
     });
 
+    getValue("pitimeout", function (pitimeout) {
+        $("#piSettings #pitimeout").val(pitimeout);
+    })
+    $("#piSettings #pitimeout").change(function () {
+        console.log("pi: Saving Timeout");
+        var value = $("#piSettings #pitimeout").val();
+        setValue("pitimeout", value);
+    });
+
     /* "Bypass Proxy" checkbox */
     getValue("noproxy", function (noproxy) {
         $("#piSettings #noproxy").prop('checked', noproxy === "1");

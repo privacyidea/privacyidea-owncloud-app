@@ -228,13 +228,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     {
         $checkssl = $this->getAppValue('checkssl', '');
         $noproxy = $this->getAppValue('noproxy', '');
+        $timeout = $this->getAppValue('pitimeout', '5');
         $options = ['headers' => ['user-agent' => "ownCloud Plugin"],
             // NOTE: Here, we check for `!== '0'` instead of `=== '1'` in order to verify certificates
             // by default just after app installation.
             'verify' => $checkssl !== '0',
             'debug' => false,
             'exceptions' => false,
-            'timeout' => 5];
+            'timeout' => $timeout];
         if ($noproxy === "1") {
             $options["proxy"] = ["https" => "", "http" => ""];
         }
