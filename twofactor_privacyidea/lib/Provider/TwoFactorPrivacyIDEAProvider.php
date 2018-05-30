@@ -110,6 +110,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         return $this->config->getAppValue('twofactor_privacyidea', $key, $default);
     }
 
+    private function log($level, $message)
+    {
+    	$context = ["app" => "privacyIDEA"];
+    	if($level === 'debug'){
+    		return $this->logger->debug($message, $context);
+	    }
+	    if($level === 'info'){
+    		return $this->logger->info($message, $context);
+	    }
+	    if($level === 'error'){
+    		return $this->logger->error($message, $context);
+	    }
+	    if($level === 'logException'){
+    		return $this->logger->logException($message, $context);
+	    }
+    }
+
     /**
      * Retrieve the privacyIDEA instance base URL from the app configuration.
      * In case the stored URL ends with '/validate/check', this suffix is removed.
@@ -150,14 +167,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $adminUser = $this->getAppValue('serviceaccount_user', '');
         $adminPassword = $this->getAppValue('serviceaccount_password', '');
         $realm = $this->getAppValue('realm', '');
+        $result = 0;
         try {
             $token = $this->fetchAuthToken($adminUser, $adminPassword);
             $client = $this->httpClientService->newClient();
             $options["body"] = ["user" => $username, "realm" => $realm];
             $options["headers"] = ["PI-Authorization" => $token];
             $result = $client->post($url, $options);
+	        $body = json_decode($result->getBody());
             if ($result->getStatusCode() == 200) {
-                $body = json_decode($result->getBody());
                 if ($body->result->status === true) {
                     $detail = $body->detail;
                     $this->detail = $detail;
@@ -179,16 +197,20 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         $this->u2fSignRequest = null;
                     }
                     return $detail->messages;
-                } else {
-                    $error_message = $this->trans->t("Failed to trigger challenges. privacyIDEA error.");
                 }
             } else {
-                $error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code.");
+                $error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code: " . $result->getStatusCode());
+	            $this->log("error", "[triggerChallenges] privacyIDEA error code: " . $body->result->error->code);
+	            $this->log("error", "[triggerChallenges] privacyIDEA error message: " . $body->result->error->message);
             }
         } catch (AdminAuthException $e) {
             $error_message = $e->getMessage();
         } catch (Exception $e) {
-            $this->logger->logException($e, ["message", $e->getMessage()]);
+        	if($result === 0) {
+        		$this->log("error", "[triggerChallenges] HTTP return code: " . $result->getStatusCode());
+	        }
+	        $this->log("error", "[triggerChallenges] " . $e->getMessage());
+        	$this->log("logException", $e);
             $error_message = $this->trans->t("Failed to trigger challenges.");
         }
         throw new TriggerChallengesException($error_message);
@@ -265,6 +287,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      *         If privacyIDEA returned a HTTP 200 and result->status=true, but
      *         result->value=false, the exception has a code 1 (i.e. if the user
      *         could be found, but the password was incorrect).
+     * @throws TwoFactorException
      */
     public function authenticate($username, $password) {
         // Read config
@@ -279,9 +302,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $transaction_id = $this->request->getParam("transaction_id");
         $signatureData = $this->request->getParam("signatureData");
         $clientData = $this->request->getParam("clientData");
-        $this->logger->debug("transaction_id: " . $transaction_id);
-        $this->logger->debug("signatureData: " . $signatureData);
-        $this->logger->debug("clientData: " . $clientData);
+        $this->log("debug", "transaction_id: " . $transaction_id);
+        $this->log("debug", "signatureData: " . $signatureData);
+        $this->log("debug", "clientData: " . $clientData);
 
         if ($transaction_id) {
             // add transaction ID in case of challenge response
@@ -289,35 +312,40 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
 
         if ($signatureData) {
-            $this->logger->debug('We are doing a U2F response.');
+            $this->log("debug", "We are doing a U2F response.");
             // here we add the signatureData and the clientData in case of U2F
             $options['body']["signaturedata"] = $signatureData;
             $options['body']["clientdata"] = $clientData;
         }
 
         $errorCode = 0;
+        $res = 0;
         try {
             $client = $this->httpClientService->newClient();
             $res = $client->post($url, $options);
-            if ($res->getStatusCode() === 200) {
-                $body = $res->getBody();
-                $body = json_decode($body);
-                if ($body->result->status === true) {
-                    if ($body->result->value === true) {
-                        return true;
-                    } else {
-                        $error_message = $this->trans->t("Failed to authenticate.");
-                        $errorCode = 1;
-                    }
+	        $body = $res->getBody();
+	        $body = json_decode($body);
+
+            if ($body->result->status === true) {
+                if ($body->result->value === true) {
+                    return true;
                 } else {
-                    $error_message = $this->trans->t("Failed to authenticate. privacyIDEA error.");
+                    $error_message = $this->trans->t("Failed to authenticate.");
+                    $errorCode = 1;
+                    $this->log("info", "User failed to authenticate. Wrong OTP value.");
                 }
             } else {
-                $error_message = $this->trans->t("Failed to authenticate. Wrong HTTP return code.");
+            	// status == false
+                $this->log("error", "[authenticate] privacyIDEA error code: " . $body->result->error->code);
+                $this->log("error", "[authenticate] privacyIDEA error message: " . $body->result->error->message);
             }
+
         } catch (Exception $e) {
-            $this->logger->logException($e,
-                ["message", $e->getMessage()]);
+        	if ($res !== 0) {
+		        $this->log( "error", "[authenticate] HTTP return code: " . $res->getStatusCode() );
+	        }
+	        $this->log("error", "[authenticate] " . $e->getMessage());
+	        $this->log("logException", $e);
             $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
         }
         if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')) {
@@ -339,14 +367,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @return boolean
      */
     public function isTwoFactorAuthEnabledForUser(IUser $user)
-    {        
+    {
         $piactive = $this->getAppValue('piactive', '');
         $piexcludegroups = $this->getAppValue('piexcludegroups', '');
         $piexclude= $this->getAppValue('piexclude', '1');
         if ($piactive === "1") {
             // 2FA is basically enabled
             if ($piexcludegroups) {
-                $this->logger->debug("excluded Groups: " . $piexcludegroups);
                 // We can exclude groups from the 2FA
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
                 $groups = explode(",", $piexcludegroupsCSV);
@@ -354,12 +381,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     if (($this->groupManager->isInGroup($user->getUID(), trim($group)) && $piexclude === "1")
                     || (!($this->groupManager->isInGroup($user->getUID(), trim($group))) && $piexclude === "0")) {
                         // The user is a group, that is allowed to pass with 1FA
+	                    $this->log("debug", "[isTwoFactorAuthEnabledForUser] User does not need 2FA");
                         return false;
                     };
                 };
             };
+            $this->log("debug", "[isTwoFactorAuthEnabledForUser] User needs 2FA");
             return true;
         }
+        $this->log("debug", "[isTwoFactorAuthEnabledForUser] privacyIDEA is not enabled.");
         return false;
     }
 
@@ -377,24 +407,28 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $error_message = "";
         $url = $this->getBaseUrl() . "auth";
         $options = $this->getClientOptions();
+        $result = 0;
         try {
             $client = $this->httpClientService->newClient();
             $options["body"] = ["username" => $username, "password" => $password];
             $result = $client->post($url, $options);
+            $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200) {
-                $body = json_decode($result->getBody());
                 if ($body->result->status === true) {
                     return $body->result->value->token;
-                } else {
-                    $error_message = $this->trans->t("Failed to fetch authentication token. privacyIDEA error.");
                 }
-            } else if ($result->getStatusCode() === 401) {
-                $error_message = $this->trans->t("Failed to fetch authentication token. Unauthorized.");
-            } else {
-                $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code.");
+            }else {
+	            $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
+	            $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
+	            $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
+
             }
         } catch (Exception $e) {
-            $this->logger->logException($e, ["message", $e->getMessage()]);
+        	if($result === 0){
+		        $this->log( "error", "[authenticate] HTTP return code: " . $result->getStatusCode() );
+	        }
+	        $this->log("error", "[fetchAuthToken] " . $e->getMessage());
+        	$this->log("logException", $e);
             $error_message = $this->trans->t("Failed to fetch authentication token.");
         }
         throw new AdminAuthException($error_message);
