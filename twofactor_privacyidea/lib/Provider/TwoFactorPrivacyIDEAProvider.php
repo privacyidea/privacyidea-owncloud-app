@@ -424,8 +424,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
             }
         } catch (Exception $e) {
-        	if($result === 0){
-		        $this->log( "error", "[authenticate] HTTP return code: " . $result->getStatusCode() );
+        	if($result !== 0){
+		        $this->log( "error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode() );
 	        }
 	        $this->log("error", "[fetchAuthToken] " . $e->getMessage());
         	$this->log("logException", $e);
