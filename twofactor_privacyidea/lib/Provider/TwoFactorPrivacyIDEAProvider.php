@@ -122,9 +122,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 	    if($level === 'error'){
     		return $this->logger->error($message, $context);
 	    }
-	    if($level === 'logException'){
-    		return $this->logger->logException($message, $context);
-	    }
     }
 
     /**
@@ -210,7 +207,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         		$this->log("error", "[triggerChallenges] HTTP return code: " . $result->getStatusCode());
 	        }
 	        $this->log("error", "[triggerChallenges] " . $e->getMessage());
-        	$this->log("logException", $e);
+        	$this->log("debug", $e);
             $error_message = $this->trans->t("Failed to trigger challenges.");
         }
         throw new TriggerChallengesException($error_message);
@@ -345,7 +342,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 		        $this->log( "error", "[authenticate] HTTP return code: " . $res->getStatusCode() );
 	        }
 	        $this->log("error", "[authenticate] " . $e->getMessage());
-	        $this->log("logException", $e);
+	        $this->log("debug", $e);
             $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
         }
         if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')) {
@@ -428,7 +425,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 		        $this->log( "error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode() );
 	        }
 	        $this->log("error", "[fetchAuthToken] " . $e->getMessage());
-        	$this->log("logException", $e);
+        	$this->log("debug", $e);
             $error_message = $this->trans->t("Failed to fetch authentication token.");
         }
         throw new AdminAuthException($error_message);
