@@ -203,7 +203,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         } catch (AdminAuthException $e) {
             $error_message = $e->getMessage();
         } catch (Exception $e) {
-        	if($result === 0) {
+        	if($result !== 0) {
         		$this->log("error", "[triggerChallenges] HTTP return code: " . $result->getStatusCode());
 	        }
 	        $this->log("error", "[triggerChallenges] " . $e->getMessage());
