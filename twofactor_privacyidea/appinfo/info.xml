@@ -7,11 +7,10 @@
 		Thus you can assign different authentication objects to your users as second factor. Users
 		can now authenticate against your ownCloud installation with Google Authenticator, Yubikey,
 		key fob, OTP display cards and much more.
-		<p>
-		<b>Note: You need a privacyIDEA authentication server in your network to manage all authentication devices of the users centrally.</b>
-		</p>
+		
+		**Note: You need a privacyIDEA authentication server in your network to manage all authentication devices of the users centrally.**
 	</description>
-	<licence>AGPLv3</licence>
+	<licence>AGPL</licence>
 	<author>NetKnights GmbH, Cornelius Kölbel</author>
 	<version>2.4.1</version>
 	<namespace>TwoFactor_privacyIDEA</namespace>
