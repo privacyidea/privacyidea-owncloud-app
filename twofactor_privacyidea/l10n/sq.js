@@ -5,6 +5,7 @@ OC.L10N.register(
     "Failed to authenticate." : "S’u arrit të bëhej mirëfilltësimi.",
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "Komunikimi me shërbyesin privacyIDEA pati sukses. Sidoqoftë, mirëfilltësimi i përdoruesit dështoi.",
     "The service account credentials are correct!" : "Kredencialet për llogarinë e shërbimit janë të sakta!",
+    "Failed to trigger challenges. Wrong HTTP return code: " : "S’u arrit të sillej token mirëfilltësimi. Kod HTTP kthimi i gabuar:",
     "Failed to trigger challenges." : "Dështoi vënia në punë e <em>challenges</em>.",
     "Failed to fetch authentication token." : "Dështoi prurja e tokenit të mirëfilltësimit.",
     "privacyIDEA 2FA" : "privacyIDEA 2FA",
