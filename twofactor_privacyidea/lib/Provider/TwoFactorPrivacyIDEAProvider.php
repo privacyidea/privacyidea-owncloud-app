@@ -375,12 +375,20 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
                 $groups = explode(",", $piexcludegroupsCSV);
                 foreach($groups as $group) {
-                    if (($this->groupManager->isInGroup($user->getUID(), trim($group)) && $piexclude === "1")
-                    || (!($this->groupManager->isInGroup($user->getUID(), trim($group))) && $piexclude === "0")) {
-                        // The user is a group, that is allowed to pass with 1FA
-	                    $this->log("debug", "[isTwoFactorAuthEnabledForUser] User does not need 2FA");
-                        return false;
-                    };
+                	if($this->groupManager->isInGroup($user->getUID(), trim($group))) {
+                		if($piexclude === "1"){
+                			return false;
+		                }
+		                if($piexclude === "0") {
+			                return true;
+		                }
+	                }
+                	if($piexclude === "1"){
+                	    return true;
+		            }
+		            if($piexclude === "0"){
+                		return false;
+		            }
                 };
             };
             $this->log("debug", "[isTwoFactorAuthEnabledForUser] User needs 2FA");
