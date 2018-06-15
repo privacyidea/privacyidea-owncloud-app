@@ -374,22 +374,32 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 // We can exclude groups from the 2FA
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
                 $groups = explode(",", $piexcludegroupsCSV);
+                $checkEnabled;
                 foreach($groups as $group) {
                 	if($this->groupManager->isInGroup($user->getUID(), trim($group))) {
+		                $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is in group " . $group . ".");
                 		if($piexclude === "1"){
+			                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User does not need 2FA).");
                 			return false;
 		                }
 		                if($piexclude === "0") {
+			                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User needs 2FA).");
 			                return true;
 		                }
 	                }
+	                $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is not in group " . $group . ".");
                 	if($piexclude === "1"){
-                	    return true;
+		                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User may not need 2FA).");
+                	    $checkEnabled = true;
 		            }
 		            if($piexclude === "0"){
-                		return false;
+			            $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User may need 2FA).");
+                		$checkEnabled = false;
 		            }
                 };
+                if(!$checkEnabled){
+                	return false;
+                }
             };
             $this->log("debug", "[isTwoFactorAuthEnabledForUser] User needs 2FA");
             return true;
