@@ -2,6 +2,7 @@
 <info>
 	<id>twofactor_privacyidea</id>
 	<name>privacyIDEA Two Factor Authentication</name>
+	<summary>Enterprise grade two factor authentication with different token types.</summary>
 	<description>Plugin to forward authentication requests to your own privacyIDEA Authentication System
                      installation. privacyIDEA can manage many different kind of authentication devices.
 		Thus you can assign different authentication objects to your users as second factor. Users
