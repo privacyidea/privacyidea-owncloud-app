@@ -389,11 +389,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 	                }
 	                $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is not in group " . $group . ".");
                 	if($piexclude === "1"){
-		                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User may not need 2FA).");
+		                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User may need 2FA).");
                 	    $checkEnabled = true;
 		            }
 		            if($piexclude === "0"){
-			            $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User may need 2FA).");
+			            $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User may not need 2FA).");
                 		$checkEnabled = false;
 		            }
                 };
