@@ -430,7 +430,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200) {
                 if ($body->result->status === true) {
-                    return $body->result->value->token;
+                	$client = $this->httpClientService->newClient();
+                	$url = $this->getBaseUrl() . "validate/triggerchallenge";
+	                $options["body"] = ["user" => "triggerChallengeTest"];
+		            $options["headers"] = ["PI-Authorization" => $body->result->value->token];
+					$result = $client->post($url, $options);
+	                $body = json_decode($result->getBody());
+	                /**
+	                 * If the status code is 403, the service account does not have enough permissions to do triggerChallenges.
+	                 */
+	                if ($result->getStatusCode() == 403){
+		                $error_message = $this->trans->t("Check if service account has correct permissions.");
+		                $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
+		                $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
+	                }else{
+		                return $body->result->value->token;
+                    }
                 }
             }else {
 	            $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
