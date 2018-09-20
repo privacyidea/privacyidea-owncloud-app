@@ -430,7 +430,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200) {
                 if ($body->result->status === true) {
-                    return $body->result->value->token;
+                	if (in_array("triggerchallenge", $body->result->value->rights)){
+		                return $body->result->value->token;
+	                }else{
+                		$error_message = $this->trans->t("Check if service account has correct permissions");
+                		$this->log("error", "[fetchAuthToken} privacyIDEA error message: Missing permissions for service account");
+	                }
                 }
             }else {
 	            $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
