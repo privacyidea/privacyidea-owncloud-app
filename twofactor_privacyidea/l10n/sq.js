@@ -7,6 +7,7 @@ OC.L10N.register(
     "The service account credentials are correct!" : "Kredencialet për llogarinë e shërbimit janë të sakta!",
     "Failed to trigger challenges. Wrong HTTP return code: " : "S’u arrit të sillej token mirëfilltësimi. Kod HTTP kthimi i gabuar:",
     "Failed to trigger challenges." : "Dështoi vënia në punë e <em>challenges</em>.",
+    "Check if service account has correct permissions" : "Kontrolloni nëse llogaria e shërbimit ka lejet e duhura",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "S’u arrit të sillej token mirëfilltësimi. Kod kthimi HTTP i gabuar: ",
     "Failed to fetch authentication token." : "Dështoi prurja e tokenit të mirëfilltësimit.",
     "privacyIDEA 2FA" : "privacyIDEA 2FA",
