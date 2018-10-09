@@ -25,6 +25,8 @@
     "\n\t\t                    If you select exclude, these groups can use 1FA (all others need 2FA).\n\t\t                " : "\n\t\t                    Если выбрано исключить, эти группы могут использовать 1ФА (все остальные обязаны проходить 2ФА).\n\t\t                ",
     "User Realm" : "Область пользователя",
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n                    Выберите область пользователя, если не та, что по умолчанию.\n                ",
+    "\n                    Verify the SSL certificate.\n                " : "\n                    Проверить сертификат SSL.\n                ",
+    "\n                        Do not uncheck this in productive environments!\n                    " : "\n                        Не отключайте это в эксплуатационной среде!\n                    ",
     "\n                    Ignore the system wide proxy settings and send authentication\n                    requests to privacyIDEA directly.\n                " : "\nИгнорировать общесистемные настройки прокси и отправлять запросы аутентификации непосредственно в privacyIDEA.",
     "Test" : "Проверка",
     "Test Authentication by supplying username and password that are checked against privacyIDEA:" : "Проверить аутентификацию, предоставив имя пользователя и пароль, которые будут проверены в privacyIDEA:",
