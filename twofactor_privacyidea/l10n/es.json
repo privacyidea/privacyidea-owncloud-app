@@ -20,6 +20,7 @@
     "\n                            Sets timeout to privacyIDEA for login in seconds.\n                        " : "\n                            Establece el tiempo de espera en segundos de privacyIDEA para iniciar sesión.\n                        ",
     "Include groups" : "Incluir grupos",
     "Exclude groups" : "Excluir grupos",
+    "\n\t\t                    If you select exclude, these groups can use 1FA (all others need 2FA).\n\t\t                " : "\n\t\t                    Si elige excluir, estos grupos pueden usar 1FA (todos los demás necesitan 2FA).\n\t\t                ",
     "User Realm" : "Area del Usuario",
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n                    Seleccionar el área del usuario, si ya no es la predeterminada.\n                ",
     "\n                    Verify the SSL certificate.\n                " : "\n                    Verificar el certificado SSL.\n                ",
