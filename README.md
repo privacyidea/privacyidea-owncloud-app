@@ -2,7 +2,7 @@
 
 ## Requirements
 
-This only works with ownCloud >= 9.1 and Nextcloud >= 12
+This only works with ownCloud >= 9.1 and Nextcloud 12 + 13
 
 You need a privacyIDEA Server to authenticate against.
 
