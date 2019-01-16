@@ -1,3 +1,8 @@
+2.4.2
+* Changed view of configuration to make it more readable
+* Checks if service account has needed rights
+* Support NextCloud v12 and v13
+
 2.4.1
 
 * Allow include/exclude of groups who need 2FA
