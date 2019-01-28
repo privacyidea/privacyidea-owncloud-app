@@ -154,7 +154,7 @@ $(document).ready(function () {
     });
 
     $("#piSettings #piexcludegroups").change(function () {
-       console.log("pi: Saving Excluse groups");
+       console.log("pi: Saving Exclude groups");
        var value = $("#piSettings #piexcludegroups").val();
        setValue("piexcludegroups", value);
     });
