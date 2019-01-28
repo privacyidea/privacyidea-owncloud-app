@@ -1,3 +1,6 @@
+2.5
+* Allow to exclude client IPs from the need for 2FA
+
 2.4.2
 * Changed view of configuration to make it more readable
 * Checks if service account has needed rights
