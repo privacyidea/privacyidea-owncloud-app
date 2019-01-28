@@ -159,6 +159,16 @@ $(document).ready(function () {
        setValue("piexcludegroups", value);
     });
 
+    getValue("piexcludeips", function (excludeips) {
+        $("#piSettings #piexcludeips").val(excludeips);
+    });
+
+    $("#piSettings #piexcludeips").change(function () {
+        console.log("pi: Saving excluded ips");
+        var value = $("#piSettings #piexcludeips").val();
+        setValue("piexcludeips", value);
+    });
+
     /* privacyIDEA service account username */
     getValue("serviceaccount_user", function (user) {
         $("#piSettings #piserviceaccount_user").val(user);

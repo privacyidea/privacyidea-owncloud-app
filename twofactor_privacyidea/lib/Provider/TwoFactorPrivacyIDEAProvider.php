@@ -354,6 +354,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
     }
 
+	public function getClientIP(){
+		if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)){
+			return  $_SERVER["HTTP_X_FORWARDED_FOR"];
+		}else if (array_key_exists('REMOTE_ADDR', $_SERVER)) {
+			return $_SERVER["REMOTE_ADDR"];
+		}else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
+			return $_SERVER["HTTP_CLIENT_IP"];
+		}
+
+		return '';
+	}
+
     /**
      * Decides whether 2FA is enabled for the given user
      * This method is called after the user has successfully finished the first
@@ -368,8 +380,30 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $piactive = $this->getAppValue('piactive', '');
         $piexcludegroups = $this->getAppValue('piexcludegroups', '');
         $piexclude= $this->getAppValue('piexclude', '1');
+	    $piexcludeips = $this->getAppValue('piexcludeips', '');
         if ($piactive === "1") {
             // 2FA is basically enabled
+	        if ($piexcludeips) {
+	        	// We can exclude clients with specified ips from 2FA
+
+		        $ipaddresses = explode(",", $piexcludeips);
+		        $clientIP = ip2long($this->getClientIP());
+				foreach ( $ipaddresses as $ipaddress ) {
+					if (strpos($ipaddress, '-') !== false) {
+						$range = explode('-', $ipaddress);
+						$startIP = ip2long($range[0]);
+						$endIP = ip2long($range[1]);
+						if ($clientIP >= $startIP && $clientIP <= $endIP) {
+							return false;
+						}
+					} else {
+						if ($clientIP === ip2long($ipaddress)) {
+							return false;
+						}
+					}
+		     	}
+
+	        }
             if ($piexcludegroups) {
                 // We can exclude groups from the 2FA
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
