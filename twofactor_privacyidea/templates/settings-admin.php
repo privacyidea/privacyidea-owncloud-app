@@ -104,7 +104,7 @@ script('twofactor_privacyidea', 'settings-admin');
                 <td>
                     <em>
 				        <?php p($l->t('
-		                    You can either add single ips like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or comining it like 10.0.1.12-10.0.1.113,192.168.0.15
+		                    You can either add single IPs like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15
 		                ')); ?>
                     </em>
                 </td>
