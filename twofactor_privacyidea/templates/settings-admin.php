@@ -82,12 +82,29 @@ script('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-		                <?php p($l->t('
+				        <?php p($l->t('
 		                    If include is selected, just the groups in this field need to do 2FA.
 		                ')); ?>
                         <br>
-		                <?php p($l->t('
+				        <?php p($l->t('
 		                    If you select exclude, these groups can use 1FA (all others need 2FA).
+		                ')); ?>
+                    </em>
+                </td>
+            </tr>
+            <tr>
+                <td>
+	                <?php p($l->t('
+		                    Exclude ip addresses
+		                ')); ?>
+                </td>
+                <td>
+                    <input type="text" id="piexcludeips" width="300px"/>
+                </td>
+                <td>
+                    <em>
+				        <?php p($l->t('
+		                    You can either add single ips like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or comining it like 10.0.1.12-10.0.1.113,192.168.0.15
 		                ')); ?>
                     </em>
                 </td>
