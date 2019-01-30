@@ -25,6 +25,8 @@ OC.L10N.register(
     "Exclude groups" : "Исключить группы",
     "\n\t\t                    If include is selected, just the groups in this field need to do 2FA.\n\t\t                " : "\n\t\t                    Если выбрано включить, то только группы в этом поле обязаны прохдить 2ФА.\n\t\t                ",
     "\n\t\t                    If you select exclude, these groups can use 1FA (all others need 2FA).\n\t\t                " : "\n\t\t                    Если выбрано исключить, эти группы могут использовать 1ФА (все остальные обязаны проходить 2ФА).\n\t\t                ",
+    "\n\t\t                    Exclude ip addresses\n\t\t                " : "\n\t\t                    Исключить адреса IP\n\t\t                ",
+    "\n\t\t                    You can either add single IPs like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15\n\t\t                " : "\n\t\t                    Можно или добавлять отдельные IP, как 10.0.1.12,10.0.1.13, диапазон, как 10.0.1.12-10.0.1.113, или их комбинации, как 10.0.1.12-10.0.1.113,192.168.0.15\n\t\t                ",
     "User Realm" : "Область пользователя",
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n                    Выберите область пользователя, если не та, что по умолчанию.\n                ",
     "\n                    Verify the SSL certificate.\n                " : "\n                    Проверить сертификат SSL.\n                ",
