@@ -25,6 +25,8 @@ OC.L10N.register(
     "Exclude groups" : "ยกเว้นกลุ่มเหล่านี้",
     "\n\t\t                    If include is selected, just the groups in this field need to do 2FA.\n\t\t                " : "\n\t\tเฉพาะกลุ่มที่เลือกไว้จะต้องทำ 2FA\n\t\t",
     "\n\t\t                    If you select exclude, these groups can use 1FA (all others need 2FA).\n\t\t                " : "\n\t\tหากเลือกยกเว้น กลุ่มเหล่านี้จะใช้ 1FA (ส่วนกลุ่มอื่นๆจะใช้ 2FA)\n\t\t",
+    "\n\t\t                    Exclude ip addresses\n\t\t                " : "\n\t\t                     ยกเว้นที่อยู่ IP \n\t\t",
+    "\n\t\t                    You can either add single IPs like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15\n\t\t                " : "\n\t\t                     คุณสามารถเพิ่ม IP แบบเดี่ยวเช่น 10.0.1.12,10.0.1.13 หรือจะเพิ่ม IP แบบกลุ่มเช่น 10.0.1.12-10.0.1.113 หรือรวมกันทั้งสอบแบบก็ได้",
     "User Realm" : "ขอบเขตของผู้ใช้",
     "\n                    Select the user realm, if it is not the default one.\n                " : "\nเลือกขอบเขตของผู้ใช้ ถ้าไม่ใช่ค่าเริ่มต้น",
     "\n                    Verify the SSL certificate.\n                " : "\nยืนยันใบรับรอง SSL",
