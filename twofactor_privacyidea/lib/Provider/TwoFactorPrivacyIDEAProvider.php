@@ -158,7 +158,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function triggerChallenges($username)
     {
-    	$message = "";
         $error_message = "";
         $url = $this->getBaseUrl() . "validate/triggerchallenge";
         $options = $this->getClientOptions();
@@ -186,7 +185,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     	$this->hideOTPField = true;
                         $multi_challenge = $detail->multi_challenge;
                         for ($i = 0; $i < count($multi_challenge); $i++) {
-                            $message = $message . $multi_challenge[$i]->serial . " ";
                             if ($multi_challenge[$i]->type === "u2f") {
                                 $this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
                             } else {
@@ -195,7 +193,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         }
                     }
 
-                    return [$message];
+                    return [$detail->message];
                 }
             } else {
                 $error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code: " . $result->getStatusCode());
