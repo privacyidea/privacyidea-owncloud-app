@@ -182,6 +182,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     }
 
                     if (property_exists($detail, "multi_challenge")) {
+                    	$this->hideOTPField = true;
                         $multi_challenge = $detail->multi_challenge;
                         for ($i = 0; $i < count($multi_challenge); $i++) {
                             if ($multi_challenge[$i]->type === "u2f") {
