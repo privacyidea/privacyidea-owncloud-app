@@ -180,19 +180,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         // TODO: What should we do, if there was more than one transaction ID?
                         $this->transactionId = $detail->transaction_ids[0];
                     }
-                    if (property_exists($detail, "attributes")) {
-                        $attributes = $detail->attributes;
-                        if (property_exists($attributes, "hideResponseInput")) {
-                            $this->hideOTPField = $attributes->hideResponseInput;
+
+                    if (property_exists($detail, "multi_challenge")) {
+                        $multi_challenge = $detail->multi_challenge;
+                        for ($i = 0; $i < count($multi_challenge); $i++) {
+                            if ($multi_challenge[$i]->type === "u2f") {
+                                $this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
+                            } else {
+                                $this->hideOTPField = false;
+                            }
                         }
-                        // check if this is a U2F Token
-                        if (property_exists($attributes, "u2fSignRequest")) {
-                            $this->u2fSignRequest = $attributes->u2fSignRequest;
-                        }
-                    } else {
-                        $this->hideOTPField = null;
-                        $this->u2fSignRequest = null;
                     }
+
                     return $detail->messages;
                 }
             } else {
