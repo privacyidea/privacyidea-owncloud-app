@@ -1,9 +1,13 @@
 function sign_u2f_request(challenge, keyHandle, appId) {
-    var signRequests = [{"challenge": challenge,
-        "keyHandle": keyHandle,
-        "appId": appId,
-        "version": "U2F_V2"}];
-    u2f.sign(signRequests, function (result) {
+
+    var registeredKeys = [];
+
+    registeredKeys.push({
+        version: "U2F_V2",
+        keyHandle: keyHandle
+    });
+
+    u2f.sign(appId, challenge, registeredKeys, function (result) {
         $('#signatureData').val(result.signatureData);
         $('#clientData').val(result.clientData);
         $('#piLoginForm').submit();
