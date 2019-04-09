@@ -1,4 +1,15 @@
+2.5.1
+
+* Fixed multi challenge: During an authentication request
+  several different challenge response tokens can be used.
+* Fix the correct hiding of the OTP field, depending on the
+  used tokens need an OTP entry field or not (e.g. HOTP/TOTP vs. U2F).  
+* Display "detail"->"message" from the authentication response to 
+  allow a more flexible communitcation with the user.
+* Use U2F API v1.1
+
 2.5
+
 * Allow to exclude client IPs from the need for 2FA
 
 2.4.2
