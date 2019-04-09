@@ -13,6 +13,7 @@
 * Allow to exclude client IPs from the need for 2FA
 
 2.4.2
+
 * Changed view of configuration to make it more readable
 * Checks if service account has needed rights
 * Support NextCloud v12 and v13
@@ -20,7 +21,7 @@
 2.4.1
 
 * Allow include/exclude of groups who need 2FA
-  * Allow groups to be selected
+* Allow groups to be selected
 * Make http timeout configurable
 
 2.4.0
