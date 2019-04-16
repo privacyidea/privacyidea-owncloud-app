@@ -2,14 +2,16 @@
 <info>
 	<id>twofactor_privacyidea</id>
 	<name>privacyIDEA Two Factor Authentication</name>
-	<summary>Enterprise grade two factor authentication with different token types.</summary>
-	<description>Plugin to forward authentication requests to your own privacyIDEA Authentication System
-                     installation. privacyIDEA can manage many different kind of authentication devices.
-		Thus you can assign different authentication objects to your users as second factor. Users
-		can now authenticate against your ownCloud installation with Google Authenticator, Yubikey,
-		key fob, OTP display cards and much more.
-		
-		**Note: You need a privacyIDEA authentication server in your network to manage all authentication devices of the users centrally.**
+	<summary>Most flexible enterprise level multi factor authentication</summary>
+	<description>This is a plugin to forward authentication requests to your own privacyIDEA Authentication System.
+[Your own privacyIDEA Authentication System](https://netknights.it/en/produkte/privacyidea/) can run on premise 
+centrally in your network under your control.
+
+privacyIDEA can manage many different kind of authentication devices.
+Thus you can assign different authentication objects to your users as second factor. Users
+can now authenticate against your ownCloud installation with e.g. Google Authenticator, 
+the [privacyIDEA Authenticator](https://netknights.it/en/produkte/privacyidea-authenticator-app/)
+Yubikey, U2F tokens, key fob, OTP display cards and much more.
 	</description>
 	<licence>AGPL</licence>
 	<author>NetKnights GmbH, Cornelius Kölbel</author>
