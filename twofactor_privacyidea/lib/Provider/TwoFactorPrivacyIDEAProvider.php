@@ -180,20 +180,20 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         // TODO: What should we do, if there was more than one transaction ID?
                         $this->transactionId = $detail->transaction_ids[0];
                     }
-                    if (property_exists($detail, "attributes")) {
-                        $attributes = $detail->attributes;
-                        if (property_exists($attributes, "hideResponseInput")) {
-                            $this->hideOTPField = $attributes->hideResponseInput;
+
+                    if (property_exists($detail, "multi_challenge")) {
+                    	$this->hideOTPField = true;
+                        $multi_challenge = $detail->multi_challenge;
+                        for ($i = 0; $i < count($multi_challenge); $i++) {
+                            if ($multi_challenge[$i]->type === "u2f") {
+                                $this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
+                            } else {
+                                $this->hideOTPField = false;
+                            }
                         }
-                        // check if this is a U2F Token
-                        if (property_exists($attributes, "u2fSignRequest")) {
-                            $this->u2fSignRequest = $attributes->u2fSignRequest;
-                        }
-                    } else {
-                        $this->hideOTPField = null;
-                        $this->u2fSignRequest = null;
                     }
-                    return $detail->messages;
+
+                    return [$detail->message];
                 }
             } else {
                 $error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code: " . $result->getStatusCode());
@@ -354,6 +354,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
     }
 
+	public function getClientIP(){
+		if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)){
+			return  $_SERVER["HTTP_X_FORWARDED_FOR"];
+		}else if (array_key_exists('REMOTE_ADDR', $_SERVER)) {
+			return $_SERVER["REMOTE_ADDR"];
+		}else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
+			return $_SERVER["HTTP_CLIENT_IP"];
+		}
+
+		return '';
+	}
+
     /**
      * Decides whether 2FA is enabled for the given user
      * This method is called after the user has successfully finished the first
@@ -368,20 +380,60 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $piactive = $this->getAppValue('piactive', '');
         $piexcludegroups = $this->getAppValue('piexcludegroups', '');
         $piexclude= $this->getAppValue('piexclude', '1');
+	    $piexcludeips = $this->getAppValue('piexcludeips', '');
         if ($piactive === "1") {
             // 2FA is basically enabled
+	        if ($piexcludeips) {
+	        	// We can exclude clients with specified ips from 2FA
+
+		        $ipaddresses = explode(",", $piexcludeips);
+		        $clientIP = ip2long($this->getClientIP());
+				foreach ( $ipaddresses as $ipaddress ) {
+					if (strpos($ipaddress, '-') !== false) {
+						$range = explode('-', $ipaddress);
+						$startIP = ip2long($range[0]);
+						$endIP = ip2long($range[1]);
+						if ($clientIP >= $startIP && $clientIP <= $endIP) {
+							return false;
+						}
+					} else {
+						if ($clientIP === ip2long($ipaddress)) {
+							return false;
+						}
+					}
+		     	}
+
+	        }
             if ($piexcludegroups) {
                 // We can exclude groups from the 2FA
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
                 $groups = explode(",", $piexcludegroupsCSV);
+                $checkEnabled;
                 foreach($groups as $group) {
-                    if (($this->groupManager->isInGroup($user->getUID(), trim($group)) && $piexclude === "1")
-                    || (!($this->groupManager->isInGroup($user->getUID(), trim($group))) && $piexclude === "0")) {
-                        // The user is a group, that is allowed to pass with 1FA
-	                    $this->log("debug", "[isTwoFactorAuthEnabledForUser] User does not need 2FA");
-                        return false;
-                    };
+                	if($this->groupManager->isInGroup($user->getUID(), trim($group))) {
+		                $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is in group " . $group . ".");
+                		if($piexclude === "1"){
+			                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User does not need 2FA).");
+                			return false;
+		                }
+		                if($piexclude === "0") {
+			                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User needs 2FA).");
+			                return true;
+		                }
+	                }
+	                $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is not in group " . $group . ".");
+                	if($piexclude === "1"){
+		                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User may need 2FA).");
+                	    $checkEnabled = true;
+		            }
+		            if($piexclude === "0"){
+			            $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User may not need 2FA).");
+                		$checkEnabled = false;
+		            }
                 };
+                if(!$checkEnabled){
+                	return false;
+                }
             };
             $this->log("debug", "[isTwoFactorAuthEnabledForUser] User needs 2FA");
             return true;
@@ -412,7 +464,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200) {
                 if ($body->result->status === true) {
-                    return $body->result->value->token;
+                	if (in_array("triggerchallenge", $body->result->value->rights)){
+		                return $body->result->value->token;
+	                }else{
+                		$error_message = $this->trans->t("Check if service account has correct permissions");
+                		$this->log("error", "[fetchAuthToken} privacyIDEA error message: Missing permissions for service account");
+	                }
                 }
             }else {
 	            $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());

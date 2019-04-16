@@ -154,9 +154,19 @@ $(document).ready(function () {
     });
 
     $("#piSettings #piexcludegroups").change(function () {
-       console.log("pi: Saving Excluse groups");
+       console.log("pi: Saving Exclude groups");
        var value = $("#piSettings #piexcludegroups").val();
        setValue("piexcludegroups", value);
+    });
+
+    getValue("piexcludeips", function (excludeips) {
+        $("#piSettings #piexcludeips").val(excludeips);
+    });
+
+    $("#piSettings #piexcludeips").change(function () {
+        console.log("pi: Saving excluded ips");
+        var value = $("#piSettings #piexcludeips").val();
+        setValue("piexcludeips", value);
     });
 
     /* privacyIDEA service account username */

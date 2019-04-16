@@ -7,3 +7,4 @@ file_filter = <lang>/twofactor_privacyidea.po
 source_file = templates/twofactor_privacyidea.pot
 source_lang = en
 type = PO
+
