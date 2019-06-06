@@ -20,7 +20,6 @@ if ($_["u2fSignRequest"]) {
 
 <form method="POST" id="piLoginForm" name="piLoginForm">
     <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
-    <input type="hidden" name="transaction_id" value="<?php p($_['transactionId']); ?>">
 
     <!-- only necessary for U2F. These hidden parameters are used in the script u2f.js -->
     <?php if ($u2fSignRequest): ?>
