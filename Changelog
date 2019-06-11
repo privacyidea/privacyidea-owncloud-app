@@ -1,3 +1,7 @@
+2.5.2
+
+* Fixed multiple trigger challenges
+
 2.5.1
 
 * Fixed multi challenge: During an authentication request
