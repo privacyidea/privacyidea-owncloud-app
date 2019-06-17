@@ -6,6 +6,9 @@ if ($_["u2fSignRequest"]) {
 } else {
     $u2fSignRequest = false;
 }
+if ($_["pushResponse"]) {
+    script('twofactor_privacyidea', 'push');
+}
 ?>
 
 <?php if ($_['messages']): ?>
@@ -31,8 +34,7 @@ if ($_["u2fSignRequest"]) {
     <?php endif; ?>
 
     <?php if (!$_['hideOTPField']): ?>
-        <input type="password" name="challenge" placeholder="OTP" autocomplete="off"
-               autocorrect="off" required autofocus>
+        <input type="password" name="challenge" placeholder="OTP" autocomplete="off" autocorrect="off" required autofocus>
         <input type="submit" class="button" value="Verify">
     <?php endif; ?>
 </form>
