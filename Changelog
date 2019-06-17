@@ -1,3 +1,7 @@
+2.6
+
+* Added support for the PUSH token.
+
 2.5.1
 
 * Fixed multi challenge: During an authentication request
