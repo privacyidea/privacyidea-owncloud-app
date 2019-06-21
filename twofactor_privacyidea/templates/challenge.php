@@ -25,7 +25,7 @@ if ($_["pushResponse"]) {
     <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
 
     <?php
-    if ($_["pushResponseStatus"]) {
+    if ($_["pushResponseStatus"] === true) {
         ?>
         <input type="hidden" id="pushResponse_status" value="true">
         <?php
