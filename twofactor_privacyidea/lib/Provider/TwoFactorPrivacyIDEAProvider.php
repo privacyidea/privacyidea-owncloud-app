@@ -305,7 +305,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $options = $this->getClientOptions();
 
         $pushResponse = $this->session->get("pi_PUSH_Response");
-        if ($password && $this->session->get("pi_hideOTPField") === false) {
+        if ($password) {
             $pushResponse = false;
         }
         if ($pushResponse) {
@@ -339,10 +339,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $options['body']["signaturedata"] = $signatureData;
                 $options['body']["clientdata"] = $clientData;
             }
-        }
-
-        if ($password) {
-            $pushResponse = false;
         }
 
         $errorCode = 0;
