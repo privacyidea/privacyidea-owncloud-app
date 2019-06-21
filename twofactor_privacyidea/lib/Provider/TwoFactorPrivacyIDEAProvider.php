@@ -244,6 +244,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $template->assign("messages", array_unique($messages));
         $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
         $template->assign("pushResponse", $this->session->get("pi_PUSH_Response"));
+        $template->assign("pushResponseStatus", $this->session->get("pi_PUSH_Response_Status"));
         $template->assign("u2fSignRequest", $this->u2fSignRequest);
         $template->assign("detail", $this->detail);
         return $template;
@@ -357,10 +358,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     $challenges = $body->result->value->challenges;
                     foreach ($challenges as $challenge) {
                         if ($this->session->get("pi_transaction_id") === $challenge->transaction_id) {
-                            if ($challenge->otp_received === true) {
-                                if ($challenge->otp_valid === true) {
-                                    return true;
-                                }
+                            if ($challenge->otp_received === true && $challenge->otp_valid === true) {
+                                $this->session->set("pi_PUSH_Response_Status", true);
+                                return true;
                             }
                         }
                     }

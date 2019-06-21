@@ -24,6 +24,14 @@ if ($_["pushResponse"]) {
 <form method="POST" id="piLoginForm" name="piLoginForm">
     <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
 
+    <?php
+    if ($_["pushResponseStatus"]) {
+        ?>
+        <input type="hidden" id="pushResponse_status" value="true">
+        <?php
+    }
+    ?>
+
     <!-- only necessary for U2F. These hidden parameters are used in the script u2f.js -->
     <?php if ($u2fSignRequest): ?>
         <input type="hidden" id="u2f_challenge" value="<?php p($u2fSignRequest->challenge);?>">
