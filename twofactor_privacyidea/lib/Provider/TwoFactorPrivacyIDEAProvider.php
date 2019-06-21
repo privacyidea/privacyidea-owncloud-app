@@ -304,8 +304,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         // Read config
         $options = $this->getClientOptions();
 
+        $signatureData = $this->request->getParam("signatureData");
+
         $pushResponse = $this->session->get("pi_PUSH_Response");
-        if ($password) {
+        if ($password || $signatureData) {
             $pushResponse = false;
         }
         if ($pushResponse) {
@@ -322,7 +324,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
             // The verifyChallenge is called with additional parameters in case of challenge response:
             $transaction_id = $this->session->get("pi_transaction_id");
-            $signatureData = $this->request->getParam("signatureData");
             $clientData = $this->request->getParam("clientData");
             $this->log("debug", "transaction_id: " . $transaction_id);
             $this->log("debug", "signatureData: " . $signatureData);
