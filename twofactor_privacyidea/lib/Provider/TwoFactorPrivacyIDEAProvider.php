@@ -65,7 +65,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->logger = $logger;
         $this->trans = $trans;
         $this->request = $request;
-        $this->hideOTPField = null;
         $this->detail = array();
         $this->u2fSignRequest = null;
         $this->groupManager = $groupManager;
@@ -161,6 +160,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function triggerChallenges($username)
     {
+        $this->session->set("pi_hideOTPField", true);
         $error_message = "";
         $url = $this->getBaseUrl() . "validate/triggerchallenge";
         $options = $this->getClientOptions();
@@ -170,6 +170,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $result = 0;
         try {
             $token = $this->fetchAuthToken($adminUser, $adminPassword);
+            $this->session->set("pi_authorization", $token);
             $client = $this->httpClientService->newClient();
             $options["body"] = ["user" => $username, "realm" => $realm];
             $options["headers"] = ["PI-Authorization" => $token];
@@ -184,13 +185,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     }
 
                     if (property_exists($detail, "multi_challenge")) {
-                    	$this->hideOTPField = true;
                         $multi_challenge = $detail->multi_challenge;
                         for ($i = 0; $i < count($multi_challenge); $i++) {
                             if ($multi_challenge[$i]->type === "u2f") {
                                 $this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
-                            } else {
-                                $this->hideOTPField = false;
+                            } elseif ($multi_challenge[$i]->type === "push") {
+                                $this->session->set("pi_PUSH_Response", true);
+                            }else{
+                                $this->session->set("pi_hideOTPField", false);
                             }
                         }
                     }
@@ -223,7 +225,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function getTemplate(IUser $user)
     {
-
     	$transactionId = $this->session->get("pi_transaction_id");
 
     	if (!$transactionId) {
@@ -241,7 +242,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 		}
         $template = new Template('twofactor_privacyidea', 'challenge');
         $template->assign("messages", array_unique($messages));
-        $template->assign("hideOTPField", $this->hideOTPField);
+        $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
+        $template->assign("pushResponse", $this->session->get("pi_PUSH_Response"));
+        $template->assign("pushResponseStatus", $this->session->get("pi_PUSH_Response_Status"));
         $template->assign("u2fSignRequest", $this->u2fSignRequest);
         $template->assign("detail", $this->detail);
         return $template;
@@ -280,6 +283,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function verifyChallenge(IUser $user, $challenge)
     {
+        $this->log("debug", "privacyIDEA challenge= " . $challenge);
         return $this->authenticate($user->getUID(), $challenge);
     }
 
@@ -296,62 +300,90 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @throws TwoFactorException
      */
     public function authenticate($username, $password) {
-        // Read config
-        $url = $this->getBaseUrl() . "validate/check";
-        $realm = $this->getAppValue('realm', '');
         $error_message = "";
+
+        // Read config
         $options = $this->getClientOptions();
-        $options['body'] = ['user' => $username,
-            'pass' => $password,
-            'realm' => $realm];
-        // The verifyChallenge is called with additional parameters in case of challenge response:
-        $transaction_id = $this->session->get("pi_transaction_id");
+
         $signatureData = $this->request->getParam("signatureData");
-        $clientData = $this->request->getParam("clientData");
-        $this->log("debug", "transaction_id: " . $transaction_id);
-        $this->log("debug", "signatureData: " . $signatureData);
-        $this->log("debug", "clientData: " . $clientData);
 
-        if ($transaction_id) {
-            // add transaction ID in case of challenge response
-            $options['body']["transaction_id"] = $transaction_id;
+        $pushResponse = $this->session->get("pi_PUSH_Response");
+        if ($password || $signatureData) {
+            $pushResponse = false;
         }
+        if ($pushResponse) {
+            $this->log("debug", "We are doing a PUSH response.");
 
-        if ($signatureData) {
-            $this->log("debug", "We are doing a U2F response.");
-            // here we add the signatureData and the clientData in case of U2F
-            $options['body']["signaturedata"] = $signatureData;
-            $options['body']["clientdata"] = $clientData;
+            $url = $this->getBaseUrl() . "token/challenges/";
+            $options["headers"] = ["authorization" => $this->session->get("pi_authorization")];
+        } else {
+            $url = $this->getBaseUrl() . "validate/check";
+            $realm = $this->getAppValue('realm', '');
+            $options['body'] = ['user' => $username,
+                'pass' => $password,
+                'realm' => $realm];
+
+            // The verifyChallenge is called with additional parameters in case of challenge response:
+            $transaction_id = $this->session->get("pi_transaction_id");
+            $clientData = $this->request->getParam("clientData");
+            $this->log("debug", "transaction_id: " . $transaction_id);
+            $this->log("debug", "signatureData: " . $signatureData);
+            $this->log("debug", "clientData: " . $clientData);
+
+            if ($transaction_id) {
+                // add transaction ID in case of challenge response
+                $options['body']["transaction_id"] = $transaction_id;
+            }
+
+            if ($signatureData) {
+                $this->log("debug", "We are doing a U2F response.");
+                // here we add the signatureData and the clientData in case of U2F
+                $options['body']["signaturedata"] = $signatureData;
+                $options['body']["clientdata"] = $clientData;
+            }
         }
 
         $errorCode = 0;
         $res = 0;
+
         try {
             $client = $this->httpClientService->newClient();
-            $res = $client->post($url, $options);
-	        $body = $res->getBody();
-	        $body = json_decode($body);
+            $res = $client->get($url, $options);
+            $body = $res->getBody();
+            $body = json_decode($body);
 
             if ($body->result->status === true) {
-                if ($body->result->value === true) {
-                    return true;
+                if ($pushResponse) {
+                    $error_message = $this->trans->t("The push token was not yet verified.");
+                    $challenges = $body->result->value->challenges;
+                    foreach ($challenges as $challenge) {
+                        if ($this->session->get("pi_transaction_id") === $challenge->transaction_id) {
+                            if ($challenge->otp_received === true && $challenge->otp_valid === true) {
+                                $this->session->set("pi_PUSH_Response_Status", true);
+                                return true;
+                            }
+                        }
+                    }
                 } else {
-                    $error_message = $this->trans->t("Failed to authenticate.");
-                    $errorCode = 1;
-                    $this->log("info", "User failed to authenticate. Wrong OTP value.");
+                    if ($body->result->value === true) {
+                        return true;
+                    } else {
+                        $error_message = $this->trans->t("Failed to authenticate.");
+                        $errorCode = 1;
+                        $this->log("info", "User failed to authenticate. Wrong OTP value.");
+                    }
                 }
             } else {
-            	// status == false
+                // status == false
                 $this->log("error", "[authenticate] privacyIDEA error code: " . $body->result->error->code);
                 $this->log("error", "[authenticate] privacyIDEA error message: " . $body->result->error->message);
             }
-
         } catch (Exception $e) {
-        	if ($res !== 0) {
-		        $this->log( "error", "[authenticate] HTTP return code: " . $res->getStatusCode() );
-	        }
-	        $this->log("error", "[authenticate] " . $e->getMessage());
-	        $this->log("debug", $e);
+            if ($res !== 0) {
+                $this->log( "error", "[authenticate] HTTP return code: " . $res->getStatusCode() );
+            }
+            $this->log("error", "[authenticate] " . $e->getMessage());
+            $this->log("debug", $e);
             $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
         }
         if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')) {

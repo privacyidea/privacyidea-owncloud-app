@@ -6,6 +6,9 @@ if ($_["u2fSignRequest"]) {
 } else {
     $u2fSignRequest = false;
 }
+if ($_["pushResponse"]) {
+    script('twofactor_privacyidea', 'push');
+}
 ?>
 
 <?php if ($_['messages']): ?>
@@ -21,6 +24,14 @@ if ($_["u2fSignRequest"]) {
 <form method="POST" id="piLoginForm" name="piLoginForm">
     <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
 
+    <?php
+    if ($_["pushResponseStatus"] === true) {
+        ?>
+        <input type="hidden" id="pushResponse_status" value="true">
+        <?php
+    }
+    ?>
+
     <!-- only necessary for U2F. These hidden parameters are used in the script u2f.js -->
     <?php if ($u2fSignRequest): ?>
         <input type="hidden" id="u2f_challenge" value="<?php p($u2fSignRequest->challenge);?>">
@@ -31,8 +42,7 @@ if ($_["u2fSignRequest"]) {
     <?php endif; ?>
 
     <?php if (!$_['hideOTPField']): ?>
-        <input type="password" name="challenge" placeholder="OTP" autocomplete="off"
-               autocorrect="off" required autofocus>
+        <input type="password" name="challenge" placeholder="OTP" autocomplete="off" autocorrect="off" required autofocus>
         <input type="submit" class="button" value="Verify">
     <?php endif; ?>
 </form>
