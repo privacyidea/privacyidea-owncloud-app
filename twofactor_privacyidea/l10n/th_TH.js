@@ -40,6 +40,6 @@ OC.L10N.register(
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "เลือกตัวเลือกนี้หากคุณใช้โทเค็นทดสอบการตอบสนอง เช่น SMS หรืออีเมลโทเค็น",
     "Username of privacyIDEA service account" : "ชื่อผู้ใช้ของบัญชีบริการ privacyIDEA",
     "Password of privacyIDEA service account" : "รหัสผ่านของบัญชีบริการ privacyIDEA",
-    "Check Credentials" : "ตรวจสอบข้อมูลประจำตัว"
+    "Check Credentials" : "ตรวจสอบหนังสือรับรอง"
 },
 "nplurals=1; plural=0;");
