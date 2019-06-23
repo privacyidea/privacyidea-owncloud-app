@@ -5,6 +5,7 @@
     "The service account credentials are correct!" : "As credenciais do servizo da conta son correctas!",
     "Failed to trigger challenges. Wrong HTTP return code: " : "Non foi posíbel desencadear desafíos. Código de retorno HTTP incorrecto: ",
     "Failed to trigger challenges." : "Non foi posíbel desencadear desafíos.",
+    "The push token was not yet verified." : "A marca de premido aínda non foi verificada.",
     "Check if service account has correct permissions" : "Comprobe se o servizo da cuenta ten os permisos necesarios ",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Produciuse un fallo ao obter a marca de autenticación. Código de retorno HTTP incorrecto: ",
     "Failed to fetch authentication token." : "Produciuse un fallo ao obter a marca de autenticación.",
