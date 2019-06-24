@@ -5,6 +5,7 @@
     "The service account credentials are correct!" : "אישורי האימות של חשבון השירות נכונים!",
     "Failed to trigger challenges. Wrong HTTP return code: " : "הפעלת אתגרי האימות נכשלה. קוד HTTP חוזר שגוי:",
     "Failed to trigger challenges." : "נכשל ניסיון לעורר אתגרים.",
+    "The push token was not yet verified." : "חתימת הייצוג בדחיפה עדיין לא אומתה.",
     "Check if service account has correct permissions" : "יש לבדוק אם לחשבון השירות יש הרשאות מתאימות",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "נכשל באחזור חתימת ייצוג מאומתת. קוד HTTP חוזר שגוי:",
     "Failed to fetch authentication token." : "נכשל הניסיון לאחזר מחרוזת אימות.",
