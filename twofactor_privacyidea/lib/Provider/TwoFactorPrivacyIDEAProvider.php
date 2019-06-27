@@ -319,6 +319,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $this->log("debug", "We are doing a PUSH response.");
 
             $url = $this->getBaseUrl() . "token/challenges/";
+            $options["body"] = ["transaction_id" => $this->session->get("pi_transaction_id")];
             $options["headers"] = ["authorization" => $this->session->get("pi_authorization")];
         } else {
             $url = $this->getBaseUrl() . "validate/check";
@@ -361,12 +362,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     $error_message = $this->trans->t("The push token was not yet verified.");
                     $challenges = $body->result->value->challenges;
                     foreach ($challenges as $challenge) {
-                        if ($this->session->get("pi_transaction_id") === $challenge->transaction_id) {
-                            if ($challenge->otp_received === true && $challenge->otp_valid === true) {
-                                $this->session->set("pi_PUSH_Response_Status", true);
-                                return true;
-                            }
-                        }
+						if ($challenge->otp_received === true && $challenge->otp_valid === true) {
+							$this->session->set("pi_PUSH_Response_Status", true);
+							return true;
+						}
                     }
                 } else {
                     if ($body->result->value === true) {
