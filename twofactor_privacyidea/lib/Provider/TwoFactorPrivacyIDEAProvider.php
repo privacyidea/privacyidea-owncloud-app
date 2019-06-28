@@ -158,8 +158,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @return string[]
      * @throws TriggerChallengesException
      */
-    private function triggerChallenges($username)
-    {
+    private function triggerChallenges($username) {
         $this->session->set("pi_hideOTPField", true);
         $error_message = "";
         $url = $this->getBaseUrl() . "validate/triggerchallenge";
