@@ -186,18 +186,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
                     if (property_exists($detail, "multi_challenge")) {
                         $multi_challenge = $detail->multi_challenge;
-                        for ($i = 0; $i < count($multi_challenge); $i++) {
-                            if ($multi_challenge[$i]->type === "u2f") {
-                                $this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
-                            } elseif ($multi_challenge[$i]->type === "push") {
-                                $this->session->set("pi_PUSH_Response", true);
-                            }else{
-                                $this->session->set("pi_hideOTPField", false);
-                            }
-                        }
+                        if (count($multi_challenge) === 0) {
+                        	$this->session->set("pi_hideOTPField", false);
+						} else {
+							for ($i = 0; $i < count($multi_challenge); $i++) {
+								if ($multi_challenge[$i]->type === "u2f") {
+									$this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
+								} elseif ($multi_challenge[$i]->type === "push") {
+									$this->session->set("pi_PUSH_Response", true);
+								} else {
+									$this->session->set("pi_hideOTPField", false);
+								}
+							}
+						}
                     }
 
-                    return [$detail->message];
+                    return $detail->message;
                 }
             } else {
                 $error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code: " . $result->getStatusCode());
@@ -228,20 +232,20 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     	$transactionId = $this->session->get("pi_transaction_id");
 
     	if (!$transactionId) {
-			$messages = [];
+			$message = null;
 			if ($this->getAppValue('triggerchallenges', '') === '1') {
 				try {
-					$messages = $this->triggerChallenges($user->getUID());
-					$this->session->set("pi_message", $messages);
+					$message = $this->triggerChallenges($user->getUID());
+					$this->session->set("pi_message", $message);
 				} catch (TriggerChallengesException $e) {
-					$messages = [$e->getMessage()];
+					$message = [$e->getMessage()];
 				}
 			}
 		} else {
-    		$messages = $this->session->get("pi_message");
+    		$message = $this->session->get("pi_message");
 		}
         $template = new Template('twofactor_privacyidea', 'challenge');
-        $template->assign("messages", array_unique($messages));
+        $template->assign("message", $message);
         $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
         $template->assign("pushResponse", $this->session->get("pi_PUSH_Response"));
         $template->assign("pushResponseStatus", $this->session->get("pi_PUSH_Response_Status"));
@@ -315,6 +319,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $this->log("debug", "We are doing a PUSH response.");
 
             $url = $this->getBaseUrl() . "token/challenges/";
+            $options["body"] = ["transaction_id" => $this->session->get("pi_transaction_id")];
             $options["headers"] = ["authorization" => $this->session->get("pi_authorization")];
         } else {
             $url = $this->getBaseUrl() . "validate/check";
@@ -357,12 +362,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     $error_message = $this->trans->t("The push token was not yet verified.");
                     $challenges = $body->result->value->challenges;
                     foreach ($challenges as $challenge) {
-                        if ($this->session->get("pi_transaction_id") === $challenge->transaction_id) {
-                            if ($challenge->otp_received === true && $challenge->otp_valid === true) {
-                                $this->session->set("pi_PUSH_Response_Status", true);
-                                return true;
-                            }
-                        }
+						if ($challenge->otp_received === true && $challenge->otp_valid === true) {
+							$this->session->set("pi_PUSH_Response_Status", true);
+							return true;
+						}
                     }
                 } else {
                     if ($body->result->value === true) {

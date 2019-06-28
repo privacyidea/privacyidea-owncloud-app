@@ -11,13 +11,9 @@ if ($_["pushResponse"]) {
 }
 ?>
 
-<?php if ($_['messages']): ?>
+<?php if ($_['message']): ?>
     <fieldset class="warning">
-        <ul>
-            <?php foreach ($_['messages'] as $message): ?>
-                <li><?php p($message); ?></li>
-            <?php endforeach; ?>
-        </ul>
+        <?php p($_['message']); ?>
     </fieldset>
 <?php endif; ?>
 
