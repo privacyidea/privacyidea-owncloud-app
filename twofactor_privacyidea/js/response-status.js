@@ -4,7 +4,7 @@ window.onload=function(){
             url:location.href,
             type:'post',
             success:window.onload=function(result){
-                if(result.search("<input type=\"hidden\" id=\"pushResponse_status\" value=\"false\">") === -1){
+                if(result.search("<input type=\"hidden\" id=\"ResponseStatus\" value=\"false\">") === -1){
                     location.reload()
                 }
             }
