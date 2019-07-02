@@ -383,9 +383,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     $challenges = $body->result->value->challenges;
                     foreach ($challenges as $challenge) {
 						if ($challenge->otp_received === true && $challenge->otp_valid === true) {
-                        	$this->session->set("pi_Response_Status", true);
+							$this->session->set("pi_Response_Status", true);
 							return true;
-                        }
+						}
                     }
                 } else {
                     if ($body->result->value === true) {
@@ -443,7 +443,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $piactive = $this->getAppValue('piactive', '');
         $piexcludegroups = $this->getAppValue('piexcludegroups', '');
         $piexclude= $this->getAppValue('piexclude', '1');
-		$piexcludeips = $this->getAppValue('piexcludeips', '');
+	    $piexcludeips = $this->getAppValue('piexcludeips', '');
         if ($piactive === "1") {
             // 2FA is basically enabled
 			if ($piexcludeips) {
