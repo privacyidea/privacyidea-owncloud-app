@@ -113,18 +113,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     private function log($level, $message)
-	{
-		$context = ["app" => "privacyIDEA"];
-		if($level === 'debug'){
-			return $this->logger->debug($message, $context);
-		}
-		if($level === 'info'){
-			return $this->logger->info($message, $context);
-		}
-		if($level === 'error'){
-			return $this->logger->error($message, $context);
-		}
-	}
+    {
+    	$context = ["app" => "privacyIDEA"];
+    	if($level === 'debug'){
+    		return $this->logger->debug($message, $context);
+	    }
+	    if($level === 'info'){
+    		return $this->logger->info($message, $context);
+	    }
+	    if($level === 'error'){
+    		return $this->logger->error($message, $context);
+	    }
+    }
 
     /**
      * Retrieve the privacyIDEA instance base URL from the app configuration.
