@@ -187,13 +187,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     if (property_exists($detail, "multi_challenge")) {
                         $multi_challenge = $detail->multi_challenge;
                         if (count($multi_challenge) === 0) {
-                        	$this->session->set("pi_hideOTPField", false);
+							$this->session->set("pi_hideOTPField", false);
 						} else {
 							for ($i = 0; $i < count($multi_challenge); $i++) {
 								if ($multi_challenge[$i]->type === "u2f") {
 									$this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
 								} elseif ($multi_challenge[$i]->type === "push") {
 									$this->session->set("pi_PUSH_Response", true);
+								} elseif ($multi_challenge[$i]->type === "tiqr") {
+                                    $tiqr_img = $multi_challenge[$i]->attributes->img;
+
+                                    $this->session->set("pi_TIQR_Response", true);
+                                    $this->session->set("pi_TIQR_Image", $tiqr_img);
 								} else {
 									$this->session->set("pi_hideOTPField", false);
 								}
@@ -211,11 +216,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         } catch (AdminAuthException $e) {
             $error_message = $e->getMessage();
         } catch (Exception $e) {
-        	if($result !== 0) {
-        		$this->log("error", "[triggerChallenges] HTTP return code: " . $result->getStatusCode());
-	        }
-	        $this->log("error", "[triggerChallenges] " . $e->getMessage());
-        	$this->log("debug", $e);
+			if($result !== 0) {
+				$this->log("error", "[triggerChallenges] HTTP return code: " . $result->getStatusCode());
+			}
+			$this->log("error", "[triggerChallenges] " . $e->getMessage());
+			$this->log("debug", $e);
             $error_message = $this->trans->t("Failed to trigger challenges.");
         }
         throw new TriggerChallengesException($error_message);
@@ -229,9 +234,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function getTemplate(IUser $user)
     {
-    	$transactionId = $this->session->get("pi_transaction_id");
-
-    	if (!$transactionId) {
+		$transactionId = $this->session->get("pi_transaction_id");
+		if (!$transactionId) {
 			$message = null;
 			if ($this->getAppValue('triggerchallenges', '') === '1') {
 				try {
@@ -242,15 +246,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 				}
 			}
 		} else {
-    		$message = $this->session->get("pi_message");
+			$message = $this->session->get("pi_message");
 		}
+
         $template = new Template('twofactor_privacyidea', 'challenge');
         $template->assign("message", $message);
         $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
-        $template->assign("pushResponse", $this->session->get("pi_PUSH_Response"));
-        $template->assign("pushResponseStatus", $this->session->get("pi_PUSH_Response_Status"));
         $template->assign("u2fSignRequest", $this->u2fSignRequest);
         $template->assign("detail", $this->detail);
+
+        $tiqrResponse = $this->session->get("pi_TIQR_Response");
+        $pushResponse = $this->session->get("pi_PUSH_Response");
+        if ($pushResponse || $tiqrResponse) {
+            if ($tiqrResponse) {
+                $template->assign("tiqrImage", $this->session->get("pi_TIQR_Image"));
+            }
+            $template->assign("response", true);
+            $template->assign("responseStatus", $this->session->get("pi_Response_Status"));
+        }
         return $template;
     }
 
@@ -309,19 +322,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         // Read config
         $options = $this->getClientOptions();
 
+        $transaction_id = $this->session->get("pi_transaction_id");
         $signatureData = $this->request->getParam("signatureData");
 
         $pushResponse = $this->session->get("pi_PUSH_Response");
+        $tiqrResponse = $this->session->get("pi_TIQR_Response");
         if ($password || $signatureData) {
             $pushResponse = false;
-        }
-        if ($pushResponse) {
-            $this->log("debug", "We are doing a PUSH response.");
+            $tiqrResponse = false;
 
-            $url = $this->getBaseUrl() . "token/challenges/";
-            $options["body"] = ["transaction_id" => $this->session->get("pi_transaction_id")];
-            $options["headers"] = ["authorization" => $this->session->get("pi_authorization")];
-        } else {
             $url = $this->getBaseUrl() . "validate/check";
             $realm = $this->getAppValue('realm', '');
             $options['body'] = ['user' => $username,
@@ -329,7 +338,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 'realm' => $realm];
 
             // The verifyChallenge is called with additional parameters in case of challenge response:
-            $transaction_id = $this->session->get("pi_transaction_id");
             $clientData = $this->request->getParam("clientData");
             $this->log("debug", "transaction_id: " . $transaction_id);
             $this->log("debug", "signatureData: " . $signatureData);
@@ -346,6 +354,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $options['body']["signaturedata"] = $signatureData;
                 $options['body']["clientdata"] = $clientData;
             }
+        } else {
+            if ($pushResponse) {
+                $this->log("debug", "We are doing a PUSH response.");
+            }
+            if ($tiqrResponse) {
+                $this->log("debug", "We are doing a TIQR response.");
+            }
+
+            $url = $this->getBaseUrl() . "token/challenges/";
+            $options["body"] = ["transaction_id" => $transaction_id];
+            $options["headers"] = ["authorization" => $this->session->get("pi_authorization")];
         }
 
         $errorCode = 0;
@@ -358,12 +377,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $body = json_decode($body);
 
             if ($body->result->status === true) {
-                if ($pushResponse) {
-                    $error_message = $this->trans->t("The push token was not yet verified.");
+                if ($pushResponse === true || $tiqrResponse === true) {
+                    $error_message = $this->trans->t("Please confirm the authentication with your mobile device or enter a valid otp.");
+
                     $challenges = $body->result->value->challenges;
                     foreach ($challenges as $challenge) {
 						if ($challenge->otp_received === true && $challenge->otp_valid === true) {
-							$this->session->set("pi_PUSH_Response_Status", true);
+							$this->session->set("pi_Response_Status", true);
 							return true;
 						}
                     }
@@ -406,7 +426,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 		}else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
 			return $_SERVER["HTTP_CLIENT_IP"];
 		}
-
 		return '';
 	}
 
@@ -427,11 +446,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 	    $piexcludeips = $this->getAppValue('piexcludeips', '');
         if ($piactive === "1") {
             // 2FA is basically enabled
-	        if ($piexcludeips) {
-	        	// We can exclude clients with specified ips from 2FA
-
-		        $ipaddresses = explode(",", $piexcludeips);
-		        $clientIP = ip2long($this->getClientIP());
+			if ($piexcludeips) {
+				// We can exclude clients with specified ips from 2FA
+				$ipaddresses = explode(",", $piexcludeips);
+				$clientIP = ip2long($this->getClientIP());
 				foreach ( $ipaddresses as $ipaddress ) {
 					if (strpos($ipaddress, '-') !== false) {
 						$range = explode('-', $ipaddress);
@@ -445,35 +463,34 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 							return false;
 						}
 					}
-		     	}
-
-	        }
+				}
+			}
             if ($piexcludegroups) {
                 // We can exclude groups from the 2FA
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
                 $groups = explode(",", $piexcludegroupsCSV);
                 $checkEnabled;
                 foreach($groups as $group) {
-                	if($this->groupManager->isInGroup($user->getUID(), trim($group))) {
-		                $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is in group " . $group . ".");
-                		if($piexclude === "1"){
-			                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User does not need 2FA).");
-                			return false;
-		                }
-		                if($piexclude === "0") {
-			                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User needs 2FA).");
-			                return true;
-		                }
-	                }
-	                $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is not in group " . $group . ".");
-                	if($piexclude === "1"){
-		                $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User may need 2FA).");
-                	    $checkEnabled = true;
-		            }
-		            if($piexclude === "0"){
-			            $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User may not need 2FA).");
-                		$checkEnabled = false;
-		            }
+					if($this->groupManager->isInGroup($user->getUID(), trim($group))) {
+						$this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is in group " . $group . ".");
+						if($piexclude === "1"){
+							$this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User does not need 2FA).");
+							return false;
+						}
+						if($piexclude === "0") {
+							$this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User needs 2FA).");
+							return true;
+						}
+					}
+					$this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is not in group " . $group . ".");
+					if($piexclude === "1"){
+						$this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User may need 2FA).");
+						$checkEnabled = true;
+					}
+					if($piexclude === "0"){
+						$this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User may not need 2FA).");
+						$checkEnabled = false;
+					}
                 };
                 if(!$checkEnabled){
                 	return false;
@@ -508,25 +525,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200) {
                 if ($body->result->status === true) {
-                	if (in_array("triggerchallenge", $body->result->value->rights)){
-		                return $body->result->value->token;
-	                }else{
-                		$error_message = $this->trans->t("Check if service account has correct permissions");
-                		$this->log("error", "[fetchAuthToken} privacyIDEA error message: Missing permissions for service account");
-	                }
+					if (in_array("triggerchallenge", $body->result->value->rights)){
+						return $body->result->value->token;
+					} else {
+						$error_message = $this->trans->t("Check if service account has correct permissions");
+						$this->log("error", "[fetchAuthToken} privacyIDEA error message: Missing permissions for service account");
+					}
                 }
             }else {
 	            $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
 	            $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
 	            $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
-
             }
         } catch (Exception $e) {
-        	if($result !== 0){
-		        $this->log( "error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode() );
-	        }
-	        $this->log("error", "[fetchAuthToken] " . $e->getMessage());
-        	$this->log("debug", $e);
+			if ($result !== 0) {
+				$this->log( "error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode() );
+			}
+			$this->log("error", "[fetchAuthToken] " . $e->getMessage());
+			$this->log("debug", $e);
             $error_message = $this->trans->t("Failed to fetch authentication token.");
         }
         throw new AdminAuthException($error_message);

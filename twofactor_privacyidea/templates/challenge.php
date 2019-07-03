@@ -1,13 +1,13 @@
 <?php
-if ($_["u2fSignRequest"]) {
-    $u2fSignRequest = $_["u2fSignRequest"];
+if ($_['u2fSignRequest']) {
+    $u2fSignRequest = $_['u2fSignRequest'];
     script('twofactor_privacyidea', 'u2f-api');
     script('twofactor_privacyidea', 'u2f');
 } else {
     $u2fSignRequest = false;
 }
-if ($_["pushResponse"]) {
-    script('twofactor_privacyidea', 'push');
+if ($_['response']) {
+    script('twofactor_privacyidea', 'response-status');
 }
 ?>
 
@@ -21,9 +21,17 @@ if ($_["pushResponse"]) {
     <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
 
     <?php
-    if (!$_["pushResponseStatus"] === true) {
+    if ($_['tiqrImage']) {
         ?>
-        <input type="hidden" id="pushResponse_status" value="false">
+        <img width="250" src="<?php p($_['tiqrImage']); ?>">
+        <?php
+    }
+    ?>
+
+    <?php
+    if (!$_["responseStatus"] === true) {
+        ?>
+        <input type="hidden" id="ResponseStatus" value="false">
         <?php
     }
     ?>
