@@ -7,7 +7,6 @@ OC.L10N.register(
     "The service account credentials are correct!" : "As credenciais da conta de serviço estão corretas!",
     "Failed to trigger challenges. Wrong HTTP return code: " : "Falha ao ativar desafios. Código de retorno HTTP errado:",
     "Failed to trigger challenges." : "Falha ao ativar os desafios.",
-    "The push token was not yet verified." : "O token de envio ainda não foi verificado.",
     "Check if service account has correct permissions" : "Verifique se a conta de serviço tem permissões corretas",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Falha ao buscar o token de autenticação. Código de retorno HTTP errado:",
     "Failed to fetch authentication token." : "Falha ao obter o token de autenticação.",
