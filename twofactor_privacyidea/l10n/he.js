@@ -7,6 +7,7 @@ OC.L10N.register(
     "The service account credentials are correct!" : "אישורי האימות של חשבון השירות נכונים!",
     "Failed to trigger challenges. Wrong HTTP return code: " : "הפעלת אתגרי האימות נכשלה. קוד HTTP חוזר שגוי:",
     "Failed to trigger challenges." : "נכשל ניסיון לעורר אתגרים.",
+    "Please confirm the authentication with your mobile device or enter a valid otp." : "יש לאשר את האימות באמצעות המכשיר הנייד שלך או להזין קוד חד פעמי חוקי.",
     "Check if service account has correct permissions" : "יש לבדוק אם לחשבון השירות יש הרשאות מתאימות",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "נכשל באחזור חתימת ייצוג מאומתת. קוד HTTP חוזר שגוי:",
     "Failed to fetch authentication token." : "נכשל הניסיון לאחזר מחרוזת אימות.",
