@@ -2,9 +2,12 @@
 
 ## Requirements
 
-This only works with ownCloud >= 9.1 and Nextcloud 12 + 13
+* ownCloud >= 9.1 or
+* Nextcloud 12 + 13
 
-You need a privacyIDEA Server to authenticate against.
+* privacyIDEA server 3.1+
+
+## Subscription
 
 The privacyIDEA ownCloud App needs a subscription file from NetKnights GmbH to run productively.
 See https://netknights.it/en/produkte/privacyidea-owncloud-app/
