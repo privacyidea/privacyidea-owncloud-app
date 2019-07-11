@@ -41,7 +41,8 @@ class Application extends \OCP\AppFramework\App
                 $c->getAppName(),
                 $server->getRequest(),
                 $server->getL10N($c->getAppName()),
-                $server->getConfig()
+                $server->getConfig(),
+				$server->getSession()
             );
         });
     }
