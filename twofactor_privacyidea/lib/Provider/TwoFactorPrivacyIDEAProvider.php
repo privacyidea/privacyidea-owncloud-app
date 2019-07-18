@@ -46,6 +46,10 @@ class TriggerChallengesException extends Exception
 
 class TwoFactorPrivacyIDEAProvider implements IProvider
 {
+	// We can enter multiple strings, the version number should start with.
+	private $recommendedPIVersions = array(
+		"3."
+	);
 
     private $httpClientService;
     private $config;
@@ -525,11 +529,21 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200) {
                 if ($body->result->status === true) {
+                	$pi_outdated = true;
+                	foreach ($this->recommendedPIVersions as $version) {
+                		if (strpos($body->versionnumber, $version) === 0) {
+                			$pi_outdated = false;
+						}
+					}
+                	if ($pi_outdated) {
+						$this->session->set("pi_outdated", true);
+						$this->log("error", "We recommend to update your privacyIDEA server");
+					}
 					if (in_array("triggerchallenge", $body->result->value->rights)){
 						return $body->result->value->token;
 					} else {
 						$error_message = $this->trans->t("Check if service account has correct permissions");
-						$this->log("error", "[fetchAuthToken} privacyIDEA error message: Missing permissions for service account");
+						$this->log("error", "[fetchAuthToken] privacyIDEA error message: Missing permissions for service account");
 					}
                 }
             }else {

@@ -13,6 +13,7 @@ use OCP\AppFramework\Controller;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IConfig;
+use OCP\ISession;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 
@@ -22,15 +23,21 @@ class SettingsController extends Controller {
         /* configuration object */
         private $config;
 	/**
+	 * @var ISession
+	 */
+	private $session;
+
+	/**
 	 * @param string $appName
 	 * @param IRequest $request
 	 * @param IL10N $trans
 	 */
 	public function __construct($appName, IRequest $request, IL10N $trans,
-                IConfig $config) {
+                IConfig $config, ISession $session) {
 		parent::__construct($appName, $request);
 		$this->trans = $trans;
 		$this->config = $config;
+		$this->session = $session;
 	}
 
 	/**
@@ -95,6 +102,10 @@ class SettingsController extends Controller {
 		try {
 			$token = $provider->fetchAuthToken($user, $pass);
 			$message = $this->trans->t("The service account credentials are correct!");
+			if ($this->session->get("pi_outdated")) {
+				$updateMessage = $this->trans->t("But we recommend to update your privacyIDEA server.");
+				$message = $message . " " . $updateMessage;
+			}
 			$status = "success";
 		} catch (Exception $e) {
 			$message = $e->getMessage();
