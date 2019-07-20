@@ -3,6 +3,7 @@
     "Failed to authenticate." : "Failed to authenticate.",
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "Comunicação com o servidor privacyIDEA bem-sucedida. No entanto, o usuário não conseguiu autenticar.",
     "The service account credentials are correct!" : "As credenciais da conta de serviço estão corretas!",
+    "But we recommend to update your privacyIDEA server." : "Mas recomendamos atualizar seu servidor privacyIDEA.",
     "Failed to trigger challenges. Wrong HTTP return code: " : "Falha ao ativar desafios. Código de retorno HTTP errado:",
     "Failed to trigger challenges." : "Falha ao ativar os desafios.",
     "Please confirm the authentication with your mobile device or enter a valid otp." : "Por favor, confirme a autenticação com o seu dispositivo móvel ou insira um otp válido.",
