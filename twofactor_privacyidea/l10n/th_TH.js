@@ -5,6 +5,7 @@ OC.L10N.register(
     "Failed to authenticate." : "การตรวจสอบล้มเหลว",
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "ไม่สามารถตรวจสอบสิทธิ์ของผู้ใช้กับเซิร์ฟเวอร์ privacyIDEA(2FA)",
     "The service account credentials are correct!" : "หนังสือรับรองของบริการบัญชีถูกต้อง",
+    "But we recommend to update your privacyIDEA server." : "แต่เราขอแนะนำให้อัปเดตเซิร์ฟเวอร์ privacyIDEA ของคุณ",
     "Failed to trigger challenges. Wrong HTTP return code: " : "เรียกทริกเกอร์ไม่สำเร็จ รหัสข้อผิดพลาดของHTTP:",
     "Failed to trigger challenges." : "ข้อผิดพลาดที่อาจก่อให้เกิดปัญหา",
     "Please confirm the authentication with your mobile device or enter a valid otp." : "โปรดยืนยันการตรวจสอบกับอุปกรณ์มือถือของคุณหรือป้อน OTP ที่ถูกต้อง",
