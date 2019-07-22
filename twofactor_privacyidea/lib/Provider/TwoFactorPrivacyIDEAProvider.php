@@ -194,17 +194,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 							$this->session->set("pi_hideOTPField", false);
 						} else {
 							for ($i = 0; $i < count($multi_challenge); $i++) {
-								if ($multi_challenge[$i]->type === "u2f") {
-									$this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
-								} elseif ($multi_challenge[$i]->type === "push") {
-									$this->session->set("pi_PUSH_Response", true);
-								} elseif ($multi_challenge[$i]->type === "tiqr") {
-                                    $tiqr_img = $multi_challenge[$i]->attributes->img;
 
-                                    $this->session->set("pi_TIQR_Response", true);
-                                    $this->session->set("pi_TIQR_Image", $tiqr_img);
-								} else {
-									$this->session->set("pi_hideOTPField", false);
+								switch($multi_challenge[$i]->type) {
+									case "u2f":
+										$this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
+										break;
+									case "push":
+										$this->session->set("pi_PUSH_Response", true);
+										break;
+									case "tiqr":
+										$tiqr_img = $multi_challenge[$i]->attributes->img;
+
+										$this->session->set("pi_TIQR_Response", true);
+										$this->session->set("pi_TIQR_Image", $tiqr_img);
+										break;
+									default:
+										$this->session->set("pi_hideOTPField", false);
+
 								}
 							}
 						}
@@ -382,7 +388,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
             if ($body->result->status === true) {
                 if ($pushResponse === true || $tiqrResponse === true) {
-                    $error_message = $this->trans->t("Please confirm the authentication with your mobile device or enter a valid otp.");
+
+                    $error_message = $this->trans->t("Please confirm the authentication with your mobile device.");
 
                     $challenges = $body->result->value->challenges;
                     foreach ($challenges as $challenge) {
