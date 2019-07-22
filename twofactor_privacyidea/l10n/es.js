@@ -7,7 +7,7 @@ OC.L10N.register(
     "The service account credentials are correct!" : "¡Las credenciales de servicio de la cuenta son correctas!",
     "Failed to trigger challenges. Wrong HTTP return code: " : "Error al aplicar los cambios. Código de error HTTP:",
     "Failed to trigger challenges." : "Fallo al realizar retos",
-    "The push token was not yet verified." : "El vale de impulso aún no se ha verificado.",
+    "Please confirm the authentication with your mobile device or enter a valid otp." : "Confirme la autenticación con su dispositivo móvil o ingrese un otp válido.",
     "Check if service account has correct permissions" : "Verifique si el servicio de la cuenta posee los permisos necesarios",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Error al obtener el vale de autentificación. Código de error HTTP:",
     "Failed to fetch authentication token." : "Fallo al descargar el vale de autenticación.",

@@ -194,6 +194,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 							$this->session->set("pi_hideOTPField", false);
 						} else {
 							for ($i = 0; $i < count($multi_challenge); $i++) {
+
 								switch($multi_challenge[$i]->type) {
 									case "u2f":
 										$this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
@@ -209,6 +210,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 										break;
 									default:
 										$this->session->set("pi_hideOTPField", false);
+
 								}
 							}
 						}
@@ -386,6 +388,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
             if ($body->result->status === true) {
                 if ($pushResponse === true || $tiqrResponse === true) {
+
                     $error_message = $this->trans->t("Please confirm the authentication with your mobile device.");
 
                     $challenges = $body->result->value->challenges;
