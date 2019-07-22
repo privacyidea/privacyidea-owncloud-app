@@ -46,6 +46,10 @@ class TriggerChallengesException extends Exception
 
 class TwoFactorPrivacyIDEAProvider implements IProvider
 {
+	// We can enter multiple strings, the version number should start with.
+	private $recommendedPIVersions = array(
+		"3."
+	);
 
     private $httpClientService;
     private $config;
@@ -190,17 +194,21 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 							$this->session->set("pi_hideOTPField", false);
 						} else {
 							for ($i = 0; $i < count($multi_challenge); $i++) {
-								if ($multi_challenge[$i]->type === "u2f") {
-									$this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
-								} elseif ($multi_challenge[$i]->type === "push") {
-									$this->session->set("pi_PUSH_Response", true);
-								} elseif ($multi_challenge[$i]->type === "tiqr") {
-                                    $tiqr_img = $multi_challenge[$i]->attributes->img;
+								switch($multi_challenge[$i]->type) {
+									case "u2f":
+										$this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
+										break;
+									case "push":
+										$this->session->set("pi_PUSH_Response", true);
+										break;
+									case "tiqr":
+										$tiqr_img = $multi_challenge[$i]->attributes->img;
 
-                                    $this->session->set("pi_TIQR_Response", true);
-                                    $this->session->set("pi_TIQR_Image", $tiqr_img);
-								} else {
-									$this->session->set("pi_hideOTPField", false);
+										$this->session->set("pi_TIQR_Response", true);
+										$this->session->set("pi_TIQR_Image", $tiqr_img);
+										break;
+									default:
+										$this->session->set("pi_hideOTPField", false);
 								}
 							}
 						}
@@ -378,7 +386,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
             if ($body->result->status === true) {
                 if ($pushResponse === true || $tiqrResponse === true) {
-                    $error_message = $this->trans->t("Please confirm the authentication with your mobile device or enter a valid otp.");
+                    $error_message = $this->trans->t("Please confirm the authentication with your mobile device.");
 
                     $challenges = $body->result->value->challenges;
                     foreach ($challenges as $challenge) {
@@ -525,11 +533,21 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200) {
                 if ($body->result->status === true) {
+                	$pi_outdated = true;
+                	foreach ($this->recommendedPIVersions as $version) {
+                		if (strpos($body->versionnumber, $version) === 0) {
+                			$pi_outdated = false;
+						}
+					}
+                	if ($pi_outdated) {
+						$this->session->set("pi_outdated", true);
+						$this->log("error", "We recommend to update your privacyIDEA server");
+					}
 					if (in_array("triggerchallenge", $body->result->value->rights)){
 						return $body->result->value->token;
 					} else {
 						$error_message = $this->trans->t("Check if service account has correct permissions");
-						$this->log("error", "[fetchAuthToken} privacyIDEA error message: Missing permissions for service account");
+						$this->log("error", "[fetchAuthToken] privacyIDEA error message: Missing permissions for service account");
 					}
                 }
             }else {
