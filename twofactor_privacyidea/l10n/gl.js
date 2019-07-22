@@ -5,6 +5,7 @@ OC.L10N.register(
     "Failed to authenticate." : "Produciuse un fallo de autenticación",
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "A comunicación con privacyIDEA foi satisfactoria. Porén non foi posíbel autenticar ao usuario.",
     "The service account credentials are correct!" : "As credenciais do servizo da conta son correctas!",
+    "But we recommend to update your privacyIDEA server." : "Mais recomendamoslle que actualice o seu servidor de privacyIDEA.",
     "Failed to trigger challenges. Wrong HTTP return code: " : "Non foi posíbel desencadear desafíos. Código de retorno HTTP incorrecto: ",
     "Failed to trigger challenges." : "Non foi posíbel desencadear desafíos.",
     "Please confirm the authentication with your mobile device or enter a valid otp." : "Confirme a autenticación co seu dispositivo móbil ou insira un OTP (contrasinal dun só uso) válido.",

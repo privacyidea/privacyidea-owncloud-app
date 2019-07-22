@@ -3,6 +3,7 @@
     "Failed to authenticate." : "Αποτυχία πιστοποίησης.",
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "Η επικοινωνία με το διακομιστή privacyIDEA επιτεύχθηκε. Ωστόσο, απέτυχε η πιστοποίηση του χρήστη.",
     "The service account credentials are correct!" : "Τα διαπιστευτήρια για τον λογαριασμό της υπηρεσίας είναι σωστά!",
+    "But we recommend to update your privacyIDEA server." : "Αλλά σας συνιστούμε να ενημερώσετε τον privacyIDEA διακομιστή σας.",
     "Failed to trigger challenges. Wrong HTTP return code: " : "Αποτυχία δημιουργίας προκλήσεων. Κωδικός σφάλματος HTTP: ",
     "Failed to trigger challenges." : "Αποτυχία δημιουργίας προκλήσεων.",
     "Please confirm the authentication with your mobile device or enter a valid otp." : "Παρακαλούμε επιβεβαιώστε την πιστοποίηση με το κινητό σας ή εισάγετε ένα έγκυρη συνθηματικό μια χρήσης (otp).",
