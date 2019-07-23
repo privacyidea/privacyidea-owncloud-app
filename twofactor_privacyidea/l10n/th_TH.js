@@ -8,7 +8,6 @@ OC.L10N.register(
     "But we recommend to update your privacyIDEA server." : "แต่เราขอแนะนำให้อัปเดตเซิร์ฟเวอร์ privacyIDEA ของคุณ",
     "Failed to trigger challenges. Wrong HTTP return code: " : "เรียกทริกเกอร์ไม่สำเร็จ รหัสข้อผิดพลาดของHTTP:",
     "Failed to trigger challenges." : "ข้อผิดพลาดที่อาจก่อให้เกิดปัญหา",
-    "Please confirm the authentication with your mobile device or enter a valid otp." : "โปรดยืนยันการตรวจสอบกับอุปกรณ์มือถือของคุณหรือป้อน OTP ที่ถูกต้อง",
     "Check if service account has correct permissions" : "ตรวจสอบว่าบัญชีบริการมีสิทธิ์ที่ถูกต้อง",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "ไม่สามารถดึงโทเค็นการรับรองความถูกต้อง รหัสข้อผิดพลาดของHTTP:",
     "Failed to fetch authentication token." : "ไม่สามารถดึงข้อมูลการตรวจสอบสิทธิ์ของโทเค็น",
