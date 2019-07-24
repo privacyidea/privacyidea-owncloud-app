@@ -8,6 +8,7 @@ OC.L10N.register(
     "But we recommend to update your privacyIDEA server." : "Wir empfehlen jedoch, Ihren privacyIDEA-Server zu aktualisieren.",
     "Failed to trigger challenges. Wrong HTTP return code: " : "Initiierung der Challenge fehlgeschlagen. Falsche HTTP-Antwort:",
     "Failed to trigger challenges." : "Fehler beim Auslösen der Aufgaben.",
+    "Please confirm the authentication with your mobile device." : "Bitte bestätigen Sie die Authentifizierung mit Ihrem Mobilgerät .",
     "Check if service account has correct permissions" : "Bitte prüfen ob das Service-Konto die richtigen Rechte/Rollen hat",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Empfang des Authentifizierungstokens fehlgeschlagen. Falsche HTTP-Antwort:",
     "Failed to fetch authentication token." : "Fehler beim Empfang des Authentifizierungs-Token.",
