@@ -252,7 +252,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 					$message = $this->triggerChallenges($user->getUID());
 					$this->session->set("pi_message", $message);
 				} catch (TriggerChallengesException $e) {
-					$message = [$e->getMessage()];
+					$message = $e->getMessage();
 				}
 			}
 		} else {
