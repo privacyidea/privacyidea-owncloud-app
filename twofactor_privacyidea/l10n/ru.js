@@ -8,6 +8,7 @@ OC.L10N.register(
     "But we recommend to update your privacyIDEA server." : "Однако рекомендуется обновить ваш сервер privacyIDEA.",
     "Failed to trigger challenges. Wrong HTTP return code: " : "Не удалось запустить вызов. Неверный код возврата HTTP:",
     "Failed to trigger challenges." : "Не удалось запустить вызов.",
+    "Please confirm the authentication with your mobile device." : "Пожалуйста, подтвердите аутентификацию с помощью вашего мобильного устройства.",
     "Check if service account has correct permissions" : "Проверьте, что служебной учётной записи даны надлежащие разрешения",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Не удалось получить токен аутентификации. Неверный код ответа HTTP:",
     "Failed to fetch authentication token." : "Не удалось получить токен аутентификации.",
