@@ -364,7 +364,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $options['body']["signaturedata"] = $signatureData;
                 $options['body']["clientdata"] = $clientData;
             }
-        } else {
+        } else if ($pushResponse || $tiqrResponse) {
             if ($pushResponse) {
                 $this->log("debug", "We are doing a PUSH response.");
             }
