@@ -380,45 +380,53 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $errorCode = 0;
         $res = 0;
 
-        try {
-            $client = $this->httpClientService->newClient();
-            $res = $client->get($url, $options);
-            $body = $res->getBody();
-            $body = json_decode($body);
+        if ($url) {
+            try {
+                $client = $this->httpClientService->newClient();
+                $res = $client->get($url, $options);
+                $body = $res->getBody();
+                $body = json_decode($body);
 
-            if ($body->result->status === true) {
-                if ($pushResponse === true || $tiqrResponse === true) {
+                if ($body->result->status === true) {
+                    if ($pushResponse === true || $tiqrResponse === true) {
 
-                    $error_message = $this->trans->t("Please confirm the authentication with your mobile device.");
+                        $error_message = $this->trans->t("Please confirm the authentication with your mobile device.");
 
-                    $challenges = $body->result->value->challenges;
-                    foreach ($challenges as $challenge) {
-						if ($challenge->otp_received === true && $challenge->otp_valid === true) {
-							$this->session->set("pi_Response_Status", true);
-							return true;
-						}
+                        $challenges = $body->result->value->challenges;
+                        foreach ($challenges as $challenge) {
+                            if ($challenge->otp_received === true && $challenge->otp_valid === true) {
+                                $this->session->set("pi_Response_Status", true);
+                                return true;
+                            }
+                        }
+                    } else {
+                        if ($body->result->value === true) {
+                            return true;
+                        } else {
+                            $error_message = $this->trans->t("Failed to authenticate.");
+                            $errorCode = 1;
+                            $this->log("info", "User failed to authenticate. Wrong OTP value.");
+                        }
                     }
                 } else {
-                    if ($body->result->value === true) {
-                        return true;
-                    } else {
-                        $error_message = $this->trans->t("Failed to authenticate.");
-                        $errorCode = 1;
-                        $this->log("info", "User failed to authenticate. Wrong OTP value.");
-                    }
+                    // status == false
+                    $this->log("error", "[authenticate] privacyIDEA error code: " . $body->result->error->code);
+                    $this->log("error", "[authenticate] privacyIDEA error message: " . $body->result->error->message);
                 }
-            } else {
-                // status == false
-                $this->log("error", "[authenticate] privacyIDEA error code: " . $body->result->error->code);
-                $this->log("error", "[authenticate] privacyIDEA error message: " . $body->result->error->message);
+            } catch (Exception $e) {
+                if ($res !== 0) {
+                    $this->log("error", "[authenticate] HTTP return code: " . $res->getStatusCode());
+                }
+                $this->log("error", "[authenticate] " . $e->getMessage());
+                $this->log("debug", $e);
+                $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
             }
-        } catch (Exception $e) {
-            if ($res !== 0) {
-                $this->log( "error", "[authenticate] HTTP return code: " . $res->getStatusCode() );
-            }
-            $this->log("error", "[authenticate] " . $e->getMessage());
-            $this->log("debug", $e);
-            $error_message = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
+        } else {
+            // We have not gotten any authentication information whatsoever. This code should never be reached, if the
+            // client is sane.
+            $error_message = $this->trans->t("Failed to authenticate.");
+            $errorCode = 1;
+            $this->log("info", "User failed to authenticate. No OTP value.");
         }
         if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')) {
             // This is the behaviour for OC >= 9.2
