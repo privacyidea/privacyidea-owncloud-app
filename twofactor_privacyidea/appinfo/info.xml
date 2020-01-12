@@ -12,10 +12,12 @@ Thus you can assign different authentication objects to your users as second fac
 can now authenticate against your ownCloud installation with e.g. Google Authenticator, 
 the [privacyIDEA Authenticator](https://netknights.it/en/produkte/privacyidea-authenticator-app/)
 Yubikey, U2F tokens, key fob, OTP display cards and much more.
+
+Version 2.6dev1
 	</description>
 	<licence>AGPL</licence>
 	<author>NetKnights GmbH, Cornelius Kölbel</author>
-	<version>2.6dev1</version>
+	<version>2.6dev</version>
 	<namespace>TwoFactor_privacyIDEA</namespace>
 	<category>Security</category>
 	<types>
