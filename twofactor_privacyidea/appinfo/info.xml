@@ -13,7 +13,7 @@ can now authenticate against your ownCloud installation with e.g. Google Authent
 the [privacyIDEA Authenticator](https://netknights.it/en/produkte/privacyidea-authenticator-app/)
 Yubikey, U2F tokens, key fob, OTP display cards and much more.
 
-Version 2.6dev1
+Version 2.6dev2
 	</description>
 	<licence>AGPL</licence>
 	<author>NetKnights GmbH, Cornelius Kölbel</author>
