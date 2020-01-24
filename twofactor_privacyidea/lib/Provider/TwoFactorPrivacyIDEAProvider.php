@@ -372,9 +372,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $this->log("debug", "We are doing a TIQR response.");
             }
 
-            $url = $this->getBaseUrl() . "token/challenges/";
+            $url = $this->getBaseUrl() . "validate/polltransaction";
             $options["body"] = ["transaction_id" => $transaction_id];
-            $options["headers"] = ["authorization" => $this->session->get("pi_authorization")];
         }
 
         $errorCode = 0;
@@ -392,11 +391,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
                         $error_message = $this->trans->t("Please confirm the authentication with your mobile device.");
 
-                        $challenges = $body->result->value->challenges;
-                        foreach ($challenges as $challenge) {
-                            if ($challenge->otp_received === true && $challenge->otp_valid === true) {
+                        if ($body->result->value === true) {
+                            // The challenge has been answered. Now we need to verify it
+                            $client = $this->httpClientService->newClient();
+                            $realm = $this->getAppValue('realm', '');
+                            $options["body"] = ["user" => $username,
+                                "transaction_id" => $transaction_id,
+                                "realm" => $realm,
+                                "pass" => ""];
+                            $res = $client->post($this->getBaseUrl() . "validate/check", $options);
+                            $auth_body = $res->getBody();
+                            $auth_body = json_decode($auth_body);
+                            if ($auth_body->result->status === true && $auth_body->result->value === true) {
                                 $this->session->set("pi_Response_Status", true);
                                 return true;
+                            } else {
+                                // The challenge was answered, but authentication fails.
+                                return false;
                             }
                         }
                     } else {

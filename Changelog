@@ -1,6 +1,8 @@
-2.6
+2.6, 2020-01-XX
 
 * Added support for the PUSH token.
+  Use the new challege verification mechanism
+  This feature requires privacyIDEA version 3.2 or higher
 
 2.5.2
 
