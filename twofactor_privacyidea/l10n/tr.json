@@ -20,6 +20,8 @@
     "\n                            Sets timeout to privacyIDEA for login in seconds.\n                        " : "\n                            privacyIDEA ile giriş için saniye süresi sınırı ayarlayın\n                        ",
     "Include groups" : "Grupları dahil et",
     "Exclude groups" : "Grupları hariç tut",
+    "\n\t\t                    If include is selected, just the groups in this field need to do 2FA.\n\t\t                " : "\n\t\t                    Eğer dahil et seçiliyse, yalnızca bu alandaki gruplar ikincil doğrulama yapmak zorunda olacak.\n\t\t                ",
+    "\n\t\t                    If you select exclude, these groups can use 1FA (all others need 2FA).\n\t\t                " : "\n\t\t                    Eğer hariç bırak seçiliyse, bu alandaki gruplar ikincil doğrulama yapmak zorunda olmayacak (tüm diğer gruplar ikincil doğrulamayı kullanmak zorunda).\n\t\t                ",
     "\n\t\t                    Exclude ip addresses\n\t\t                " : "\n\t\t                    Hariç tutulan IP adresleri\n\t\t                ",
     "\n\t\t                    You can either add single IPs like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15\n\t\t                " : "\n\t\t                    10.0.1.12,10.0.1.13 gibi tek bir IP, 10.0.1.12-10.0.1.113 gibi bir aralık or ya da 10.0.1.12-10.0.1.113,192.168.0.15 gibi kombinasyonlar ekleyebilirsiniz.\n\t\t                ",
     "User Realm" : "Kullanıcı Alanı",
