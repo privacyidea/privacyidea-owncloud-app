@@ -4,14 +4,14 @@ script('twofactor_privacyidea', 'settings-admin');
 
 <div class="section" id="privacyIDEA">
     <h2 style="display: inline-block">
-    <span style="float: left"><?php p($l->t('privacyIDEA 2FA')); ?></span>
-    <a target="_blank" rel="noreferrer" class="icon-info svg"
-       title="<?php p($l->t('Open documentation')); ?>"
-       href="http://privacyidea.readthedocs.io"></a></h2>
+        <span style="float: left"><?php p($l->t('privacyIDEA 2FA')); ?></span>
+        <a target="_blank" rel="noreferrer" class="icon-info svg"
+           title="<?php p($l->t('Open documentation')); ?>"
+           href="http://privacyidea.readthedocs.io"></a></h2>
     <span id="pi_settings_msg" class="msg"></span>
     <p>
         <em>
-			<?php p($l->t('
+            <?php p($l->t('
                 In a second step of authentication the user is asked to provide a one
                 time password. The users devices are managed in privacyIDEA. The
                 authentication request is forwarded to privacyIDEA.
@@ -31,7 +31,7 @@ script('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-	                    <?php p($l->t('
+                        <?php p($l->t('
                             Before activating two factor authentication with privacyIDEA, please asure, that the connection to
                             your privacyIDEA-server is configured correctly.
                         ')); ?>
@@ -63,7 +63,7 @@ script('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-		                <?php p($l->t('
+                        <?php p($l->t('
                             Sets timeout to privacyIDEA for login in seconds.
                         ')); ?>
                     </em>
@@ -82,11 +82,11 @@ script('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-				        <?php p($l->t('
+                        <?php p($l->t('
 		                    If include is selected, just the groups in this field need to do 2FA.
 		                ')); ?>
                         <br>
-				        <?php p($l->t('
+                        <?php p($l->t('
 		                    If you select exclude, these groups can use 1FA (all others need 2FA).
 		                ')); ?>
                     </em>
@@ -94,7 +94,7 @@ script('twofactor_privacyidea', 'settings-admin');
             </tr>
             <tr>
                 <td>
-	                <?php p($l->t('
+                    <?php p($l->t('
 		                    Exclude ip addresses
 		                ')); ?>
                 </td>
@@ -103,7 +103,7 @@ script('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-				        <?php p($l->t('
+                        <?php p($l->t('
 		                    You can either add single IPs like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15
 		                ')); ?>
                     </em>
@@ -118,24 +118,24 @@ script('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-		                <?php p($l->t('
+                        <?php p($l->t('
                     Select the user realm, if it is not the default one.
                 ')); ?>
                     </em>
                 </td>
             </tr>
         </table>
-            <input id="checkssl" type="checkbox" class="checkbox">
-            <label for="checkssl">
-                <?php p($l->t('
+        <input id="checkssl" type="checkbox" class="checkbox">
+        <label for="checkssl">
+            <?php p($l->t('
                     Verify the SSL certificate.
                 ')); ?>
-                <em>
-                    <?php p($l->t('
+            <em>
+                <?php p($l->t('
                         Do not uncheck this in productive environments!
                     ')); ?>
-                </em>
-            </label>
+            </em>
+        </label>
         </p>
 
         <p>
@@ -153,13 +153,13 @@ script('twofactor_privacyidea', 'settings-admin');
         </h3>
         <p>
             <?php p($l->t('Test Authentication by supplying username and password that are checked against privacyIDEA:')); ?>
-            <table>
+        <table>
             <tr>
                 <td>
                     <label for="pitestauthentication_user"><?php p($l->t('User')); ?></label> &nbsp;
                 </td>
                 <td>
-                    <input type="text" id="pitestauthentication_user" size="40" />
+                    <input type="text" id="pitestauthentication_user" size="40"/>
                 </td>
             </tr>
             <tr>
@@ -167,29 +167,37 @@ script('twofactor_privacyidea', 'settings-admin');
                     <label for="pitestauthentication_password"><?php p($l->t('Password')); ?></label> &nbsp;
                 </td>
                 <td>
-                    <input type="password" id="pitestauthentication_password" size="40" />
+                    <input type="password" id="pitestauthentication_password" size="40"/>
                 </td>
             </tr>
-            </table>
-            <input id="pitestauthentication" type="button" value="<?php p($l->t('Test')); ?>" />
-            <span id="pitestauthentication_msg" class="msg"></span>
+        </table>
+        <input id="pitestauthentication" type="button" value="<?php p($l->t('Test')); ?>"/>
+        <span id="pitestauthentication_msg" class="msg"></span>
         </p>
         <hr>
         <h3>
             <?php p($l->t('Challenge Response')); ?>
         </h3>
+
         <p>
             <input id="triggerchallenges" type="checkbox" class="checkbox">
             <label for="triggerchallenges">
                 <?php p($l->t('Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens.')); ?>
             </label>
         </p>
-        <div id="piserviceaccount_credentials">
 
+        <p>
+            <input id="passOnNoToken" type="checkbox" class="checkbox">
+            <label for="passOnNoToken">
+                <?php p($l->t('Let the user log in if no token is found in privacyIDEA.')); ?>
+            </label>
+        </p>
+
+        <div id="piserviceaccount_credentials">
             <table>
                 <tr>
                     <td>
-                        <label for="piserviceaccount_user"><?php p($l->t('Username of privacyIDEA service account')); ?></label> &nbsp;
+                        <label for="piserviceaccount_user"><?php p($l->t('Username of privacyIDEA service account')); ?> </label>&nbsp;
                     </td>
                     <td>
                         <input id="piserviceaccount_user" type="text" size="40"/>
@@ -197,15 +205,17 @@ script('twofactor_privacyidea', 'settings-admin');
                 </tr>
                 <tr>
                     <td>
-                        <label for="piserviceaccount_password"><?php p($l->t('Password of privacyIDEA service account')); ?></label> &nbsp;
+                        <label for="piserviceaccount_password"><?php p($l->t('Password of privacyIDEA service account')); ?></label>
+                        &nbsp;
                     </td>
                     <td>
-                        <input id="piserviceaccount_password" type="password" size="40" autocomplete="new-password" />
+                        <input id="piserviceaccount_password" type="password" size="40" autocomplete="new-password"/>
                     </td>
                 </tr>
             </table>
-            <input id="piserviceaccount_test" type="button" value="<?php p($l->t('Check Credentials')); ?>" />
+            <input id="piserviceaccount_test" type="button" value="<?php p($l->t('Check Credentials')); ?>"/>
             <span id="piserviceaccount_msg" class="msg"></span>
         </div>
+
     </div>
 </div>

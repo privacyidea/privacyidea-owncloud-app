@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  */
+
 namespace OCA\TwoFactor_privacyIDEA\Provider;
 
 use OCP\IUser;
@@ -29,6 +30,7 @@ use OCP\IConfig;
 use OCP\IRequest;
 use OCP\ISession;
 use Exception;
+
 // For OC < 9.2 the TwoFactorException does not exist. So we need to handle this in the method verifyChallenge
 use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 use OCP\Authentication\TwoFactorAuth\IProvider;
@@ -46,10 +48,10 @@ class TriggerChallengesException extends Exception
 
 class TwoFactorPrivacyIDEAProvider implements IProvider
 {
-	// We can enter multiple strings, the version number should start with.
-	private $recommendedPIVersions = array(
-		"3."
-	);
+    // We can enter multiple strings, the version number should start with.
+    private $recommendedPIVersions = array(
+        "3."
+    );
 
     private $httpClientService;
     private $config;
@@ -118,16 +120,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
     private function log($level, $message)
     {
-    	$context = ["app" => "privacyIDEA"];
-    	if($level === 'debug'){
-    		return $this->logger->debug($message, $context);
-	    }
-	    if($level === 'info'){
-    		return $this->logger->info($message, $context);
-	    }
-	    if($level === 'error'){
-    		return $this->logger->error($message, $context);
-	    }
+        $context = ["app" => "privacyIDEA"];
+        if ($level === 'debug') {
+            return $this->logger->debug($message, $context);
+        }
+        if ($level === 'info') {
+            return $this->logger->info($message, $context);
+        }
+        if ($level === 'error') {
+            return $this->logger->error($message, $context);
+        }
     }
 
     /**
@@ -156,14 +158,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * Ask privacyIDEA to trigger all challenges for a given username via
      * the /validate/triggerchallenge API request.
      * If the request was successful, return a list of messages from privacyIDEA's response.
-     * If the request failed for any reason, a TriggerChallengesException is raised.
+     * If the request failed with HTTP Code 400 and passOnNoToken is activated, pi_no_auth_required is set to indicate that the
+     * authentication can be skipped. Returns an info string in this case that is displayed instead of the message.
+     * Otherwise, if the request failed for any reason, a TriggerChallengesException is raised.
      *
      * @param string $username user for which privacyIDEA should trigger challenges
-     * @return string[]
+     * @return string|string[]
      * @throws TriggerChallengesException
      */
     private function triggerChallenges($username)
     {
+        $passOnNoToken = $this->getAppValue('passOnNoToken', false);
+
         $this->session->set("pi_hideOTPField", true);
         $error_message = "";
         $url = $this->getBaseUrl() . "validate/triggerchallenge";
@@ -179,7 +185,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $options["body"] = ["user" => $username, "realm" => $realm];
             $options["headers"] = ["PI-Authorization" => $token];
             $result = $client->post($url, $options);
-	        $body = json_decode($result->getBody());
+            $body = json_decode($result->getBody());
             if ($result->getStatusCode() == 200) {
                 if ($body->result->status === true) {
                     $detail = $body->detail;
@@ -191,46 +197,50 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     if (property_exists($detail, "multi_challenge")) {
                         $multi_challenge = $detail->multi_challenge;
                         if (count($multi_challenge) === 0) {
-							$this->session->set("pi_hideOTPField", false);
-						} else {
-							for ($i = 0; $i < count($multi_challenge); $i++) {
+                            $this->session->set("pi_hideOTPField", false);
+                        } else {
+                            for ($i = 0; $i < count($multi_challenge); $i++) {
 
-								switch($multi_challenge[$i]->type) {
-									case "u2f":
-										$this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
-										break;
-									case "push":
-										$this->session->set("pi_PUSH_Response", true);
-										break;
-									case "tiqr":
-										$tiqr_img = $multi_challenge[$i]->attributes->img;
+                                switch ($multi_challenge[$i]->type) {
+                                    case "u2f":
+                                        $this->u2fSignRequest = $multi_challenge[$i]->attributes->u2fSignRequest;
+                                        break;
+                                    case "push":
+                                        $this->session->set("pi_PUSH_Response", true);
+                                        break;
+                                    case "tiqr":
+                                        $tiqr_img = $multi_challenge[$i]->attributes->img;
 
-										$this->session->set("pi_TIQR_Response", true);
-										$this->session->set("pi_TIQR_Image", $tiqr_img);
-										break;
-									default:
-										$this->session->set("pi_hideOTPField", false);
-
-								}
-							}
-						}
+                                        $this->session->set("pi_TIQR_Response", true);
+                                        $this->session->set("pi_TIQR_Image", $tiqr_img);
+                                        break;
+                                    default:
+                                        $this->session->set("pi_hideOTPField", false);
+                                }
+                            }
+                        }
                     }
 
                     return $detail->message;
                 }
+            } elseif ($result->getStatusCode() == 400 && $passOnNoToken) {
+                $this->session->set("pi_no_auth_required", true);
+                $this->session->set("autoSubmit", true);
+                $this->log("debug", "PassOnNoToken enabled, skipping 2FA...");
+                return "No token found for your user, Login is still enabled.";
             } else {
                 $error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code: " . $result->getStatusCode());
-	            $this->log("error", "[triggerChallenges] privacyIDEA error code: " . $body->result->error->code);
-	            $this->log("error", "[triggerChallenges] privacyIDEA error message: " . $body->result->error->message);
+                $this->log("error", "[triggerChallenges] privacyIDEA error code: " . $body->result->error->code);
+                $this->log("error", "[triggerChallenges] privacyIDEA error message: " . $body->result->error->message);
             }
         } catch (AdminAuthException $e) {
             $error_message = $e->getMessage();
         } catch (Exception $e) {
-			if($result !== 0) {
-				$this->log("error", "[triggerChallenges] HTTP return code: " . $result->getStatusCode());
-			}
-			$this->log("error", "[triggerChallenges] " . $e->getMessage());
-			$this->log("debug", $e);
+            if ($result !== 0) {
+                $this->log("error", "[triggerChallenges] HTTP return code: " . $result->getStatusCode());
+            }
+            $this->log("error", "[triggerChallenges] " . $e->getMessage());
+            $this->log("debug", $e);
             $error_message = $this->trans->t("Failed to trigger challenges.");
         }
         throw new TriggerChallengesException($error_message);
@@ -244,23 +254,26 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function getTemplate(IUser $user)
     {
-		$transactionId = $this->session->get("pi_transaction_id");
-		if (!$transactionId) {
-			$message = null;
-			if ($this->getAppValue('triggerchallenges', '') === '1') {
-				try {
-					$message = $this->triggerChallenges($user->getUID());
-					$this->session->set("pi_message", $message);
-				} catch (TriggerChallengesException $e) {
-					$message = $e->getMessage();
-				}
-			}
-		} else {
-			$message = $this->session->get("pi_message");
-		}
+        $transactionId = $this->session->get("pi_transaction_id");
+        if (!$transactionId) {
+            $message = null;
+            if ($this->getAppValue('triggerchallenges', '') === '1') {
+                try {
+                    $message = $this->triggerChallenges($user->getUID());
+                    // Check if the user was actually found when triggering challenges
+                    // If not and the setting "passOnNoToken" is set, the user can login without 2FA
+                    $this->session->set("pi_message", $message);
+                } catch (TriggerChallengesException $e) {
+                    $message = $e->getMessage();
+                }
+            }
+        } else {
+            $message = $this->session->get("pi_message");
+        }
 
         $template = new Template('twofactor_privacyidea', 'challenge');
         $template->assign("message", $message);
+        $template->assign("autoSubmit", $this->session->get("autoSubmit"));
         $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
         $template->assign("u2fSignRequest", $this->u2fSignRequest);
         $template->assign("detail", $this->detail);
@@ -326,7 +339,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      *         could be found, but the password was incorrect).
      * @throws TwoFactorException
      */
-    public function authenticate($username, $password) {
+    public function authenticate($username, $password)
+    {
+        $this->log("debug", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        $this->log("debug", "pi_no_auth_required= " . $this->session->get("pi_no_auth_required", false));
+        if ($this->session->get("pi_no_auth_required", false)) {
+            return true;
+        }
+
         $error_message = "";
 
         // Read config
@@ -337,6 +357,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         $pushResponse = $this->session->get("pi_PUSH_Response");
         $tiqrResponse = $this->session->get("pi_TIQR_Response");
+
         if ($password || $signatureData) {
             $pushResponse = false;
             $tiqrResponse = false;
@@ -448,16 +469,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
     }
 
-	public function getClientIP(){
-		if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)){
-			return  $_SERVER["HTTP_X_FORWARDED_FOR"];
-		}else if (array_key_exists('REMOTE_ADDR', $_SERVER)) {
-			return $_SERVER["REMOTE_ADDR"];
-		}else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
-			return $_SERVER["HTTP_CLIENT_IP"];
-		}
-		return '';
-	}
+    public function getClientIP()
+    {
+        if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)) {
+            return $_SERVER["HTTP_X_FORWARDED_FOR"];
+        } else if (array_key_exists('REMOTE_ADDR', $_SERVER)) {
+            return $_SERVER["REMOTE_ADDR"];
+        } else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
+            return $_SERVER["HTTP_CLIENT_IP"];
+        }
+        return '';
+    }
 
     /**
      * Decides whether 2FA is enabled for the given user
@@ -470,62 +492,64 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function isTwoFactorAuthEnabledForUser(IUser $user)
     {
+        $this->log("debug", "ISTWOFACTORAUTHENABLED");
+
         $piactive = $this->getAppValue('piactive', '');
         $piexcludegroups = $this->getAppValue('piexcludegroups', '');
-        $piexclude= $this->getAppValue('piexclude', '1');
-	    $piexcludeips = $this->getAppValue('piexcludeips', '');
+        $piexclude = $this->getAppValue('piexclude', '1');
+        $piexcludeips = $this->getAppValue('piexcludeips', '');
         if ($piactive === "1") {
             // 2FA is basically enabled
-			if ($piexcludeips) {
-				// We can exclude clients with specified ips from 2FA
-				$ipaddresses = explode(",", $piexcludeips);
-				$clientIP = ip2long($this->getClientIP());
-				foreach ( $ipaddresses as $ipaddress ) {
-					if (strpos($ipaddress, '-') !== false) {
-						$range = explode('-', $ipaddress);
-						$startIP = ip2long($range[0]);
-						$endIP = ip2long($range[1]);
-						if ($clientIP >= $startIP && $clientIP <= $endIP) {
-							return false;
-						}
-					} else {
-						if ($clientIP === ip2long($ipaddress)) {
-							return false;
-						}
-					}
-				}
-			}
+            if ($piexcludeips) {
+                // We can exclude clients with specified ips from 2FA
+                $ipaddresses = explode(",", $piexcludeips);
+                $clientIP = ip2long($this->getClientIP());
+                foreach ($ipaddresses as $ipaddress) {
+                    if (strpos($ipaddress, '-') !== false) {
+                        $range = explode('-', $ipaddress);
+                        $startIP = ip2long($range[0]);
+                        $endIP = ip2long($range[1]);
+                        if ($clientIP >= $startIP && $clientIP <= $endIP) {
+                            return false;
+                        }
+                    } else {
+                        if ($clientIP === ip2long($ipaddress)) {
+                            return false;
+                        }
+                    }
+                }
+            }
             if ($piexcludegroups) {
                 // We can exclude groups from the 2FA
                 $piexcludegroupsCSV = str_replace("|", ",", $piexcludegroups);
                 $groups = explode(",", $piexcludegroupsCSV);
-                $checkEnabled;
-                foreach($groups as $group) {
-					if($this->groupManager->isInGroup($user->getUID(), trim($group))) {
-						$this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is in group " . $group . ".");
-						if($piexclude === "1"){
-							$this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User does not need 2FA).");
-							return false;
-						}
-						if($piexclude === "0") {
-							$this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User needs 2FA).");
-							return true;
-						}
-					}
-					$this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is not in group " . $group . ".");
-					if($piexclude === "1"){
-						$this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User may need 2FA).");
-						$checkEnabled = true;
-					}
-					if($piexclude === "0"){
-						$this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User may not need 2FA).");
-						$checkEnabled = false;
-					}
-                };
-                if(!$checkEnabled){
-                	return false;
+                $checkEnabled = false;
+                foreach ($groups as $group) {
+                    if ($this->groupManager->isInGroup($user->getUID(), trim($group))) {
+                        $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is in group " . $group . ".");
+                        if ($piexclude === "1") {
+                            $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User does not need 2FA).");
+                            return false;
+                        }
+                        if ($piexclude === "0") {
+                            $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User needs 2FA).");
+                            return true;
+                        }
+                    }
+                    $this->log("debug", "[isTwoFactorEnabledForUser] The user " . $user->getUID() . " is not in group " . $group . ".");
+                    if ($piexclude === "1") {
+                        $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is excluded (User may need 2FA).");
+                        $checkEnabled = true;
+                    }
+                    if ($piexclude === "0") {
+                        $this->log("debug", "[isTwoFactorEnabledForUser] The group " . $group . " is included (User may not need 2FA).");
+                        $checkEnabled = false;
+                    }
                 }
-            };
+                if (!$checkEnabled) {
+                    return false;
+                }
+            }
             $this->log("debug", "[isTwoFactorAuthEnabledForUser] User needs 2FA");
             return true;
         }
@@ -544,6 +568,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function fetchAuthToken($username, $password)
     {
+        $this->log("debug", "FETCH AUTH TOKEN");
         $error_message = "";
         $url = $this->getBaseUrl() . "auth";
         $options = $this->getClientOptions();
@@ -555,34 +580,34 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200) {
                 if ($body->result->status === true) {
-                	$pi_outdated = true;
-                	foreach ($this->recommendedPIVersions as $version) {
-                		if (strpos($body->versionnumber, $version) === 0) {
-                			$pi_outdated = false;
-						}
-					}
-                	if ($pi_outdated) {
-						$this->session->set("pi_outdated", true);
-						$this->log("error", "We recommend to update your privacyIDEA server");
-					}
-					if (in_array("triggerchallenge", $body->result->value->rights)){
-						return $body->result->value->token;
-					} else {
-						$error_message = $this->trans->t("Check if service account has correct permissions");
-						$this->log("error", "[fetchAuthToken] privacyIDEA error message: Missing permissions for service account");
-					}
+                    $pi_outdated = true;
+                    foreach ($this->recommendedPIVersions as $version) {
+                        if (strpos($body->versionnumber, $version) === 0) {
+                            $pi_outdated = false;
+                        }
+                    }
+                    if ($pi_outdated) {
+                        $this->session->set("pi_outdated", true);
+                        $this->log("error", "We recommend to update your privacyIDEA server");
+                    }
+                    if (in_array("triggerchallenge", $body->result->value->rights)) {
+                        return $body->result->value->token;
+                    } else {
+                        $error_message = $this->trans->t("Check if service account has correct permissions");
+                        $this->log("error", "[fetchAuthToken] privacyIDEA error message: Missing permissions for service account");
+                    }
                 }
-            }else {
-	            $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
-	            $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
-	            $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
+            } else {
+                $error_message = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
+                $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
+                $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
             }
         } catch (Exception $e) {
-			if ($result !== 0) {
-				$this->log( "error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode() );
-			}
-			$this->log("error", "[fetchAuthToken] " . $e->getMessage());
-			$this->log("debug", $e);
+            if ($result !== 0) {
+                $this->log("error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode());
+            }
+            $this->log("error", "[fetchAuthToken] " . $e->getMessage());
+            $this->log("debug", $e);
             $error_message = $this->trans->t("Failed to fetch authentication token.");
         }
         throw new AdminAuthException($error_message);
