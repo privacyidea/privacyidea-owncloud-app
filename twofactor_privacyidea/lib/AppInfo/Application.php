@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  */
+
 namespace OCA\TwoFactor_privacyIDEA\AppInfo;
 
 use OCA\TwoFactor_privacyIDEA\Controller\SettingsController;
@@ -42,7 +43,7 @@ class Application extends \OCP\AppFramework\App
                 $server->getRequest(),
                 $server->getL10N($c->getAppName()),
                 $server->getConfig(),
-				$server->getSession()
+                $server->getSession()
             );
         });
     }
@@ -55,6 +56,4 @@ class Application extends \OCP\AppFramework\App
         App::registerAdmin('twofactor_privacyidea',
             'settings/settings-admin');
     }
-
-
 }

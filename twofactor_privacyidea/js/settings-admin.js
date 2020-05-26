@@ -1,4 +1,4 @@
- /**
+/**
  * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
  * @license AGPL-3.0
  *
@@ -22,7 +22,7 @@ $(document).ready(function () {
     /* Use the /getValue API call to retrieve a string value from the app config */
     var getValue = function (key, callback) {
         $.get(OC.generateUrl(BASE_URL + 'getValue'), {key: key}).done(
-            function(result) {
+            function (result) {
                 callback(result);
             }
         );
@@ -52,9 +52,9 @@ $(document).ready(function () {
 
     /* privacyIDEA instance URL */
     getValue("url", function (url) {
-       $("#piSettings #piurl").val(url);
+        $("#piSettings #piurl").val(url);
     });
-    $("#piSettings #piurl").change(function() {
+    $("#piSettings #piurl").change(function () {
         // We simple save the value always ;-)
         console.log("pi: Saving URL");
         var value = $("#piSettings #piurl").val();
@@ -67,16 +67,16 @@ $(document).ready(function () {
         /* NOTE: We check for `!== "0"` instead of `=== "1"` here in order to be consistent with the Provider. */
         $("#piSettings #checkssl").prop('checked', checkssl !== "0");
     });
-    $("#piSettings #checkssl").change(function() {
+    $("#piSettings #checkssl").change(function () {
         setValue("checkssl", $(this).is(":checked") ? "1" : "0");
     });
 
     /* Activate privacyIDEA */
-    getValue("piactive", function(piactive) {
+    getValue("piactive", function (piactive) {
         $("#piSettings #piactive").prop('checked', piactive === "1");
     });
-    $('#piSettings #piactive').change(function() {
-       setValue("piactive", $(this).is(":checked") ? "1" : "0");
+    $('#piSettings #piactive').change(function () {
+        setValue("piactive", $(this).is(":checked") ? "1" : "0");
     });
 
     getValue("pitimeout", function (pitimeout) {
@@ -92,7 +92,7 @@ $(document).ready(function () {
     getValue("noproxy", function (noproxy) {
         $("#piSettings #noproxy").prop('checked', noproxy === "1");
     });
-    $("#piSettings #noproxy").change(function() {
+    $("#piSettings #noproxy").change(function () {
         setValue("noproxy", $(this).is(":checked") ? "1" : "0");
     });
 
@@ -100,7 +100,7 @@ $(document).ready(function () {
     getValue("realm", function (realm) {
         $("#piSettings #pirealm").val(realm);
     });
-    $("#piSettings #pirealm").change(function() {
+    $("#piSettings #pirealm").change(function () {
         // We simple save the value always ;-)
         console.log("pi: Saving Realm");
         var value = $("#piSettings #pirealm").val();
@@ -110,11 +110,11 @@ $(document).ready(function () {
 
     /* Enable/Disable challenge triggering */
     var displayServerCredentials = function (show) {
-        if(show) {
+        if (show) {
             $("#piserviceaccount_credentials").show();
         } else {
             $("#piserviceaccount_credentials").hide();
-        };
+        }
     };
 
     getValue("triggerchallenges", function (trigger) {
@@ -123,40 +123,53 @@ $(document).ready(function () {
         displayServerCredentials(value);
     });
 
-    $("#piSettings #triggerchallenges").change(function() {
+    $("#piSettings #triggerchallenges").change(function () {
         var checked = $(this).is(":checked");
         setValue("triggerchallenges", checked ? "1" : "0");
         displayServerCredentials(checked);
     });
-    
+
+    /* Let the user log in if no token is found */
+    getValue("passOnNoToken", function (trigger) {
+        var value = (trigger === "1");
+        $("#piSettings #passOnNoToken").prop('checked', value);
+        displayServerCredentials(value);
+    });
+
+    $("#piSettings #passOnNoToken").change(function () {
+        var checked = $(this).is(":checked");
+        setValue("passOnNoToken", checked ? "1" : "0");
+        //displayServerCredentials(checked);
+    });
+
     /* in or exclude owncloud user groups */
     radioinclude = document.getElementById('piinclude');
     radioexclude = document.getElementById('piexclude');
     getValue("piexclude", function (piexclude) {
-        $("#piSettings #piinclude").prop('checked', piexclude ==="0");
-        $("#piSettings #piexclude").prop('checked', piexclude ==="1");
+        $("#piSettings #piinclude").prop('checked', piexclude === "0");
+        $("#piSettings #piexclude").prop('checked', piexclude === "1");
     })
 
     $("#piSettings #piinclude").change(function () {
-        if(radioinclude.checked){
+        if (radioinclude.checked) {
             setValue("piexclude", "0");
         }
     })
     $("#piSettings #piexclude").change(function () {
-        if(radioexclude.checked){
+        if (radioexclude.checked) {
             setValue("piexclude", "1");
         }
     })
 
     getValue("piexcludegroups", function (excludegroups) {
-       $("#piSettings #piexcludegroups").val(excludegroups);
+        $("#piSettings #piexcludegroups").val(excludegroups);
         OC.Settings.setupGroupsSelect($('#piSettings #piexcludegroups'));
     });
 
     $("#piSettings #piexcludegroups").change(function () {
-       console.log("pi: Saving Exclude groups");
-       var value = $("#piSettings #piexcludegroups").val();
-       setValue("piexcludegroups", value);
+        console.log("pi: Saving Exclude groups");
+        var value = $("#piSettings #piexcludegroups").val();
+        setValue("piexcludegroups", value);
     });
 
     getValue("piexcludeips", function (excludeips) {
