@@ -187,8 +187,8 @@ script('twofactor_privacyidea', 'settings-admin');
         </p>
 
         <p>
-            <input id="passOnNoToken" type="checkbox" class="checkbox">
-            <label for="passOnNoToken">
+            <input id="passOnNoUser" type="checkbox" class="checkbox">
+            <label for="passOnNoUser">
                 <?php p($l->t('Let the user log in if the user is not found in privacyIDEA.')); ?>
             </label>
         </p>

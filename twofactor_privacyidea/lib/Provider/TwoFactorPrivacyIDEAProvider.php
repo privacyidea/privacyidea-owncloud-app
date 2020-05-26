@@ -168,7 +168,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function triggerChallenges($username)
     {
-        $passOnNoToken = $this->getAppValue('passOnNoToken', false);
+        $passOnNoToken = $this->getAppValue('passOnNoUser', false);
 
         $this->session->set("pi_hideOTPField", true);
         $error_message = "";
