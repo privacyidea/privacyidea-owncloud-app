@@ -224,10 +224,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     return $detail->message;
                 }
             } elseif ($result->getStatusCode() == 400 && $passOnNoToken) {
-                $this->session->set("pi_no_auth_required", true);
-                $this->session->set("autoSubmit", true);
-                $this->log("debug", "PassOnNoToken enabled, skipping 2FA...");
-                return "No token found for your user, Login is still enabled.";
+                if ($body->result->error != null) {
+                    if ($body->result->error->code == 904) {
+                        $this->session->set("pi_no_auth_required", true);
+                        $this->session->set("autoSubmit", true);
+                        $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
+                        return "No token found for your user, Login is still enabled.";
+                    }
+                }
+                $error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code: " . $result->getStatusCode());
             } else {
                 $error_message = $this->trans->t("Failed to trigger challenges. Wrong HTTP return code: " . $result->getStatusCode());
                 $this->log("error", "[triggerChallenges] privacyIDEA error code: " . $body->result->error->code);
@@ -341,8 +346,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function authenticate($username, $password)
     {
-        $this->log("debug", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-        $this->log("debug", "pi_no_auth_required= " . $this->session->get("pi_no_auth_required", false));
         if ($this->session->get("pi_no_auth_required", false)) {
             return true;
         }
@@ -492,8 +495,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function isTwoFactorAuthEnabledForUser(IUser $user)
     {
-        $this->log("debug", "ISTWOFACTORAUTHENABLED");
-
         $piactive = $this->getAppValue('piactive', '');
         $piexcludegroups = $this->getAppValue('piexcludegroups', '');
         $piexclude = $this->getAppValue('piexclude', '1');
@@ -568,7 +569,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function fetchAuthToken($username, $password)
     {
-        $this->log("debug", "FETCH AUTH TOKEN");
         $error_message = "";
         $url = $this->getBaseUrl() . "auth";
         $options = $this->getClientOptions();
