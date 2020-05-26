@@ -129,16 +129,16 @@ $(document).ready(function () {
         displayServerCredentials(checked);
     });
 
-    /* Let the user log in if no token is found */
-    getValue("passOnNoToken", function (trigger) {
+    /* Let the user log in if the user is not found in privacyIDEA */
+    getValue("passOnNoUser", function (trigger) {
         var value = (trigger === "1");
-        $("#piSettings #passOnNoToken").prop('checked', value);
+        $("#piSettings #passOnNoUser").prop('checked', value);
         displayServerCredentials(value);
     });
 
-    $("#piSettings #passOnNoToken").change(function () {
+    $("#piSettings #passOnNoUser").change(function () {
         var checked = $(this).is(":checked");
-        setValue("passOnNoToken", checked ? "1" : "0");
+        setValue("passOnNoUser", checked ? "1" : "0");
         //displayServerCredentials(checked);
     });
 
