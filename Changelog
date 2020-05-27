@@ -1,3 +1,10 @@
+2.7, 2020-05-XX
+
+* Add PassOnNoUser
+  If the user, who tries to authenticate does not exist in privacyIDEA
+  the user can authenticate to ownCloud without 2nd factor.
+  This only works with triggerchallenge.
+
 2.6, 2020-01-25
 
 * Added support for the PUSH token.
