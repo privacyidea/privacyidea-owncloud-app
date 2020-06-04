@@ -37,6 +37,7 @@ OC.L10N.register(
     "User" : "Përdorues",
     "Password" : "Fjalëkalim",
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "Prodho <em>challenges</em> për token <em>challenge-response</em>. I vini shenjë kësaj, nëse përdorni, f.v., token SMS ose E-Mail.",
+    "Let the user log in if the user is not found in privacyIDEA." : "Lejoje përdoruesin të futet, nëse përdoruesi s’gjendet te privacyIDEA.",
     "Username of privacyIDEA service account" : "Emër Përdoruesi për llogarinë në shërbimin privacyIDEA",
     "Password of privacyIDEA service account" : "Fjalëkalim për llogarinë në shërbimin privacyIDEA",
     "Check Credentials" : "Kontrolloni Kredencialet"
