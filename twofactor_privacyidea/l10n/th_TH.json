@@ -38,6 +38,7 @@
     "Password" : "รหัสผ่าน",
     "Challenge Response" : "ทดสอบการตอบสนอง",
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "เลือกตัวเลือกนี้หากคุณใช้โทเค็นทดสอบการตอบสนอง เช่น SMS หรืออีเมลโทเค็น",
+    "Let the user log in if the user is not found in privacyIDEA." : "อนุญาตให้ผู้ใช้ล็อกอินหากไม่พบผู้ใช้ใน privacyIDEA",
     "Username of privacyIDEA service account" : "ชื่อผู้ใช้ของบัญชีบริการ privacyIDEA",
     "Password of privacyIDEA service account" : "รหัสผ่านของบัญชีบริการ privacyIDEA",
     "Check Credentials" : "ตรวจสอบหนังสือรับรอง"
