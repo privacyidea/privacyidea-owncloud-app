@@ -40,6 +40,7 @@ OC.L10N.register(
     "Password" : "Passwort",
     "Challenge Response" : "Challenge-Response",
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "Challenges für Challenge-Response-Token auslösen. Aktivieren Sie diese Konfiguration, wenn Sie bspw. SMS oder E-Mail-Token verwenden möchten.",
+    "Let the user log in if the user is not found in privacyIDEA." : "Lassen Sie den Benutzer einloggen, obwohl er nicht in privacyIDEA gefunden wird.",
     "Username of privacyIDEA service account" : "Benutzername des privacyIDEA-Dienstekontos",
     "Password of privacyIDEA service account" : "Passwort des privacyIDEA-Dienstekontos",
     "Check Credentials" : "Überprüfe die Login-Daten"
