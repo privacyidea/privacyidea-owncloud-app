@@ -38,6 +38,7 @@
     "Password" : "סיסמא",
     "Challenge Response" : "תגובת אתגר",
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "הפעלת אתגרים עבור תגובת אתגר של חתימות ייצוג. בודק אם ברשותך חתימות ייצוג עבור, SMS או דואר אלקטרוני, לדוגמא.",
+    "Let the user log in if the user is not found in privacyIDEA." : "מאפשר למשתמש להתחבר אם המשתמש אינו נכלל ב- privacyIDEA.",
     "Username of privacyIDEA service account" : "שם משתמש עבור חשבון שירות privacyIDEA",
     "Password of privacyIDEA service account" : "סיסמא עבור חשבון שירות privacyIDEA",
     "Check Credentials" : "בדיקת אישורי אימות"
