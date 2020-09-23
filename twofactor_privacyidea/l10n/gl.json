@@ -31,7 +31,7 @@
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n                    Seleccione o dominio do usuario, se non é o predeterminado.\n                ",
     "\n                    Verify the SSL certificate.\n                " : "\n                    Verificar o certificado SSL.\n                ",
     "\n                        Do not uncheck this in productive environments!\n                    " : "\n                        Non desmarque esta opción en contornos de produción!\n                    ",
-    "\n                    Ignore the system wide proxy settings and send authentication\n                    requests to privacyIDEA directly.\n                " : "\n                    Ignore a configuración do proxy de todo o sistema e envíe as\n                    solicitudes de autenticación a privacyIDEA directamente.\n                ",
+    "\n                    Ignore the system wide proxy settings and send authentication\n                    requests to privacyIDEA directly.\n                " : "\n                    Ignorar a configuración do proxy de todo o sistema e envíar as\n                    solicitudes de autenticación a privacyIDEA directamente.\n                ",
     "Test" : "Proba",
     "Test Authentication by supplying username and password that are checked against privacyIDEA:" : "Probar a autenticación empregando o nome de usuario e o contrasinal subministrado, para comprobar privacyIDEA,",
     "User" : "Usuario",
