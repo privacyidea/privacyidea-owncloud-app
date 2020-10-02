@@ -35,9 +35,12 @@ OC.L10N.register(
     "\n                        Do not uncheck this in productive environments!\n                    " : "\n                        請別在生產環境取消選擇這項！\n                    ",
     "\n                    Ignore the system wide proxy settings and send authentication\n                    requests to privacyIDEA directly.\n                " : "\n                    忽略系統全域 Proxy 設定，並直接傳送驗證請求至\n                    privacyIDEA。\n                ",
     "Test" : "測試",
+    "Test Authentication by supplying username and password that are checked against privacyIDEA:" : "通過提供根據privacyIDEA檢查的使用者名稱和密碼來測試驗證：",
     "User" : "使用者名稱",
     "Password" : "密碼",
     "Challenge Response" : "測驗回應",
+    "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "觸發挑戰響應令牌的挑戰。 如果您使用例如SMS或電子郵件令牌，請選中此復選框。",
+    "Let the user log in if the user is not found in privacyIDEA." : "如果在privacyIDEA中找不到該使用者記錄，則讓該使用者登入。",
     "Username of privacyIDEA service account" : "privacyIDEA 服務帳號的使用者名稱",
     "Password of privacyIDEA service account" : "privacyIDEA 服務帳號的密碼",
     "Check Credentials" : "檢查認證"
