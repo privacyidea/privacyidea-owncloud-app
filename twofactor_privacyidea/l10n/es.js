@@ -40,6 +40,7 @@ OC.L10N.register(
     "Password" : "Contraseña",
     "Challenge Response" : "Respuesta al reto",
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "Desencadenar pruebas para vales de desafío-respuesta. Marque esto si lo utilizas, por ejemplo, sea símbolos de SMS o vales de correo electrónico.",
+    "Let the user log in if the user is not found in privacyIDEA." : "Permita que el usuario inicie sesión si el usuario no se encuentra en privacyIDEA.",
     "Username of privacyIDEA service account" : "Nombre de la cuenta del servicio privacyIDEA.",
     "Password of privacyIDEA service account" : "Contraseña de la cuenta del servicio privacyIDEA.",
     "Check Credentials" : "Comprobar credenciales"
