@@ -33,10 +33,10 @@ class Application extends \OCP\AppFramework\App
     {
         parent::__construct('twofactor_privacyidea', $urlParams);
         $container = $this->getContainer();
-        /**
-         * Controllers
-         */
-        $container->registerService('SettingsController', function ($c) {
+
+        //Controllers
+        $container->registerService('SettingsController', function ($c)
+        {
             $server = $c->getServer();
             return new SettingsController(
                 $c->getAppName(),
@@ -49,11 +49,11 @@ class Application extends \OCP\AppFramework\App
     }
 
     /**
-     * register setting scripts
+     * Register setting scripts
      */
     public function registerSettings()
     {
         App::registerAdmin('twofactor_privacyidea',
-            'settings/settings-admin');
+                           'settings/settings-admin');
     }
 }

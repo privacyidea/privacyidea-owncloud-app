@@ -6,8 +6,8 @@ OC.L10N.register(
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "Die Kommunikation mit dem privacyIDEA Server war erfolgreich. Die Authentifizierung des Benutzers ist allerdings fehlgeschlagen.",
     "The service account credentials are correct!" : "Die Zugangsdaten des Service-Accounts sind korrekt.",
     "But we recommend to update your privacyIDEA server." : "Wir empfehlen jedoch, deinen privacyIDEA-Server zu aktualisieren.",
-    "Failed to trigger challenges. Wrong HTTP return code: " : "Initiierung der Challenge fehlgeschlagen. Falsche HTTP-Antwort:",
-    "Failed to trigger challenges." : "Fehler beim Auslösen der Challenge.",
+    "Failed to process PI response. Wrong HTTP return code: " : "PI-Antwortsbearbeitung fehlgeschlagen. Falsche HTTP-Antwort:",
+    "Failed to process PI response." : "Fehler beim PI-Antwortsbearbeitung.",
     "Please confirm the authentication with your mobile device." : "Bitte bestätige die Authentifizierung mit deinem Mobilgerät.",
     "Check if service account has correct permissions" : "Bitte prüfen ob das Service-Konto die richtigen Rechte/Rollen hat",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Empfang des Authentifizierungstokens fehlgeschlagen. Falsche HTTP-Antwort:",
@@ -43,6 +43,8 @@ OC.L10N.register(
     "Let the user log in if the user is not found in privacyIDEA." : "Lassen Sie den Benutzer einloggen, obwohl er nicht in privacyIDEA gefunden wurde.",
     "Username of privacyIDEA service account" : "Benutzername des privacyIDEA-Dienstekontos",
     "Password of privacyIDEA service account" : "Passwort des privacyIDEA-Dienstekontos",
+    "Check it if you will use UID instead of username." : "Aktivieren Sie dieses Checkbox, wenn Sie die UID anstelle des Benutzernamens verwenden.",
+    "If you decide to use UID, set it so in your privacyIDEA too!" : "Wenn Sie sich für die Verwendung der UID entscheiden, stellen Sie dies auch in Ihrer privacyIDEA ein!",
     "Check Credentials" : "Überprüfe die Login-Daten"
 },
 "nplurals=2; plural=(n != 1);");

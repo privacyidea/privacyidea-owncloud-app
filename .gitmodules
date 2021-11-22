@@ -1,0 +1,6 @@
+[submodule "sdk-php"]
+	path = sdk-php
+	url = https://github.com/privacyidea/sdk-php.git
+[submodule "twofactor_privacyidea/lib/sdk-php"]
+	path = twofactor_privacyidea/lib/sdk-php
+	url = https://github.com/privacyidea/sdk-php.git
