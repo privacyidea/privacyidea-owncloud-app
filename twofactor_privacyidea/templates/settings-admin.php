@@ -137,20 +137,41 @@ script('twofactor_privacyidea', 'settings-admin');
             </em>
         </label>
         <br>
-        <input id="senduid" type="checkbox" class="checkbox">
-        <label for="senduid">
-            <?php p($l->t('Check it if you will use UID instead of username.')); ?>
-            <em>
-                <?php p($l->t('If you decide to use UID, set it so in your privacyIDEA too!')); ?>
-            </em>
-        </label>
-        <br>
+<!--        <input id="senduid" type="checkbox" class="checkbox">-->
+<!--        <label for="senduid">-->
+<!--            --><?php //p($l->t('Use UID instead of username.')); ?>
+<!--            <em>-->
+<!--                --><?php //p($l->t('If you decide to use UID, set it so in your privacyIDEA too!')); ?>
+<!--            </em>-->
+<!--        </label>-->
+<!--        <br>-->
         <input id="noproxy" type="checkbox" class="checkbox">
         <label for="noproxy">
             <?php p($l->t('Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly.')); ?>
         </label>
-        <hr>
-        <h3>
+<!--        <hr>-->
+<!--        <h3>OTP and PASS Hint</h3>-->
+<!--        <table>-->
+<!--            <tr>-->
+<!--                <td>-->
+<!--                    <label for="otpHint">OTP Hint: </label>-->
+<!--                </td>-->
+<!--                <td>-->
+<!--                    <input type="text" id="otpHint" size="40"/>-->
+<!--                </td>-->
+<!--            </tr>-->
+<!--            <tr>-->
+<!--                <td>-->
+<!--                    <label for="passHint">PASS Hint: </label>-->
+<!--                </td>-->
+<!--                <td>-->
+<!--                    <input type="text" id="passHint" size="40"/>-->
+<!--                </td>-->
+<!--            </tr>-->
+<!--        </table>-->
+<!--        <input id="Accept" type="button" value="Accept"/>-->
+<!--        <hr>-->
+<!--        <h3>-->
             <?php p($l->t('Test')); ?>
         </h3>
         <p>

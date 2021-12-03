@@ -126,6 +126,9 @@ $(document).ready(function ()
         setValue("realm", value);
     });
 
+    /* OTP and PASS Hint */
+//TODO HINT Logic here
+
     /* Enable/Disable challenge triggering */
     var displayServerCredentials = function (show)
     {

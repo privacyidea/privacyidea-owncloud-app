@@ -43,7 +43,7 @@ OC.L10N.register(
     "Let the user log in if the user is not found in privacyIDEA." : "Lassen Sie den Benutzer einloggen, obwohl er nicht in privacyIDEA gefunden wurde.",
     "Username of privacyIDEA service account" : "Benutzername des privacyIDEA-Dienstekontos",
     "Password of privacyIDEA service account" : "Passwort des privacyIDEA-Dienstekontos",
-    "Check it if you will use UID instead of username." : "Aktivieren Sie dieses Checkbox, wenn Sie die UID anstelle des Benutzernamens verwenden.",
+    "Use UID instead of username." : "Aktivieren Sie dieses Checkbox, wenn Sie die UID anstelle des Benutzernamens verwenden.",
     "If you decide to use UID, set it so in your privacyIDEA too!" : "Wenn Sie sich für die Verwendung der UID entscheiden, stellen Sie dies auch in Ihrer privacyIDEA ein!",
     "Check Credentials" : "Überprüfe die Login-Daten"
 },

@@ -53,7 +53,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private $logger;
     /** @var IL10N */
     private $trans;
-    /** @var ISession */
+    /** @var ISession Every our key needs "pi_" as a prefix to avoid collisions */
     private $session;
     /** @var IRequest */
     private $request;
@@ -94,41 +94,92 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function getTemplate(IUser $user): Template
     {
+
         if ($this->getAppValue('triggerchallenges', '') === '1')
         {
-            try
+            if ($this->session->get("pi_TriggerChallengeSuccess") !== true)
             {
-                $message = $this->triggerChallenge($user->getUID());
-                // Check if the user was actually found when triggering challenges
-                // If not and the setting "passOnNoToken" is set, the user can log in without 2FA
-                $this->session->set("pi_message", $message);
-            } catch (Exception $e)
-            {
-                $message = $e->getMessage();
+                try
+                {
+                    $message = $this->triggerChallenge($user->getUID());
+//                    $this->log("error", "mess: " . $message);
+
+                    // Check if the user was actually found when triggering challenges
+                    // If not and the setting "passOnNoToken" is set, the user can log in without 2FA
+                    $this->session->set("pi_message", $message);
+                    $this->session->set("pi_TriggerChallengeSuccess", true);
+                } catch (Exception $e)
+                {
+                    $err = 1;
+                    $message = $e->getMessage();
+                }
             }
-        } else
+        }
+
+        if (!isset($err))
         {
             $message = $this->session->get("pi_message");
         }
 
+
         $template = new Template('twofactor_privacyidea', 'challenge');
-        $template->assign("message", $message);
-        $template->assign("autoSubmit", $this->session->get("autoSubmit"));
-        $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
-        $template->assign("u2fSignRequest", $this->session->get("u2fSignRequest"));
-        $template->assign("detail", $this->session->get("pi_detail"));
 
-        $tiqrResponse = $this->session->get("pi_TIQR_Response");
-        $pushResponse = $this->session->get("pi_PUSH_Response");
+        if (isset($message))
+        {
+            $template->assign("message", $message);
+        }
 
-        if ($pushResponse || $tiqrResponse)
+        if ($this->session->get("pi_autoSubmit") !== null)
+        {
+            $template->assign("autoSubmit", $this->session->get("pi_autoSubmit"));
+        }
+
+        if ($this->session->get("pi_hideOTPField") !== null)
+        {
+            $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
+        }
+
+        if ($this->session->get("pi_u2fSignRequest") !== null)
+        {
+            $template->assign("u2fSignRequest", json_encode($this->session->get("pi_u2fSignRequest")));
+        }
+
+        if ($this->session->get("pi_webAuthnSignRequest") !== null)
+        {
+            $template->assign("webAuthnSignRequest", json_encode($this->session->get("pi_webAuthnSignRequest")));
+        }
+
+        if ($this->session->get("pi_detail") !== null)
+        {
+            $template->assign("detail", $this->session->get("pi_detail"));
+        }
+
+        if ($this->session->get("pi_pushAvailable") !== null)
+        {
+            $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
+        }
+
+        $tiqrResponse = "";
+        $pushResponse = "";
+
+        if ($this->session->get("pi_tiqrResponse"))
+        {
+            $tiqrResponse = $this->session->get("pi_tiqrResponse");
+        }
+
+        if ($this->session->get("pi_pushResponse"))
+        {
+            $pushResponse = $this->session->get("pi_pushResponse");
+        }
+
+        if ($pushResponse !== "" || $tiqrResponse !== "")
         {
             if ($tiqrResponse)
             {
-                $template->assign("tiqrImage", $this->session->get("pi_TIQR_Image"));
+                $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
             }
             $template->assign("response", true);
-            $template->assign("responseStatus", $this->session->get("pi_Response_Status"));
+            $template->assign("responseStatus", $this->session->get("pi_responseStatus"));
         }
         return $template;
     }
@@ -147,7 +198,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function verifyChallenge(IUser $user, $challenge): bool
     {
-        if ($this->session->get("pi_no_auth_required"))
+        if ($this->session->get("pi_noAuthRequired"))
         {
             return true;
         }
@@ -155,25 +206,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $password = $challenge;
         $errorMessage = "";
 
-        if ($this->getAppValue("send_uid", ""))
-        {
-            $username = $user->getUID();
-        } else
-        {
-            $username = $user->getUserName();
-        }
+        $username = $user->getUID();
 
         // Read config
         $options = $this->getClientOptions();
 
-        $transactionID = $this->session->get("pi_transaction_id");
-        $signatureData = $this->request->getParam("signatureData");
-        $pushResponse = $this->session->get("pi_PUSH_Response");
-        $tiqrResponse = $this->session->get("pi_TIQR_Response");
+        $transactionID = $this->session->get("pi_transactionId");
+        $u2fSignResponse = json_decode($this->request->getParam("u2fSignResponse"), true);
+        $webAuthnSignResponse = $this->request->getParam("webAuthnSignResponse");
+        $origin = $this->request->getParam("origin");
+        $pushResponse = $this->session->get("pi_pushResponse");
+        $tiqrResponse = $this->session->get("pi_tiqrResponse");
+        $mode = $this->request->getParam("mode");
+
+        $this->log("error", "mode: " . $mode); //TODO rm
 
         $url = false;
 
-        if ($password || $signatureData)
+        if ($password || $u2fSignResponse || $webAuthnSignResponse)
         {
             $pushResponse = false;
             $tiqrResponse = false;
@@ -186,7 +236,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 'realm' => $realm];
 
             // The verifyChallenge is called with additional parameters in case of challenge response
-            $clientData = $this->request->getParam("clientData");
+            $clientData = $u2fSignResponse['clientData'];
+            $signatureData = $u2fSignResponse['signatureData'];
             $this->log("debug", "transaction_id: " . $transactionID);
             $this->log("debug", "signatureData: " . $signatureData);
             $this->log("debug", "clientData: " . $clientData);
@@ -197,22 +248,31 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $options['body']["transaction_id"] = $transactionID;
             }
 
-            if ($signatureData && $clientData)
+            if ($mode === "u2f")
             {
-                $this->log("debug", "We are doing a U2F response.");
+                $this->log("debug", "We are processing a U2F response.");
                 // here we add the signatureData and the clientData in case of U2F
                 $options['body']["signaturedata"] = $signatureData;
                 $options['body']["clientdata"] = $clientData;
             }
-        } else if ($pushResponse || $tiqrResponse)
+
+            if ($mode === "webauthn")
+            {
+                $this->log("debug", "We are processing a Web Authn response.");
+                // here we add the origin, signatureData and the clientData in case of Web Authn
+                $options['body']["signaturedata"] = $signatureData;
+                $options['body']["clientdata"] = $clientData;
+                $options['body']["origin"] = $origin;
+            }
+        } else if ($mode === "push" || "mode" === "tiqr")
         {
             if ($pushResponse)
             {
-                $this->log("debug", "We are doing a PUSH response.");
+                $this->log("debug", "We are processing a PUSH response.");
             }
             if ($tiqrResponse)
             {
-                $this->log("debug", "We are doing a TIQR response.");
+                $this->log("debug", "We are processing a TIQR response.");
             }
 
             $url = $this->getBaseUrl() . "validate/polltransaction";
@@ -250,7 +310,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                             $authBody = $this->processPIResponse($res);
                             if ($authBody->result->status === true && $authBody->result->value === true)
                             {
-                                $this->session->set("pi_Response_Status", true);
+                                $this->session->set("pi_responseStatus", true);
                                 return true;
                             } else
                             {
@@ -364,6 +424,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     {
         $passOnNoToken = $this->getAppValue('passOnNoUser', false);
         $errorMessage = "";
+
         try
         {
             $body = json_decode($result->getBody());
@@ -376,7 +437,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     $this->session->set("pi_detail", $detail);
                     if (property_exists($detail, "transaction_id"))
                     {
-                        $this->session->set("pi_transaction_id", $detail->transaction_id);
+                        $this->session->set("pi_transactionId", $detail->transaction_id);
                     }
 
                     if (property_exists($detail, "multi_challenge"))
@@ -393,19 +454,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                 switch ($multiChallenge[$i]->type)
                                 {
                                     case "u2f":
-                                        $this->session->set("u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
+                                        $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
+                                        break;
+                                    case "webauthn":
+                                        $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
                                         break;
                                     case "push":
-                                        $this->session->set("pi_PUSH_Response", true);
+                                        $this->session->set("pi_pushResponse", true);
+                                        $this->session->set("pi_pushAvailable", true);
                                         break;
                                     case "tiqr":
                                         $tiqrImg = $multiChallenge[$i]->attributes->img;
-
-                                        $this->session->set("pi_TIQR_Response", true);
-                                        $this->session->set("pi_TIQR_Image", $tiqrImg);
+                                        $this->session->set("pi_tiqrResponse", true);
+                                        $this->session->set("pi_tiqrImage", $tiqrImg);
                                         break;
                                     default:
                                         $this->session->set("pi_hideOTPField", false);
+                                        $this->session->set("pi_otpAvailable", true);
+                                        $this->session->set("pi_pushAvailable", false);
                                 }
                             }
                         }
@@ -418,8 +484,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 {
                     if ($body->result->error->code == 904)
                     {
-                        $this->session->set("pi_no_auth_required", true);
-                        $this->session->set("autoSubmit", true);
+                        $this->session->set("pi_noAuthRequired", true);
+                        $this->session->set("pi_autoSubmit", true);
                         $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
                         return "No token found for your user, Login is still enabled.";
                     }
