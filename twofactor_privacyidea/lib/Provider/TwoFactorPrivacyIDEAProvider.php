@@ -102,7 +102,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 try
                 {
                     $message = $this->triggerChallenge($user->getUID());
-//                    $this->log("error", "mess: " . $message);
+                    $this->log("error", "mess: " . $message); //TODO rm
 
                     // Check if the user was actually found when triggering challenges
                     // If not and the setting "passOnNoToken" is set, the user can log in without 2FA
@@ -121,39 +121,32 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $message = $this->session->get("pi_message");
         }
 
-
         $template = new Template('twofactor_privacyidea', 'challenge');
 
         if (isset($message))
         {
             $template->assign("message", $message);
         }
-
         if ($this->session->get("pi_autoSubmit") !== null)
         {
             $template->assign("autoSubmit", $this->session->get("pi_autoSubmit"));
         }
-
         if ($this->session->get("pi_hideOTPField") !== null)
         {
             $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
         }
-
         if ($this->session->get("pi_u2fSignRequest") !== null)
         {
             $template->assign("u2fSignRequest", json_encode($this->session->get("pi_u2fSignRequest")));
         }
-
         if ($this->session->get("pi_webAuthnSignRequest") !== null)
         {
             $template->assign("webAuthnSignRequest", json_encode($this->session->get("pi_webAuthnSignRequest")));
         }
-
         if ($this->session->get("pi_detail") !== null)
         {
             $template->assign("detail", $this->session->get("pi_detail"));
         }
-
         if ($this->session->get("pi_pushAvailable") !== null)
         {
             $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
@@ -166,7 +159,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $tiqrResponse = $this->session->get("pi_tiqrResponse");
         }
-
         if ($this->session->get("pi_pushResponse"))
         {
             $pushResponse = $this->session->get("pi_pushResponse");
