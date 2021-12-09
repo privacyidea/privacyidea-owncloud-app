@@ -1,10 +1,10 @@
 <?php
 script('twofactor_privacyidea', 'challenge');
 
-if (isset($_['response']) && $_['response'])
-{
-    script('twofactor_privacyidea', 'response-status');
-} ?>
+//if (isset($_['response']) && $_['response'])
+//{
+//    script('twofactor_privacyidea', 'response-status');
+//} ?>
 
     <!--TODO Add otpFieldHint in settings-->
 
@@ -30,22 +30,23 @@ if (isset($_['response']) && $_['response'])
         }
         ?>
 
-        <?php
-        if (isset($_["responseStatus"]) && !$_["responseStatus"] === true)
-        {
-            ?>
-            <input type="hidden" id="ResponseStatus" value="false">
-            <?php
-        }
-        ?>
+        <!--        --><?php
+        //        if (isset($_["responseStatus"]) && !$_["responseStatus"] === true)
+        //        {
+        //            ?>
+        <!--            <input type="hidden" id="ResponseStatus" value="false">-->
+        <!--            --><?php
+        //        }
+        //        ?>
 
         <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']): ?>
             <label>
-                <input type="password" name="challenge" placeholder="OTP" autocomplete="off" autocorrect="off" required
+                <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off" autocorrect="off"
+                       required
                        autofocus>
             </label>
         <?php endif; ?>
-        <input type="submit" class="button" value="Verify" style="width: 100%">
+        <input id="submitButton" type="submit" class="button" value="Verify" style="width: 100%">
 
         <!-- Hidden input which store the info about changes -->
         <input id="mode" type="hidden" name="mode" value="<?php if (isset($_['mode']))
@@ -81,13 +82,21 @@ if (isset($_['response']) && $_['response'])
                    p($_['otpAvailable']);
                } ?>"/>
 
+        <input id="loadCounter" type="hidden" name="loadCounter"
+               value="<?php if (isset($_['loadCounter']))
+               {
+                   p($_['loadCounter']);
+               } ?>"/>
+
         <!-- Alternate Login Options -->
-        <div id="AlternateLoginOptions" style="margin-top:35px">
+        <div id="alternateLoginOptions" style="margin-top:35px">
             <label><strong>Alternate login options:</strong></label>
             <br><br>
             <input id="useWebAuthnButton" name="useWebAuthnButton" type="button" value="WebAuthn"
                    style="width:140px; margin:15px 10px 7px"/>
-            <input id="usePushButton" name="usePushButton" type="button" value="Push"
+            <input id="usePushButton" name="usePushButton" type="button" value="PUSH"
+                   style="width:140px; margin:15px 10px 7px"/>
+            <input id="useTiQRButton" name="useTiQRButton" type="button" value="TiQR"
                    style="width:140px; margin:15px 10px 7px"/>
             <input id="useOTPButton" name="useOTPButton" type="button" value="OTP"
                    style="width:140px; margin:15px 15px 7px"/>

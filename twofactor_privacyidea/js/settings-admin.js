@@ -126,9 +126,6 @@ $(document).ready(function ()
         setValue("realm", value);
     });
 
-    /* OTP and PASS Hint */
-//TODO HINT Logic here
-
     /* Enable/Disable challenge triggering */
     var displayServerCredentials = function (show)
     {
@@ -265,7 +262,7 @@ $(document).ready(function ()
     });
 
     /* Test Service Account button */
-    $("#piSettings #piserviceaccount_test").onclick(function (event)
+    $("#piSettings #piserviceaccount_test").click(function (event)
     {
         event.preventDefault();
         // Use this trick to ensure that the `change` events of inputs

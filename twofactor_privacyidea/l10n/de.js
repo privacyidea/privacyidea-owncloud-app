@@ -38,6 +38,7 @@ OC.L10N.register(
     "Test Authentication by supplying username and password that are checked against privacyIDEA:" : "Du kannst die Konfiguration testen, indem du einen Benutzernamen und das Einmal-Passwort, das an privacyIDEA gesendet werden soll, hier eingeben:",
     "User" : "Benutzer",
     "Password" : "Kennwort",
+    "Authentication still incomplete." : "Authentifizierung unvollständig.",
     "Challenge Response" : "Challenge-Response",
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "Challenges für Challenge-Response-Token auslösen. Aktiviere diese Konfiguration, wenn du bspw. SMS oder E-Mail-Token verwenden möchtest.",
     "Let the user log in if the user is not found in privacyIDEA." : "Lassen Sie den Benutzer einloggen, obwohl er nicht in privacyIDEA gefunden wurde.",

@@ -22,8 +22,8 @@
 
 namespace OCA\TwoFactor_privacyIDEA\Provider;
 
-//require_once((dirname(__FILE__)) . 'AdminAuthException.php'); //TODO Check signature topic in owncloud
-//require_once((dirname(__FILE__)) . 'ProcessPIResponseException.php');
+require_once(dirname(__FILE__) . '/AdminAuthException.php');
+require_once(dirname(__FILE__) . '/ProcessPIResponseException.php');
 
 use OCP\Http\Client\IResponse;
 use OCP\IUser;
@@ -95,6 +95,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     public function getTemplate(IUser $user): Template
     {
 
+        // Triggerchallenge
         if ($this->getAppValue('triggerchallenges', '') === '1')
         {
             if ($this->session->get("pi_TriggerChallengeSuccess") !== true)
@@ -102,7 +103,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 try
                 {
                     $message = $this->triggerChallenge($user->getUID());
-                    $this->log("error", "mess: " . $message); //TODO rm
 
                     // Check if the user was actually found when triggering challenges
                     // If not and the setting "passOnNoToken" is set, the user can log in without 2FA
@@ -116,11 +116,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             }
         }
 
+        // Save the message
         if (!isset($err))
         {
             $message = $this->session->get("pi_message");
         }
 
+        // Set options, tokens and load counter to the template
         $template = new Template('twofactor_privacyidea', 'challenge');
 
         if (isset($message))
@@ -135,6 +137,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
         }
+        //        if ($this->session->get("pi_detail") !== null)
+//        {
+//            $template->assign("detail", $this->session->get("pi_detail"));
+//        }
+
         if ($this->session->get("pi_u2fSignRequest") !== null)
         {
             $template->assign("u2fSignRequest", json_encode($this->session->get("pi_u2fSignRequest")));
@@ -143,35 +150,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("webAuthnSignRequest", json_encode($this->session->get("pi_webAuthnSignRequest")));
         }
-        if ($this->session->get("pi_detail") !== null)
+        $template->assign("tiqrAvailable", $this->session->get("pi_tiqrAvailable"));
+        $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
+        $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
+        $template->assign("otpAvailable", $this->session->get("pi_otpAvailable"));
+        if ($this->session->get("pi_loadCounter"))
         {
-            $template->assign("detail", $this->session->get("pi_detail"));
-        }
-        if ($this->session->get("pi_pushAvailable") !== null)
+            $template->assign("loadCounter", $this->session->get("pi_loadCounter"));
+        } else
         {
-            $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
-        }
-
-        $tiqrResponse = "";
-        $pushResponse = "";
-
-        if ($this->session->get("pi_tiqrResponse"))
-        {
-            $tiqrResponse = $this->session->get("pi_tiqrResponse");
-        }
-        if ($this->session->get("pi_pushResponse"))
-        {
-            $pushResponse = $this->session->get("pi_pushResponse");
-        }
-
-        if ($pushResponse !== "" || $tiqrResponse !== "")
-        {
-            if ($tiqrResponse)
-            {
-                $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
-            }
-            $template->assign("response", true);
-            $template->assign("responseStatus", $this->session->get("pi_responseStatus"));
+            $template->assign("loadCounter", 1);
         }
         return $template;
     }
@@ -202,14 +190,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         // Read config
         $options = $this->getClientOptions();
-
         $transactionID = $this->session->get("pi_transactionId");
         $u2fSignResponse = json_decode($this->request->getParam("u2fSignResponse"), true);
         $webAuthnSignResponse = $this->request->getParam("webAuthnSignResponse");
         $origin = $this->request->getParam("origin");
-        $pushResponse = $this->session->get("pi_pushResponse");
-        $tiqrResponse = $this->session->get("pi_tiqrResponse");
-        $mode = $this->request->getParam("mode");
+        $mode = $this->request->getParam("mode", "otp");
+
 
         $this->log("error", "mode: " . $mode); //TODO rm
 
@@ -230,6 +216,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             // The verifyChallenge is called with additional parameters in case of challenge response
             $clientData = $u2fSignResponse['clientData'];
             $signatureData = $u2fSignResponse['signatureData'];
+
             $this->log("debug", "transaction_id: " . $transactionID);
             $this->log("debug", "signatureData: " . $signatureData);
             $this->log("debug", "clientData: " . $clientData);
@@ -258,17 +245,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             }
         } else if ($mode === "push" || "mode" === "tiqr")
         {
-            if ($pushResponse)
+            if ($mode === "push")
             {
                 $this->log("debug", "We are processing a PUSH response.");
             }
-            if ($tiqrResponse)
+            if ("mode" === "tiqr")
             {
                 $this->log("debug", "We are processing a TIQR response.");
             }
 
             $url = $this->getBaseUrl() . "validate/polltransaction";
             $options["body"] = ["transaction_id" => $transactionID];
+
+            // Increase load counter
+            if ($this->request->getParam("loadCounter"))
+            {
+                $counter = $this->request->getParam("loadCounter");
+                $this->session->set("pi_loadCounter", $counter + 1);
+            }
         }
 
         $errorCode = 0;
@@ -284,7 +278,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
                 if ($body->result->status === true)
                 {
-                    if ($pushResponse === true || $tiqrResponse === true)
+                    if ($pushResponse === true || $tiqrResponse === true) //TODO Here!!!!
                     {
                         $errorMessage = $this->trans->t("Please confirm the authentication with your mobile device.");
 
@@ -302,7 +296,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                             $authBody = $this->processPIResponse($res);
                             if ($authBody->result->status === true && $authBody->result->value === true)
                             {
-                                $this->session->set("pi_responseStatus", true);
+//                                $this->session->set("pi_responseStatus", true);
                                 return true;
                             } else
                             {
@@ -314,12 +308,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     {
                         if ($body->result->value === true)
                         {
+                            $this->log("debug", "privacyIDEA: User authenticated successfully!");
                             return true;
                         } else
                         {
-                            $errorMessage = $this->trans->t("Failed to authenticate.");
-                            $errorCode = 1;
-                            $this->log("info", "User failed to authenticate. Wrong OTP value.");
+                            $errorMessage = $this->trans->t(implode(", ", array_unique($body->detail->messages)));
                         }
                     }
                 } else
@@ -426,7 +419,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 if ($body->result->status === true)
                 {
                     $detail = $body->detail;
-                    $this->session->set("pi_detail", $detail);
+//                    $this->session->set("pi_detail", $detail);
                     if (property_exists($detail, "transaction_id"))
                     {
                         $this->session->set("pi_transactionId", $detail->transaction_id);
@@ -437,7 +430,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         $multiChallenge = $detail->multi_challenge;
                         if (count($multiChallenge) === 0)
                         {
-                            $this->session->set("pi_hideOTPField", false);
+                            $this->session->set("pi_hideOTPField", "0");
                         } else
                         {
                             for ($i = 0; $i < count($multiChallenge); $i++)
@@ -452,18 +445,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                         $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
                                         break;
                                     case "push":
-                                        $this->session->set("pi_pushResponse", true);
-                                        $this->session->set("pi_pushAvailable", true);
+//                                        $this->session->set("pi_pushResponse", true);
+                                        $this->session->set("pi_pushAvailable", "1");
                                         break;
                                     case "tiqr":
                                         $tiqrImg = $multiChallenge[$i]->attributes->img;
-                                        $this->session->set("pi_tiqrResponse", true);
+//                                        $this->session->set("pi_tiqrResponse", true);
+                                        $this->session->set("pi_tiqrAvailable", "1");
                                         $this->session->set("pi_tiqrImage", $tiqrImg);
                                         break;
+                                    case "otp":
+                                        $this->session->set("pi_otpAvailable", "1");
+                                        break;
                                     default:
-                                        $this->session->set("pi_hideOTPField", false);
-                                        $this->session->set("pi_otpAvailable", true);
-                                        $this->session->set("pi_pushAvailable", false);
+                                        $this->session->set("pi_hideOTPField", "0");
+                                        $this->session->set("pi_otpAvailable", "1");
+                                        $this->session->set("pi_pushAvailable", "0");
+                                        $this->session->set("pi_tiqrAvailable", "0");
                                 }
                             }
                         }
@@ -788,12 +786,4 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $this->logger->error($message, $context);
         }
     }
-}
-
-class AdminAuthException extends Exception
-{
-}
-
-class ProcessPIResponseException extends Exception
-{
 }

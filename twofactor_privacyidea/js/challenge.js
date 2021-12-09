@@ -20,7 +20,8 @@ window.onload = function ()
     });
 
     // Set alternate token button visibility
-    if (document.getElementById("webAuthnSignRequest").value === "")
+
+    if (value("webAuthnSignRequest") === "")
     {
         disable("useWebAuthnButton");
         console.log("Web Authn Button - disabled");
@@ -38,13 +39,24 @@ window.onload = function ()
         console.log("PUSH Button - disabled");
     }
 
+    if (value("tiqrAvailable") !== "1")
+    {
+        disable("useTiQRButton");
+        console.log("TiQR Button - disabled");
+    }
+
     if (value("otpAvailable") !== "1")
     {
         disable("useOTPButton");
-        console.log("OTP Button - disabled");
+        disable("otp");
+        disable("submitButton");
+        console.log("OTP - disabled");
     }
 
-    if (value("pushAvailable") === "0" && value("webAuthnSignRequest") === "" && value("u2fSignRequest") === "")
+    if (value("pushAvailable") !== "1"
+        && value("tiqrAvailable") !== "1"
+        && value("webAuthnSignRequest").length < 1
+        && value("u2fSignRequest").length < 1)
     {
         disable("alternateLoginOptions");
         console.log("Alternate Login Options - disabled. No other tokens available.");
@@ -70,15 +82,8 @@ window.onload = function ()
 
     function doWebAuthn()
     {
-        if(window.webauthn){
-            console.log("webauthn");
-        }
-        if(window.u2f){
-            console.log("u2f");
-        }
-
         // If mode is push, we have to change it, otherwise the site will refresh while doing webauthn
-        if (value("mode") === "push")
+        if (value("mode") === "push" || value("mode") === "tiqr")
         {
             changeMode("webauthn");
         }
@@ -91,7 +96,7 @@ window.onload = function ()
             return;
         }
 
-        if (!window.pi_webauthn)
+        if (!window.webauthn)
         {
             window.alert("Could not load WebAuthn library. Please try again or use other token!.");
             changeMode("otp");
@@ -141,7 +146,7 @@ console.log("webauthn possible to process!!!"); //TODO rm
     function doU2F()
     {
         // If mode is push, we have to change it, otherwise the site will refresh while doing webauthn
-        if (value("mode") === "push")
+        if (value("mode") === "push" || value("mode") === "tiqr")
         {
             changeMode("u2f");
         }
@@ -196,6 +201,31 @@ console.log("webauthn possible to process!!!"); //TODO rm
                 document.forms["piLoginForm"].submit();
             }
         });
+    }
+
+    if (value("mode") === "push" || value("mode") === "tiqr")
+    {
+        var pollingIntervals = [4, 3, 2, 1];
+
+        disable("otp");
+        disable("submitButton");
+        disable("usePushButton");
+        disable("tiqrButton");
+        var refreshTime = 0;
+
+        if (value("loadCounter") > (pollingIntervals.length - 1))
+        {
+            refreshTime = pollingIntervals[(pollingIntervals.length - 1)];
+        } else
+        {
+            refreshTime = pollingIntervals[Number(value("loadCounter") - 1)];
+        }
+
+        refreshTime *= 1000;
+        setTimeout(() =>
+        {
+            document.forms["piLoginForm"].submit();
+        }, refreshTime);
     }
 
     /**
