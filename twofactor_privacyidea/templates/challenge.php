@@ -49,10 +49,6 @@ script('twofactor_privacyidea', 'challenge');
         <input id="submitButton" type="submit" class="button" value="Verify" style="width: 100%">
 
         <!-- Hidden input which store the info about changes -->
-        <input id="mode" type="hidden" name="mode" value="<?php if (isset($_['mode']))
-        {
-            p($_['mode']);
-        } ?>"/>
         <input id="modeChanged" type="hidden" name="modeChanged" value="0"/>
 
         <input id="u2fSignRequest" type="hidden" name="u2fSignRequest"
@@ -87,6 +83,12 @@ script('twofactor_privacyidea', 'challenge');
                {
                    p($_['loadCounter']);
                } ?>"/>
+        <input id="mode" type="hidden" name="mode" value="<?php if (isset($_['mode']))
+        {
+            p($_['mode']);
+        }else {
+            p("otp");
+        } ?>"/>
 
         <!-- Alternate Login Options -->
         <div id="alternateLoginOptions" style="margin-top:35px">

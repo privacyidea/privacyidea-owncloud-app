@@ -14,6 +14,10 @@ window.onload = function ()
     {
         changeMode('push');
     });
+    document.getElementById("useTiQRButton").addEventListener("click", function ()
+    {
+        changeMode('tiqr');
+    });
     document.getElementById("useOTPButton").addEventListener("click", function ()
     {
         changeMode('otp');
@@ -48,8 +52,6 @@ window.onload = function ()
     if (value("otpAvailable") !== "1")
     {
         disable("useOTPButton");
-        disable("otp");
-        disable("submitButton");
         console.log("OTP - disabled");
     }
 
@@ -62,7 +64,7 @@ window.onload = function ()
         console.log("Alternate Login Options - disabled. No other tokens available.");
     }
 
-    if (value("mode") === "otp")
+    if (value("mode") === "otp" || value("mode").length < 1)
     {
         disable("useOTPButton");
         console.log("OTP Button - disabled");
@@ -127,8 +129,8 @@ console.log("webauthn possible to process!!!"); //TODO rm
         {
             var requestjson = JSON.parse(requestStr);
 
-            var webAuthnSignResponse = window.pi_webauthn.sign(requestjson);
-            webAuthnSignResponse.then((webauthnresponse) =>
+            var webAuthnSignResponse = window.webauthn.sign(requestjson);
+            webAuthnSignResponse.then(function (webauthnresponse)
             {
                 var response = JSON.stringify(webauthnresponse);
                 set("webAuthnSignResponse", response);
@@ -145,7 +147,7 @@ console.log("webauthn possible to process!!!"); //TODO rm
 
     function doU2F()
     {
-        // If mode is push, we have to change it, otherwise the site will refresh while doing webauthn
+        // If mode is push, we have to change it, otherwise the site will refresh while doing U2F
         if (value("mode") === "push" || value("mode") === "tiqr")
         {
             changeMode("u2f");
@@ -205,12 +207,19 @@ console.log("webauthn possible to process!!!"); //TODO rm
 
     if (value("mode") === "push" || value("mode") === "tiqr")
     {
+
         var pollingIntervals = [4, 3, 2, 1];
 
         disable("otp");
         disable("submitButton");
-        disable("usePushButton");
-        disable("tiqrButton");
+        if(value("mode") === "push") {
+            disable("usePushButton");
+        }
+        if(value("mode") === "tiqr") {
+            disable("tiqrButton");
+        }
+        enable("useOTPButton");
+
         var refreshTime = 0;
 
         if (value("loadCounter") > (pollingIntervals.length - 1))
@@ -220,9 +229,8 @@ console.log("webauthn possible to process!!!"); //TODO rm
         {
             refreshTime = pollingIntervals[Number(value("loadCounter") - 1)];
         }
-
         refreshTime *= 1000;
-        setTimeout(() =>
+        window.setTimeout(function ()
         {
             document.forms["piLoginForm"].submit();
         }, refreshTime);

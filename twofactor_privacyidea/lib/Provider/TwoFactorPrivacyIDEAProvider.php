@@ -125,9 +125,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         // Set options, tokens and load counter to the template
         $template = new Template('twofactor_privacyidea', 'challenge');
 
+        if ($this->session->get("pi_detail") !== null)
+        {
+            $template->assign("detail", $this->session->get("pi_detail"));
+        }
         if (isset($message))
         {
             $template->assign("message", $message);
+        }
+        if ($this->session->get("pi_mode") !== null)
+        {
+            $template->assign("mode", $this->session->get("pi_mode"));
         }
         if ($this->session->get("pi_autoSubmit") !== null)
         {
@@ -137,11 +145,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("hideOTPField", $this->session->get("pi_hideOTPField"));
         }
-        //        if ($this->session->get("pi_detail") !== null)
-//        {
-//            $template->assign("detail", $this->session->get("pi_detail"));
-//        }
-
         if ($this->session->get("pi_u2fSignRequest") !== null)
         {
             $template->assign("u2fSignRequest", json_encode($this->session->get("pi_u2fSignRequest")));
@@ -154,13 +157,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
         $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
         $template->assign("otpAvailable", $this->session->get("pi_otpAvailable"));
-        if ($this->session->get("pi_loadCounter"))
+
+        $loads = 1;
+        if ($this->session->get("pi_loadCounter") !== null)
         {
-            $template->assign("loadCounter", $this->session->get("pi_loadCounter"));
-        } else
-        {
-            $template->assign("loadCounter", 1);
+            $loads = $this->session->get("pi_loadCounter");
         }
+        $template->assign("loadCounter", $loads);
+
         return $template;
     }
 
@@ -185,7 +189,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         $password = $challenge;
         $errorMessage = "";
-
         $username = $user->getUID();
 
         // Read config
@@ -194,8 +197,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $u2fSignResponse = json_decode($this->request->getParam("u2fSignResponse"), true);
         $webAuthnSignResponse = $this->request->getParam("webAuthnSignResponse");
         $origin = $this->request->getParam("origin");
-        $mode = $this->request->getParam("mode", "otp");
-
+        $mode = $this->request->getParam("mode");
+        $this->session->set("pi_mode", $mode);
 
         $this->log("error", "mode: " . $mode); //TODO rm
 
@@ -203,9 +206,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         if ($password || $u2fSignResponse || $webAuthnSignResponse)
         {
-            $pushResponse = false;
-            $tiqrResponse = false;
-
             $url = $this->getBaseUrl() . "validate/check";
             $realm = $this->getAppValue('realm', '');
             $options['body'] = [
@@ -278,7 +278,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
                 if ($body->result->status === true)
                 {
-                    if ($pushResponse === true || $tiqrResponse === true) //TODO Here!!!!
+                    if ($mode === "push" || $mode === "tiqr")
                     {
                         $errorMessage = $this->trans->t("Please confirm the authentication with your mobile device.");
 
@@ -296,24 +296,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                             $authBody = $this->processPIResponse($res);
                             if ($authBody->result->status === true && $authBody->result->value === true)
                             {
-//                                $this->session->set("pi_responseStatus", true);
                                 return true;
-                            } else
-                            {
-                                // The challenge was answered, but authentication fails.
-                                return false;
                             }
                         }
+                    } elseif ($body->result->value === true)
+                    {
+                        $this->log("debug", "privacyIDEA: User authenticated successfully!");
+                        return true;
                     } else
                     {
-                        if ($body->result->value === true)
-                        {
-                            $this->log("debug", "privacyIDEA: User authenticated successfully!");
-                            return true;
-                        } else
-                        {
-                            $errorMessage = $this->trans->t(implode(", ", array_unique($body->detail->messages)));
-                        }
+                        $errorMessage = $this->trans->t(implode(", ", array_unique($body->detail->messages)));
                     }
                 } else
                 {
@@ -410,94 +402,101 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $passOnNoToken = $this->getAppValue('passOnNoUser', false);
         $errorMessage = "";
 
-        try
+        $mode = $this->request->getParam("mode", "otp");
+        if ($mode === "push" || $mode === "tiqr")
         {
-            $body = json_decode($result->getBody());
-
-            if ($result->getStatusCode() == 200)
+            return json_decode($result->getBody());
+        } else
+        {
+            try
             {
-                if ($body->result->status === true)
+                $body = json_decode($result->getBody());
+
+                if ($result->getStatusCode() == 200)
                 {
-                    $detail = $body->detail;
-//                    $this->session->set("pi_detail", $detail);
-                    if (property_exists($detail, "transaction_id"))
+                    if ($body->result->status === true)
                     {
-                        $this->session->set("pi_transactionId", $detail->transaction_id);
-                    }
+                        $detail = $body->detail;
+                        $this->session->set("pi_detail", $detail);
+                        if (property_exists($detail, "transaction_id"))
+                        {
+                            $this->session->set("pi_transactionId", $detail->transaction_id);
+                        }
 
-                    if (property_exists($detail, "multi_challenge"))
-                    {
-                        $multiChallenge = $detail->multi_challenge;
-                        if (count($multiChallenge) === 0)
+                        if (property_exists($detail, "multi_challenge"))
                         {
-                            $this->session->set("pi_hideOTPField", "0");
-                        } else
-                        {
-                            for ($i = 0; $i < count($multiChallenge); $i++)
+                            $multiChallenge = $detail->multi_challenge;
+                            if (count($multiChallenge) === 0)
                             {
-
-                                switch ($multiChallenge[$i]->type)
+                                $this->session->set("pi_hideOTPField", "0");
+                            } else
+                            {
+                                for ($i = 0; $i < count($multiChallenge); $i++)
                                 {
-                                    case "u2f":
-                                        $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
-                                        break;
-                                    case "webauthn":
-                                        $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
-                                        break;
-                                    case "push":
+
+                                    switch ($multiChallenge[$i]->type)
+                                    {
+                                        case "u2f":
+                                            $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
+                                            break;
+                                        case "webauthn":
+                                            $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
+                                            break;
+                                        case "push":
 //                                        $this->session->set("pi_pushResponse", true);
-                                        $this->session->set("pi_pushAvailable", "1");
-                                        break;
-                                    case "tiqr":
-                                        $tiqrImg = $multiChallenge[$i]->attributes->img;
+                                            $this->session->set("pi_pushAvailable", "1");
+                                            break;
+                                        case "tiqr":
+                                            $tiqrImg = $multiChallenge[$i]->attributes->img;
 //                                        $this->session->set("pi_tiqrResponse", true);
-                                        $this->session->set("pi_tiqrAvailable", "1");
-                                        $this->session->set("pi_tiqrImage", $tiqrImg);
-                                        break;
-                                    case "otp":
-                                        $this->session->set("pi_otpAvailable", "1");
-                                        break;
-                                    default:
-                                        $this->session->set("pi_hideOTPField", "0");
-                                        $this->session->set("pi_otpAvailable", "1");
-                                        $this->session->set("pi_pushAvailable", "0");
-                                        $this->session->set("pi_tiqrAvailable", "0");
+                                            $this->session->set("pi_tiqrAvailable", "1");
+                                            $this->session->set("pi_tiqrImage", $tiqrImg);
+                                            break;
+                                        case "otp":
+                                            $this->session->set("pi_otpAvailable", "1");
+                                            break;
+                                        default:
+                                            $this->session->set("pi_hideOTPField", "0");
+                                            $this->session->set("pi_otpAvailable", "1");
+                                            $this->session->set("pi_pushAvailable", "0");
+                                            $this->session->set("pi_tiqrAvailable", "0");
+                                    }
                                 }
                             }
                         }
+                        return $body;
                     }
-                    return $body;
-                }
-            } elseif ($result->getStatusCode() == 400 && $passOnNoToken)
-            {
-                if ($body->result->error != null)
+                } elseif ($result->getStatusCode() == 400 && $passOnNoToken)
                 {
-                    if ($body->result->error->code == 904)
+                    if ($body->result->error != null)
                     {
-                        $this->session->set("pi_noAuthRequired", true);
-                        $this->session->set("pi_autoSubmit", true);
-                        $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
-                        return "No token found for your user, Login is still enabled.";
+                        if ($body->result->error->code == 904)
+                        {
+                            $this->session->set("pi_noAuthRequired", true);
+                            $this->session->set("pi_autoSubmit", true);
+                            $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
+                            return "No token found for your user, Login is still enabled.";
+                        }
                     }
+                    $errorMessage = $this->trans->t("Failed to process PI response. Wrong HTTP return code: " . $result->getStatusCode());
+                } else
+                {
+                    $errorMessage = $this->trans->t("Failed to process PI response. Wrong HTTP return code: " . $result->getStatusCode());
+                    $this->log("error", "[processPIResponse] privacyIDEA error code: " . $body->result->error->code);
+                    $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
                 }
-                $errorMessage = $this->trans->t("Failed to process PI response. Wrong HTTP return code: " . $result->getStatusCode());
-            } else
+            } catch (Exception $e)
             {
-                $errorMessage = $this->trans->t("Failed to process PI response. Wrong HTTP return code: " . $result->getStatusCode());
-                $this->log("error", "[processPIResponse] privacyIDEA error code: " . $body->result->error->code);
-                $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
+                if ($result != 0)
+                {
+                    $this->log("error", "[processPIResponse] HTTP return code: " . $result->getStatusCode());
+                }
+                $this->log("error", "[processPIResponse] " . $e->getMessage());
+                $this->log("debug", $e);
+                $errorMessage = $this->trans->t("Failed to process PI response.");
             }
-        } catch (Exception $e)
-        {
-            if ($result != 0)
-            {
-                $this->log("error", "[processPIResponse] HTTP return code: " . $result->getStatusCode());
-            }
-            $this->log("error", "[processPIResponse] " . $e->getMessage());
-            $this->log("debug", $e);
-            $errorMessage = $this->trans->t("Failed to process PI response.");
+            throw new ProcessPIResponseException($errorMessage);
         }
-        throw new ProcessPIResponseException($errorMessage);
     }
 
     /**
