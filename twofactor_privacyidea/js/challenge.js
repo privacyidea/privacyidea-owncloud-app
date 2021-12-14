@@ -1,4 +1,5 @@
 /*jshint sub:true*/
+
 window.onload = function ()
 {
     // Button listeners
@@ -34,25 +35,21 @@ window.onload = function ()
     if (value("u2fSignRequest") === "")
     {
         disable("useU2FButton");
-        console.log("U2F Button - disabled");
     }
 
     if (value("pushAvailable") !== "1")
     {
         disable("usePushButton");
-        console.log("PUSH Button - disabled");
     }
 
     if (value("tiqrAvailable") !== "1")
     {
         disable("useTiQRButton");
-        console.log("TiQR Button - disabled");
     }
 
     if (value("otpAvailable") !== "1")
     {
         disable("useOTPButton");
-        console.log("OTP - disabled");
     }
 
     if (value("pushAvailable") !== "1"
@@ -67,7 +64,6 @@ window.onload = function ()
     if (value("mode") === "otp" || value("mode").length < 1)
     {
         disable("useOTPButton");
-        console.log("OTP Button - disabled");
     }
 
     if (value("mode") === "webauthn")
@@ -84,6 +80,7 @@ window.onload = function ()
 
     function doWebAuthn()
     {
+
         // If mode is push, we have to change it, otherwise the site will refresh while doing webauthn
         if (value("mode") === "push" || value("mode") === "tiqr")
         {
@@ -113,7 +110,7 @@ window.onload = function ()
             changeMode("otp");
             return;
         }
-console.log("webauthn possible to process!!!"); //TODO rm
+
         // Set origin
         if (!window.location.origin)
         {
@@ -217,6 +214,7 @@ console.log("webauthn possible to process!!!"); //TODO rm
         }
         if(value("mode") === "tiqr") {
             disable("tiqrButton");
+            enable("tiqrImage");
         }
         enable("useOTPButton");
 

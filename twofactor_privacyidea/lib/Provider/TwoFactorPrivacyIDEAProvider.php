@@ -108,7 +108,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     // If not and the setting "passOnNoToken" is set, the user can log in without 2FA
                     $this->session->set("pi_message", $message);
                     $this->session->set("pi_TriggerChallengeSuccess", true);
-                } catch (Exception $e)
+                }
+                catch (Exception $e)
                 {
                     $err = 1;
                     $message = $e->getMessage();
@@ -153,10 +154,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("webAuthnSignRequest", json_encode($this->session->get("pi_webAuthnSignRequest")));
         }
-        $template->assign("tiqrAvailable", $this->session->get("pi_tiqrAvailable"));
-        $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
+
         $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
         $template->assign("otpAvailable", $this->session->get("pi_otpAvailable"));
+        $template->assign("tiqrAvailable", $this->session->get("pi_tiqrAvailable"));
+        if ($this->session->get("pi_tiqrImage") !== null)
+        {
+            $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
+        }
 
         $loads = 1;
         if ($this->session->get("pi_loadCounter") !== null)
@@ -195,55 +200,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $options = $this->getClientOptions();
         $transactionID = $this->session->get("pi_transactionId");
         $u2fSignResponse = json_decode($this->request->getParam("u2fSignResponse"), true);
-        $webAuthnSignResponse = $this->request->getParam("webAuthnSignResponse");
+        $webAuthnSignResponse = json_decode($this->request->getParam("webAuthnSignResponse"), true);
         $origin = $this->request->getParam("origin");
         $mode = $this->request->getParam("mode");
         $this->session->set("pi_mode", $mode);
 
-        $this->log("error", "mode: " . $mode); //TODO rm
-
-        $url = false;
-
-        if ($password || $u2fSignResponse || $webAuthnSignResponse)
-        {
-            $url = $this->getBaseUrl() . "validate/check";
-            $realm = $this->getAppValue('realm', '');
-            $options['body'] = [
-                'user' => $username,
-                'pass' => $password,
-                'realm' => $realm];
-
-            // The verifyChallenge is called with additional parameters in case of challenge response
-            $clientData = $u2fSignResponse['clientData'];
-            $signatureData = $u2fSignResponse['signatureData'];
-
-            $this->log("debug", "transaction_id: " . $transactionID);
-            $this->log("debug", "signatureData: " . $signatureData);
-            $this->log("debug", "clientData: " . $clientData);
-
-            if ($transactionID)
-            {
-                // add transaction ID in case of challenge response
-                $options['body']["transaction_id"] = $transactionID;
-            }
-
-            if ($mode === "u2f")
-            {
-                $this->log("debug", "We are processing a U2F response.");
-                // here we add the signatureData and the clientData in case of U2F
-                $options['body']["signaturedata"] = $signatureData;
-                $options['body']["clientdata"] = $clientData;
-            }
-
-            if ($mode === "webauthn")
-            {
-                $this->log("debug", "We are processing a Web Authn response.");
-                // here we add the origin, signatureData and the clientData in case of Web Authn
-                $options['body']["signaturedata"] = $signatureData;
-                $options['body']["clientdata"] = $clientData;
-                $options['body']["origin"] = $origin;
-            }
-        } else if ($mode === "push" || "mode" === "tiqr")
+        if ($mode === "push" || "mode" === "tiqr")
         {
             if ($mode === "push")
             {
@@ -255,6 +217,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             }
 
             $url = $this->getBaseUrl() . "validate/polltransaction";
+            $doGet = true;
             $options["body"] = ["transaction_id" => $transactionID];
 
             // Increase load counter
@@ -262,6 +225,50 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             {
                 $counter = $this->request->getParam("loadCounter");
                 $this->session->set("pi_loadCounter", $counter + 1);
+            }
+        }
+        else
+        {
+            $url = $this->getBaseUrl() . "validate/check";
+            $realm = $this->getAppValue('realm', '');
+            $options['body'] = [
+                'user' => $username,
+                'pass' => $password,
+                'realm' => $realm];
+
+            $this->log("debug", "transaction_id: " . $transactionID);
+
+            if ($transactionID)
+            {
+                // add transaction ID in case of challenge response
+                $options['body']["transaction_id"] = $transactionID;
+            }
+
+            if ($mode === "u2f")
+            {
+                $this->log("debug", "We are processing a U2F response.");
+                // here we add the signatureData and the clientData in case of U2F
+                $options['body']["signaturedata"] = $u2fSignResponse['signatureData'];
+                $options['body']["clientdata"] = $u2fSignResponse['clientData'];
+            }
+
+            if ($mode === "webauthn")
+            {
+                $this->log("debug", "We are processing a Web Authn response.");
+                // here we add the origin, signatureData and the clientData in case of Web Authn
+                $options['body']['signaturedata'] = $webAuthnSignResponse['signaturedata'];
+                $options['body']['clientdata'] = $webAuthnSignResponse['clientdata'];
+                $options['body']['credentialid'] = $webAuthnSignResponse['credentialid'];
+                $options['body']['authenticatordata'] = $webAuthnSignResponse['authenticatordata'];
+                if (!empty($webAuthnSignResponse['userhandle']))
+                {
+                    $options['body']['userhandle'] = $webAuthnSignResponse['userhandle'];
+                }
+                if (!empty($webAuthnSignResponse['assertionclientextensions']))
+                {
+                    $options['body']['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
+                }
+                $options['headers']['Origin'] = $origin;
             }
         }
 
@@ -273,16 +280,25 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             try
             {
                 $client = $this->httpClientService->newClient();
-                $res = $client->get($url, $options);
-                $body = $this->processPIResponse($res);
 
-                if ($body->result->status === true)
+                if (isset($doGet) && $doGet)
+                {
+                    $result = $client->get($url, $options);
+                }
+                else
+                {
+                    $result = $client->post($url, $options);
+                }
+
+                $ret = $this->processPIResponse($result);
+
+                if ($ret->result->status === true)
                 {
                     if ($mode === "push" || $mode === "tiqr")
                     {
                         $errorMessage = $this->trans->t("Please confirm the authentication with your mobile device.");
 
-                        if ($body->result->value === true)
+                        if ($ret->result->value === true)
                         {
                             // The challenge has been answered. Now we need to verify it
                             $client = $this->httpClientService->newClient();
@@ -299,21 +315,33 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                 return true;
                             }
                         }
-                    } elseif ($body->result->value === true)
+                    }
+                    elseif ($ret->result->value === true)
                     {
                         $this->log("debug", "privacyIDEA: User authenticated successfully!");
                         return true;
-                    } else
-                    {
-                        $errorMessage = $this->trans->t(implode(", ", array_unique($body->detail->messages)));
                     }
-                } else
+                    else
+                    {
+                        if (isset($ret->detail->messages))
+                        {
+                            $errorMessage = $this->trans->t(implode(", ", array_unique($ret->detail->messages)));
+                        }
+                        else
+                        {
+                            $errorMessage = $this->trans->t($ret->detail->message);
+                            $this->log("debug", "privacyIDEA:" . $ret->detail->message);
+                        }
+                    }
+                }
+                else
                 {
                     // status == false
-                    $this->log("error", "[authenticate] privacyIDEA error code: " . $body->result->error->code);
-                    $this->log("error", "[authenticate] privacyIDEA error message: " . $body->result->error->message);
+                    $this->log("error", "[authenticate] privacyIDEA error code: " . $ret->result->error->code);
+                    $this->log("error", "[authenticate] privacyIDEA error message: " . $ret->result->error->message);
                 }
-            } catch (Exception $e)
+            }
+            catch (Exception $e)
             {
                 if ($res !== 0)
                 {
@@ -323,7 +351,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $this->log("debug", $e);
                 $errorMessage = $this->trans->t("Failed to authenticate.") . " " . $e->getMessage();
             }
-        } else
+        }
+        else
         {
             // We have not gotten any authentication information whatsoever. This code should never be reached, if the
             // client is sane.
@@ -336,7 +365,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             // This is the behaviour for OC >= 9.2
             throw new TwoFactorException($errorMessage, $errorCode);
-        } else
+        }
+        else
         {
             // This is the behaviour for OC == 9.1 and NC.
             return false;
@@ -376,7 +406,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $client = $this->httpClientService->newClient();
             $result = $client->post($url, $options);
             $ret = $this->processPIResponse($result);
-        } catch (ProcessPIResponseException $e)
+        }
+        catch (ProcessPIResponseException $e)
         {
             return $e->getMessage();
         }
@@ -384,14 +415,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         if (is_string($ret))
         {
             return $ret;
-        } else
+        }
+        else
         {
             return $ret->detail->message;
         }
     }
 
     /**
-     * Send API-request to privacyIDEA using httpClientService from owncloud.
      *
      * @param IResponse $result
      * @return mixed|string
@@ -403,15 +434,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $errorMessage = "";
 
         $mode = $this->request->getParam("mode", "otp");
+
+        $body = json_decode($result->getBody());
+        $this->log("debug", print_r(json_encode($body, JSON_PRETTY_PRINT), true));
+
         if ($mode === "push" || $mode === "tiqr")
         {
-            return json_decode($result->getBody());
-        } else
+            return $body;
+        }
+        else
         {
             try
             {
-                $body = json_decode($result->getBody());
-
                 if ($result->getStatusCode() == 200)
                 {
                     if ($body->result->status === true)
@@ -429,7 +463,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                             if (count($multiChallenge) === 0)
                             {
                                 $this->session->set("pi_hideOTPField", "0");
-                            } else
+                            }
+                            else
                             {
                                 for ($i = 0; $i < count($multiChallenge); $i++)
                                 {
@@ -443,14 +478,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                             $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
                                             break;
                                         case "push":
-//                                        $this->session->set("pi_pushResponse", true);
                                             $this->session->set("pi_pushAvailable", "1");
                                             break;
                                         case "tiqr":
-                                            $tiqrImg = $multiChallenge[$i]->attributes->img;
-//                                        $this->session->set("pi_tiqrResponse", true);
                                             $this->session->set("pi_tiqrAvailable", "1");
-                                            $this->session->set("pi_tiqrImage", $tiqrImg);
+                                            $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
                                             break;
                                         case "otp":
                                             $this->session->set("pi_otpAvailable", "1");
@@ -466,7 +498,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         }
                         return $body;
                     }
-                } elseif ($result->getStatusCode() == 400 && $passOnNoToken)
+                }
+                elseif ($result->getStatusCode() == 400 && $passOnNoToken)
                 {
                     if ($body->result->error != null)
                     {
@@ -479,13 +512,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         }
                     }
                     $errorMessage = $this->trans->t("Failed to process PI response. Wrong HTTP return code: " . $result->getStatusCode());
-                } else
+                }
+                else
                 {
                     $errorMessage = $this->trans->t("Failed to process PI response. Wrong HTTP return code: " . $result->getStatusCode());
                     $this->log("error", "[processPIResponse] privacyIDEA error code: " . $body->result->error->code);
                     $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
                 }
-            } catch (Exception $e)
+            }
+            catch (Exception $e)
             {
                 if ($result != 0)
                 {
@@ -540,19 +575,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     if (in_array("triggerchallenge", $body->result->value->rights))
                     {
                         return $body->result->value->token;
-                    } else
+                    }
+                    else
                     {
                         $errorMessage = $this->trans->t("Check if service account has correct permissions");
                         $this->log("error", "[fetchAuthToken] privacyIDEA error message: Missing permissions for service account");
                     }
                 }
-            } else
+            }
+            else
             {
                 $errorMessage = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
                 $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
                 $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
             }
-        } catch (Exception $e)
+        }
+        catch (Exception $e)
         {
             if ($result !== 0)
             {
@@ -599,7 +637,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         {
                             return false;
                         }
-                    } else
+                    }
+                    else
                     {
                         if ($clientIP === ip2long($address))
                         {
@@ -662,10 +701,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER))
         {
             return $_SERVER["HTTP_X_FORWARDED_FOR"];
-        } else if (array_key_exists('REMOTE_ADDR', $_SERVER))
+        }
+        else if (array_key_exists('REMOTE_ADDR', $_SERVER))
         {
             return $_SERVER["REMOTE_ADDR"];
-        } else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER))
+        }
+        else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER))
         {
             return $_SERVER["HTTP_CLIENT_IP"];
         }

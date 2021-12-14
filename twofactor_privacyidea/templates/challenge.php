@@ -1,5 +1,6 @@
 <?php
 script('twofactor_privacyidea', 'challenge');
+script('twofactor_privacyidea', 'webauthn');
 
 //if (isset($_['response']) && $_['response'])
 //{
@@ -72,6 +73,12 @@ script('twofactor_privacyidea', 'challenge');
                    p($_['pushAvailable']);
                } ?>"/>
 
+        <input id="tiqrAvailable" type="hidden" name="tiqrAvailable"
+               value="<?php if (isset($_['tiqrAvailable']))
+               {
+                   p($_['tiqrAvailable']);
+               } ?>"/>
+
         <input id="otpAvailable" type="hidden" name="otpAvailable"
                value="<?php if (isset($_['otpAvailable']))
                {
@@ -83,12 +90,19 @@ script('twofactor_privacyidea', 'challenge');
                {
                    p($_['loadCounter']);
                } ?>"/>
+
         <input id="mode" type="hidden" name="mode" value="<?php if (isset($_['mode']))
         {
             p($_['mode']);
         }else {
             p("otp");
         } ?>"/>
+
+        <input id="tiqrImage" type="image" alt="TiQR Image" name="tiqrImage"
+               value="<?php if (isset($_['tiqrImage']))
+               {
+                   p($_['tiqrImage']);
+               } ?>"/>
 
         <!-- Alternate Login Options -->
         <div id="alternateLoginOptions" style="margin-top:35px">

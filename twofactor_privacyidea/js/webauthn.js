@@ -31,7 +31,6 @@ var webauthn = navigator.credentials ? window.webauthn || {} : null;
 (function (credentials)
 {
     'use strict';
-
     // Do not proceed if webAuthn is unsupported in this client.
     if (!this)
     {
@@ -81,7 +80,7 @@ var webauthn = navigator.credentials ? window.webauthn || {} : null;
                     id: webAuthnBase64DecToArr(x.id),
                     type: x.type,
                     transports: x.transports
-                };
+                }
             }),
             rpId: webAuthnSignRequest.rpId,
             userVerification: webAuthnSignRequest.userVerification,
@@ -113,7 +112,7 @@ var webauthn = navigator.credentials ? window.webauthn || {} : null;
                 if (assertion.response.assertionClientExtensions)
                 {
                     webAuthnSignResponse.assertionclientextensions = webAuthnBase64EncArr(
-                        strToUtf8Arr(JSON.stringify(assertion.response.assertionClientExtensions)));
+                        strToUtf8Arr(JSON.stringify(assertion.response.assertionClientExtensions)))
                 }
 
                 return Promise.resolve(webAuthnSignResponse);
@@ -385,7 +384,7 @@ var webauthn = navigator.credentials ? window.webauthn || {} : null;
             sBase64
                 .replace(/-/g, '+')
                 .replace(/_/g, '/')
-                .padEnd((sBase64.length | 3) + 1, '='));
+                .padEnd((sBase64.length | 3) + 1, '='))
     };
 
     /**
