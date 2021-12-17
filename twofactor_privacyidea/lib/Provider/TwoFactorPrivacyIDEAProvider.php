@@ -21,10 +21,8 @@
  */
 
 namespace OCA\TwoFactor_privacyIDEA\Provider;
-
 require_once(dirname(__FILE__) . '/AdminAuthException.php');
 require_once(dirname(__FILE__) . '/ProcessPIResponseException.php');
-
 use OCP\Http\Client\IResponse;
 use OCP\IUser;
 use OCP\IGroupManager;
@@ -53,7 +51,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private $logger;
     /** @var IL10N */
     private $trans;
-    /** @var ISession Every our key needs "pi_" as a prefix to avoid collisions */
+    /** @var ISession Every key needs "pi_" as a prefix to avoid collisions */
     private $session;
     /** @var IRequest */
     private $request;
@@ -94,7 +92,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function getTemplate(IUser $user): Template
     {
-
         // Triggerchallenge
         if ($this->getAppValue('triggerchallenges', '') === '1')
         {
@@ -158,12 +155,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
         $template->assign("otpAvailable", $this->session->get("pi_otpAvailable"));
         $template->assign("tiqrAvailable", $this->session->get("pi_tiqrAvailable"));
+
         if ($this->session->get("pi_tiqrImage") !== null)
         {
             $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
         }
 
         $loads = 1;
+
         if ($this->session->get("pi_loadCounter") !== null)
         {
             $loads = $this->session->get("pi_loadCounter");
@@ -339,6 +338,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     // status == false
                     $this->log("error", "[authenticate] privacyIDEA error code: " . $ret->result->error->code);
                     $this->log("error", "[authenticate] privacyIDEA error message: " . $ret->result->error->message);
+                    $errorMessage = $this->trans->t("Failed to authenticate.") . " " . $ret->result->error->message;
+
                 }
             }
             catch (Exception $e)
@@ -423,6 +424,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
+     * Process and sort the privacyIDEA API Response
      *
      * @param IResponse $result
      * @return mixed|string
@@ -511,11 +513,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                             return "No token found for your user, Login is still enabled.";
                         }
                     }
-                    $errorMessage = $this->trans->t("Failed to process PI response. Wrong HTTP return code: " . $result->getStatusCode());
+                    $errorMessage = $this->trans->t("Failed to process PI response.". $body->result->error->message);
                 }
                 else
                 {
-                    $errorMessage = $this->trans->t("Failed to process PI response. Wrong HTTP return code: " . $result->getStatusCode());
+                    $errorMessage = $this->trans->t("Failed to process PI response." . $body->result->error->message);
                     $this->log("error", "[processPIResponse] privacyIDEA error code: " . $body->result->error->code);
                     $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
                 }

@@ -1,13 +1,7 @@
 <?php
 script('twofactor_privacyidea', 'challenge');
 script('twofactor_privacyidea', 'webauthn');
-
-//if (isset($_['response']) && $_['response'])
-//{
-//    script('twofactor_privacyidea', 'response-status');
-//} ?>
-
-    <!--TODO Add otpFieldHint in settings-->
+?>
 
 <?php if (isset($_['message']) && $_['message']): ?>
     <fieldset class="warning">
@@ -23,22 +17,13 @@ script('twofactor_privacyidea', 'webauthn');
             <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
             <?php
         }
-        if (isset($_['tiqrImage']) && $_['tiqrImage'])
+        if (isset($_['tiqrImage']))
         {
             ?>
-            <img width="250" src="<?php p($_['tiqrImage']); ?>" alt="tiqrImage">
+            <img id="tiqrImage" width="250" src="<?php p($_['tiqrImage']); ?>" alt="TiQR Image"><br>
             <?php
         }
         ?>
-
-        <!--        --><?php
-        //        if (isset($_["responseStatus"]) && !$_["responseStatus"] === true)
-        //        {
-        //            ?>
-        <!--            <input type="hidden" id="ResponseStatus" value="false">-->
-        <!--            --><?php
-        //        }
-        //        ?>
 
         <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']): ?>
             <label>
@@ -46,8 +31,8 @@ script('twofactor_privacyidea', 'webauthn');
                        required
                        autofocus>
             </label>
+            <input id="submitButton" type="submit" class="button" value="Verify" style="width: 100%">
         <?php endif; ?>
-        <input id="submitButton" type="submit" class="button" value="Verify" style="width: 100%">
 
         <!-- Hidden input which store the info about changes -->
         <input id="modeChanged" type="hidden" name="modeChanged" value="0"/>
@@ -98,12 +83,6 @@ script('twofactor_privacyidea', 'webauthn');
             p("otp");
         } ?>"/>
 
-        <input id="tiqrImage" type="image" alt="TiQR Image" name="tiqrImage"
-               value="<?php if (isset($_['tiqrImage']))
-               {
-                   p($_['tiqrImage']);
-               } ?>"/>
-
         <!-- Alternate Login Options -->
         <div id="alternateLoginOptions" style="margin-top:35px">
             <label><strong>Alternate login options:</strong></label>
@@ -129,6 +108,5 @@ script('twofactor_privacyidea', 'webauthn');
 
 <?php if (isset($_['autoSubmit']) && $_['autoSubmit']):
     script('twofactor_privacyidea', 'auto-submit');
-    echo "autosubmit!";
 endif;
 ?>

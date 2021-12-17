@@ -45,6 +45,7 @@ window.onload = function ()
     if (value("tiqrAvailable") !== "1")
     {
         disable("useTiQRButton");
+        disable("tiqrImage");
     }
 
     if (value("otpAvailable") !== "1")
@@ -64,6 +65,10 @@ window.onload = function ()
     if (value("mode") === "otp" || value("mode").length < 1)
     {
         disable("useOTPButton");
+    }
+
+    if(value("mode") !== "tiqr") {
+        disable("tiqrImage");
     }
 
     if (value("mode") === "webauthn")
@@ -213,12 +218,12 @@ window.onload = function ()
             disable("usePushButton");
         }
         if(value("mode") === "tiqr") {
-            disable("tiqrButton");
+            disable("useTiQRButton");
             enable("tiqrImage");
         }
         enable("useOTPButton");
 
-        var refreshTime = 0;
+        var refreshTime;
 
         if (value("loadCounter") > (pollingIntervals.length - 1))
         {
