@@ -204,7 +204,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $mode = $this->request->getParam("mode");
         $this->session->set("pi_mode", $mode);
 
-        if ($mode === "push" || "mode" === "tiqr")
+        if ($mode === "push" || $mode === "tiqr")
         {
             if ($mode === "push")
             {

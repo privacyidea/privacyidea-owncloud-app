@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<info>
+	<id>twofactor_privacyidea</id>
+	<name>privacyIDEA Two Factor Authentication</name>
+	<summary>Most flexible enterprise level multi factor authentication</summary>
+	<description>This is a plugin to forward authentication requests to your own privacyIDEA Authentication System.
+[Your own privacyIDEA Authentication System](https://netknights.it/en/produkte/privacyidea/) can run on premise
+centrally in your network under your control.
+
+privacyIDEA can manage many different kind of authentication devices.
+Thus you can assign different authentication objects to your users as second factor. Users
+can now authenticate against your ownCloud installation with e.g. Google Authenticator,
+the [privacyIDEA Authenticator](https://netknights.it/en/produkte/privacyidea-authenticator-app/)
+Yubikey, U2F tokens, key fob, OTP display cards and much more.
+	</description>
+	<licence>AGPL</licence>
+	<author>NetKnights GmbH, Cornelius Kölbel</author>
+	<version>2.7</version>
+	<namespace>TwoFactor_privacyIDEA</namespace>
+	<category>Security</category>
+	<types>
+		<prelogin/>
+		<authentication/>
+	</types>
+
+	<two-factor-providers>
+		<provider>OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider</provider>
+	</two-factor-providers>
+        <screenshot>https://www.privacyidea.org/wp-content/uploads/2014/05/token.png</screenshot>
+	<dependencies>
+		<nextcloud min-version="12" max-version="13" />
+		<owncloud min-version="9.1" max-version="10" />
+	</dependencies>
+	<website>https://privacyidea.org</website>
+	<bugs>https://github.com/privacyidea/privacyidea-owncloud-app/issues</bugs>
+	<documentation>
+		<admin>https://github.com/privacyidea/privacyidea-owncloud-app/blob/master/README.md</admin>
+	</documentation>
+</info>
