@@ -80,59 +80,63 @@ window.onload = function ()
         doU2F();
     }
 
-    function doWebAuthn()
+    function ensureSecureContextAndMode(mode)
     {
-
         // If mode is push, we have to change it, otherwise the site will refresh while doing webauthn
         if (value("mode") === "push" || value("mode") === "tiqr")
         {
-            changeMode("webauthn");
+            changeMode(mode);
         }
 
         if (!window.isSecureContext)
         {
-            window.alert("Unable to proceed with Web Authn because the context is insecure!");
-            console.log("Insecure context detected: Aborting Web Authn authentication!");
+            window.alert("Unable to proceed with WebAuthn / U2F because the context is insecure!");
+            console.log("Insecure context detected: Aborting WebAuthn / U2F authentication!");
             changeMode("otp");
-            return;
         }
 
-        if (!window.webauthn)
+        if (mode === "webauthn")
         {
-            window.alert("Could not load WebAuthn library. Please try again or use other token!.");
-            changeMode("otp");
-            return;
+            if (!window.webauthn)
+            {
+                window.alert("Could not load WebAuthn library. Please try again or use other token!.");
+                changeMode("otp");
+            }
         }
+    }
 
-        var requestStr = value("webAuthnSignRequest");
+    function doWebAuthn()
+    {
+        ensureSecureContextAndMode("webauthn");
 
+        const requestStr = value("webAuthnSignRequest");
         if (requestStr === null)
         {
             window.alert("Could not to process WebAuthn request. Please try again or use other token.");
             changeMode("otp");
-            return;
         }
 
         // Set origin
         if (!window.location.origin)
         {
-            window.location.origin = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+            window.location.origin = window.location.protocol + "//"
+                + window.location.hostname
+                + (window.location.port ? ':' + window.location.port : '');
         }
         set("origin", window.origin);
 
         try
         {
-            var requestjson = JSON.parse(requestStr);
+            const requestjson = JSON.parse(requestStr);
 
-            var webAuthnSignResponse = window.webauthn.sign(requestjson);
+            const webAuthnSignResponse = window.webauthn.sign(requestjson);
             webAuthnSignResponse.then(function (webauthnresponse)
             {
-                var response = JSON.stringify(webauthnresponse);
+                const response = JSON.stringify(webauthnresponse);
                 set("webAuthnSignResponse", response);
                 set("mode", "webauthn");
                 document.forms["piLoginForm"].submit();
             });
-
         }
         catch (err)
         {
@@ -143,32 +147,18 @@ window.onload = function ()
 
     function doU2F()
     {
-        // If mode is push, we have to change it, otherwise the site will refresh while doing U2F
-        if (value("mode") === "push" || value("mode") === "tiqr")
-        {
-            changeMode("u2f");
-        }
+        ensureSecureContextAndMode(u2f);
 
-        if (!window.isSecureContext)
-        {
-            window.alert("Unable to proceed with U2F because the context is insecure!");
-            console.log("Insecure context detected: Aborting U2F authentication!");
-            changeMode("otp");
-            return;
-        }
-
-        var requestStr = value("u2fSignRequest");
-
+        const requestStr = value("u2fSignRequest");
         if (requestStr === null)
         {
             window.alert("Could not load U2F library. Please try again or use other token.");
             changeMode("otp");
-            return;
         }
 
         try
         {
-            var requestjson = JSON.parse(requestStr);
+            const requestjson = JSON.parse(requestStr);
             signU2FRequest(requestjson);
         }
         catch (err)
@@ -180,9 +170,9 @@ window.onload = function ()
 
     function signU2FRequest(signRequest)
     {
-        var appId = signRequest["appId"];
-        var challenge = signRequest["challenge"];
-        var registeredKeys = [];
+        const appId = signRequest["appId"];
+        const challenge = signRequest["challenge"];
+        const registeredKeys = [];
 
         registeredKeys.push({
             version: "U2F_V2",
@@ -191,7 +181,7 @@ window.onload = function ()
 
         window.u2f.sign(appId, challenge, registeredKeys, function (result)
         {
-            var stringResult = JSON.stringify(result);
+            const stringResult = JSON.stringify(result);
 
             if (stringResult.includes("clientData") && stringResult.includes("signatureData"))
             {
@@ -204,8 +194,7 @@ window.onload = function ()
 
     if (value("mode") === "push" || value("mode") === "tiqr")
     {
-
-        var pollingIntervals = [4, 3, 2, 1];
+        const pollingIntervals = [4, 3, 2, 1];
 
         disable("otp");
         disable("submitButton");
@@ -220,7 +209,7 @@ window.onload = function ()
         }
         enable("useOTPButton");
 
-        var refreshTime;
+        let refreshTime;
 
         if (value("loadCounter") > (pollingIntervals.length - 1))
         {
@@ -244,8 +233,7 @@ window.onload = function ()
      */
     function value(id)
     {
-        var element = document.getElementById(id);
-
+        const element = document.getElementById(id);
         if (element === null)
         {
             console.log(id + " is null!");
@@ -264,7 +252,7 @@ window.onload = function ()
      */
     function set(id, value)
     {
-        var element = document.getElementById(id);
+        const element = document.getElementById(id);
         if (element !== null)
         {
             element.value = value;
@@ -281,7 +269,7 @@ window.onload = function ()
      */
     function disable(id)
     {
-        var element = document.getElementById(id);
+        const element = document.getElementById(id);
         if (element !== null)
         {
             element.style.display = "none";
@@ -298,7 +286,7 @@ window.onload = function ()
      */
     function enable(id)
     {
-        var element = document.getElementById(id);
+        const element = document.getElementById(id);
         if (element !== null)
         {
             element.style.display = "initial";
