@@ -202,20 +202,24 @@ u2f.getMessagePort = function (callback)
                 // We are on a whitelisted origin and can talk directly
                 // with the extension.
                 u2f.getChromeRuntimePort_(callback);
-            } else
+            }
+            else
             {
                 // chrome.runtime was available, but we couldn't message
                 // the extension directly, use iframe
                 u2f.getIframePort_(callback);
             }
         });
-    } else if (u2f.isAndroidChrome_())
+    }
+    else if (u2f.isAndroidChrome_())
     {
         u2f.getAuthenticatorPort_(callback);
-    } else if (u2f.isIosChrome_())
+    }
+    else if (u2f.isIosChrome_())
     {
         u2f.getIosPort_(callback);
-    } else
+    }
+    else
     {
         // chrome.runtime was not available at all, which is normal
         // when this origin doesn't have access to any extensions.
@@ -411,7 +415,8 @@ u2f.WrappedChromeRuntimePort_.prototype.addEventListener =
                 // Emulate a minimal MessageEvent object
                 handler({'data': message});
             });
-        } else
+        }
+        else
         {
             console.error('WrappedChromeRuntimePort only supports onMessage');
         }
@@ -466,7 +471,8 @@ u2f.WrappedAuthenticatorPort_.prototype.addEventListener = function (eventName, 
          * chrome injects the response. */
         window.addEventListener(
             'message', self.onRequestUpdate_.bind(self, handler), false);
-    } else
+    }
+    else
     {
         console.error('WrappedAuthenticatorPort only supports message');
     }
@@ -566,7 +572,8 @@ u2f.getIframePort_ = function (callback)
         {
             channel.port1.removeEventListener('message', ready);
             callback(channel.port1);
-        } else
+        }
+        else
         {
             console.error('First event on iframe port was not "ready"');
         }
@@ -629,7 +636,8 @@ u2f.getPortSingleton_ = function (callback)
     if (u2f.port_)
     {
         callback(u2f.port_);
-    } else
+    }
+    else
     {
         if (u2f.waitingForPort_.length === 0)
         {
@@ -690,7 +698,8 @@ u2f.sign = function (appId, challenge, registeredKeys, callback, opt_timeoutSeco
                 console.log("Extension JS API Version: ", js_api_version);
                 u2f.sendSignRequest(appId, challenge, registeredKeys, callback, opt_timeoutSeconds);
             });
-    } else
+    }
+    else
     {
         // We know the JS API version. Send the actual sign request in the supported API version.
         u2f.sendSignRequest(appId, challenge, registeredKeys, callback, opt_timeoutSeconds);
@@ -743,7 +752,8 @@ u2f.register = function (appId, registerRequests, registeredKeys, callback, opt_
                 u2f.sendRegisterRequest(appId, registerRequests, registeredKeys,
                     callback, opt_timeoutSeconds);
             });
-    } else
+    }
+    else
     {
         // We know the JS API version. Send the actual register request in the supported API version.
         u2f.sendRegisterRequest(appId, registerRequests, registeredKeys,

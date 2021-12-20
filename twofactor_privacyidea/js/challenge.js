@@ -29,7 +29,6 @@ window.onload = function ()
     if (value("webAuthnSignRequest") === "")
     {
         disable("useWebAuthnButton");
-        console.log("Web Authn Button - disabled");
     }
 
     if (value("u2fSignRequest") === "")
@@ -59,7 +58,6 @@ window.onload = function ()
         && value("u2fSignRequest").length < 1)
     {
         disable("alternateLoginOptions");
-        console.log("Alternate Login Options - disabled. No other tokens available.");
     }
 
     if (value("mode") === "otp" || value("mode").length < 1)
@@ -67,20 +65,19 @@ window.onload = function ()
         disable("useOTPButton");
     }
 
-    if(value("mode") !== "tiqr") {
+    if (value("mode") !== "tiqr")
+    {
         disable("tiqrImage");
     }
 
     if (value("mode") === "webauthn")
     {
         doWebAuthn();
-        console.log("Doing WebAuthn");
     }
 
     if (value("mode") === "u2f")
     {
         doU2F();
-        console.log("Doing U2F");
     }
 
     function doWebAuthn()
@@ -119,11 +116,7 @@ window.onload = function ()
         // Set origin
         if (!window.location.origin)
         {
-            window.location.origin = window.location.protocol
-                + "//"
-                + window.location.hostname
-                + (window.location.port ? ':'
-                    + window.location.port : '');
+            window.location.origin = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
         }
         set("origin", window.origin);
 
@@ -140,7 +133,8 @@ window.onload = function ()
                 document.forms["piLoginForm"].submit();
             });
 
-        } catch (err)
+        }
+        catch (err)
         {
             console.log("Error while signing WebAuthnSignRequest: " + err);
             window.alert("Error while signing WebAuthnSignRequest: " + err);
@@ -176,7 +170,8 @@ window.onload = function ()
         {
             var requestjson = JSON.parse(requestStr);
             signU2FRequest(requestjson);
-        } catch (err)
+        }
+        catch (err)
         {
             console.log("Error while signing U2FSignRequest: " + err);
             window.alert("Error while signing U2FSignRequest: " + err);
@@ -214,10 +209,12 @@ window.onload = function ()
 
         disable("otp");
         disable("submitButton");
-        if(value("mode") === "push") {
+        if (value("mode") === "push")
+        {
             disable("usePushButton");
         }
-        if(value("mode") === "tiqr") {
+        if (value("mode") === "tiqr")
+        {
             disable("useTiQRButton");
             enable("tiqrImage");
         }
@@ -228,7 +225,8 @@ window.onload = function ()
         if (value("loadCounter") > (pollingIntervals.length - 1))
         {
             refreshTime = pollingIntervals[(pollingIntervals.length - 1)];
-        } else
+        }
+        else
         {
             refreshTime = pollingIntervals[Number(value("loadCounter") - 1)];
         }
@@ -252,7 +250,8 @@ window.onload = function ()
         {
             console.log(id + " is null!");
             return "";
-        } else
+        }
+        else
         {
             return element.value;
         }
@@ -269,7 +268,8 @@ window.onload = function ()
         if (element !== null)
         {
             element.value = value;
-        } else
+        }
+        else
         {
             console.log(id + " is null!");
         }
@@ -285,7 +285,8 @@ window.onload = function ()
         if (element !== null)
         {
             element.style.display = "none";
-        } else
+        }
+        else
         {
             console.log(id + " is null!");
         }
@@ -301,7 +302,8 @@ window.onload = function ()
         if (element !== null)
         {
             element.style.display = "initial";
-        } else
+        }
+        else
         {
             console.log(id + " is null!");
         }

@@ -23,7 +23,7 @@ class SettingsController extends Controller
 {
     /** @var IL10N Translation */
     private $trans;
-    /** @var IConfig Configuration object*/
+    /** @var IConfig Configuration object */
     private $config;
     /** @var ISession */
     private $session;
@@ -86,12 +86,14 @@ class SettingsController extends Controller
             {
                 $message = $this->trans->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
                 $status = "success";
-            } else
+            }
+            else
             {
                 // only happens for OC==9 and NC. In this case, we cannot know why authentication failed.
                 $message = $this->trans->t("Failed to authenticate.");
             }
-        } catch (Exception $e)
+        }
+        catch (Exception $e)
         {
             if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException')
                 && $e instanceof TwoFactorException
@@ -100,7 +102,8 @@ class SettingsController extends Controller
                 // in this case, privacyIDEA worked correctly, but the password was wrong
                 $message = $this->trans->t("Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.");
                 $status = "error";
-            } else
+            }
+            else
             {
                 $message = $e->getMessage();
             }
@@ -132,11 +135,14 @@ class SettingsController extends Controller
                     $message = $message . " " . $updateMessage;
                 }
                 $status = "success";
-            }else {
+            }
+            else
+            {
                 $message = "The service account credentials are incorrect";
                 $status = "error";
             }
-        } catch (Exception $e)
+        }
+        catch (Exception $e)
         {
             $message = "Probably you have entered wrong credentials. Check the server's message: " . $e->getMessage();
         }

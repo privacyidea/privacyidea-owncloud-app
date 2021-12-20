@@ -34,7 +34,7 @@ class Application extends \OCP\AppFramework\App
         parent::__construct('twofactor_privacyidea', $urlParams);
         $container = $this->getContainer();
 
-        //Controllers
+        // Controllers
         $container->registerService('SettingsController', function ($c)
         {
             $server = $c->getServer();

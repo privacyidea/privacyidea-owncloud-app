@@ -31,7 +31,10 @@ script('twofactor_privacyidea', 'webauthn');
                        required
                        autofocus>
             </label>
-            <input id="submitButton" type="submit" class="button" value="Verify" style="width: 100%">
+            <input id="submitButton" type="submit" class="button" value="<?php if (isset($_['verify']))
+            {
+                p($_['verify']);
+            } ?>" style="width: 100%">
         <?php endif; ?>
 
         <!-- Hidden input which store the info about changes -->
@@ -79,17 +82,22 @@ script('twofactor_privacyidea', 'webauthn');
         <input id="mode" type="hidden" name="mode" value="<?php if (isset($_['mode']))
         {
             p($_['mode']);
-        }else {
+        }
+        else
+        {
             p("otp");
         } ?>"/>
 
         <!-- Alternate Login Options -->
         <div id="alternateLoginOptions" style="margin-top:35px">
-            <label><strong>Alternate login options:</strong></label>
-            <br><br>
+            <label><strong><?php if (isset($_['alternateLoginOptions']))
+                    {
+                        p($_['alternateLoginOptions']);
+                    } ?></strong></label>
+            <br>
             <input id="useWebAuthnButton" name="useWebAuthnButton" type="button" value="WebAuthn"
                    style="width:140px; margin:15px 10px 7px"/>
-            <input id="usePushButton" name="usePushButton" type="button" value="PUSH"
+            <input id="usePushButton" name="usePushButton" type="button" value="Push"
                    style="width:140px; margin:15px 10px 7px"/>
             <input id="useTiQRButton" name="useTiQRButton" type="button" value="TiQR"
                    style="width:140px; margin:15px 10px 7px"/>

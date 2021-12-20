@@ -132,7 +132,8 @@ $(document).ready(function ()
         if (show)
         {
             $("#piserviceaccount_credentials").show();
-        } else
+        }
+        else
         {
             $("#piserviceaccount_credentials").hide();
         }

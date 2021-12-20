@@ -508,25 +508,29 @@ var webauthn = navigator.credentials ? window.webauthn || {} : null;
             {
                 /* one byte */
                 aBytes[nIdx++] = nChr;
-            } else if (nChr < 0x800)
+            }
+            else if (nChr < 0x800)
             {
                 /* two bytes */
                 aBytes[nIdx++] = 192 + (nChr >>> 6);
                 aBytes[nIdx++] = 128 + (nChr & 63);
-            } else if (nChr < 0x10000)
+            }
+            else if (nChr < 0x10000)
             {
                 /* three bytes */
                 aBytes[nIdx++] = 224 + (nChr >>> 12);
                 aBytes[nIdx++] = 128 + (nChr >>> 6 & 63);
                 aBytes[nIdx++] = 128 + (nChr & 63);
-            } else if (nChr < 0x200000)
+            }
+            else if (nChr < 0x200000)
             {
                 /* four bytes */
                 aBytes[nIdx++] = 240 + (nChr >>> 18);
                 aBytes[nIdx++] = 128 + (nChr >>> 12 & 63);
                 aBytes[nIdx++] = 128 + (nChr >>> 6 & 63);
                 aBytes[nIdx++] = 128 + (nChr & 63);
-            } else if (nChr < 0x4000000)
+            }
+            else if (nChr < 0x4000000)
             {
                 /* five bytes */
                 aBytes[nIdx++] = 248 + (nChr >>> 24);
@@ -534,7 +538,8 @@ var webauthn = navigator.credentials ? window.webauthn || {} : null;
                 aBytes[nIdx++] = 128 + (nChr >>> 12 & 63);
                 aBytes[nIdx++] = 128 + (nChr >>> 6 & 63);
                 aBytes[nIdx++] = 128 + (nChr & 63);
-            } else /* if (nChr <= 0x7fffffff) */ {
+            }
+            else /* if (nChr <= 0x7fffffff) */ {
                 /* six bytes */
                 aBytes[nIdx++] = 252 + (nChr >>> 30);
                 aBytes[nIdx++] = 128 + (nChr >>> 24 & 63);
