@@ -97,7 +97,7 @@ window.onload = function ()
 
         if (mode === "webauthn")
         {
-            if (!window.webauthn)
+            if (!window.pi_webauthn)
             {
                 window.alert("Could not load WebAuthn library. Please try again or use other token!.");
                 changeMode("otp");
@@ -129,7 +129,7 @@ window.onload = function ()
         {
             const requestjson = JSON.parse(requestStr);
 
-            const webAuthnSignResponse = window.webauthn.sign(requestjson);
+            const webAuthnSignResponse = window.pi_webauthn.sign(requestjson);
             webAuthnSignResponse.then(function (webauthnresponse)
             {
                 const response = JSON.stringify(webauthnresponse);

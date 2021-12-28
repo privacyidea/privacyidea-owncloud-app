@@ -1,6 +1,6 @@
 <?php
 script('twofactor_privacyidea', 'challenge');
-script('twofactor_privacyidea', 'webauthn');
+script('twofactor_privacyidea', 'webauthn-client/pi-webauthn');
 ?>
 
 <?php if (isset($_['message']) && $_['message']): ?>
