@@ -7,7 +7,7 @@ script('twofactor_privacyidea', 'settings-admin');
         <span style="float: left"><?php p($l->t('privacyIDEA 2FA')); ?></span>
         <a target="_blank" rel="noreferrer" class="icon-info svg"
            title="<?php p($l->t('Open documentation')); ?>"
-           href="http://privacyidea.readthedocs.io"></a></h2>
+           href="https://privacyidea.readthedocs.io"></a></h2>
     <span id="pi_settings_msg" class="msg"></span>
     <p>
         <em>
@@ -78,7 +78,7 @@ script('twofactor_privacyidea', 'settings-admin');
                     <label for="piexclude"><?php p($l->t('Exclude groups')); ?></label>
                 </td>
                 <td>
-                    <input type="text" id="piexcludegroups" width="300px"/>
+                    <label for="piexcludegroups"></label><input type="text" id="piexcludegroups" width="300px"/>
                 </td>
                 <td>
                     <em>
@@ -99,7 +99,7 @@ script('twofactor_privacyidea', 'settings-admin');
 		                ')); ?>
                 </td>
                 <td>
-                    <input type="text" id="piexcludeips" width="300px"/>
+                    <label for="piexcludeips"></label><input type="text" id="piexcludeips" width="300px"/>
                 </td>
                 <td>
                     <em>
@@ -125,7 +125,7 @@ script('twofactor_privacyidea', 'settings-admin');
                 </td>
             </tr>
         </table>
-        <input id="checkssl" type="checkbox" class="checkbox">
+        <input id="checkssl" type="checkbox" class="checkbox" checked>
         <label for="checkssl">
             <?php p($l->t('
                     Verify the SSL certificate.
@@ -136,23 +136,15 @@ script('twofactor_privacyidea', 'settings-admin');
                     ')); ?>
             </em>
         </label>
-        </p>
-
+        <br>
+        <input id="noproxy" type="checkbox" class="checkbox">
+        <label for="noproxy">
+            <?php p($l->t('Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly.')); ?>
+        </label>
+        <?php p($l->t('Test')); ?>
         <p>
-            <input id="noproxy" type="checkbox" class="checkbox">
-            <label for="noproxy">
-                <?php p($l->t('
-                    Ignore the system wide proxy settings and send authentication
-                    requests to privacyIDEA directly.
-                ')); ?>
-            </label>
+            <?php p($l->t('Test authentication by supplying username and password that are checked against privacyIDEA:')); ?>
         </p>
-        <hr>
-        <h3>
-            <?php p($l->t('Test')); ?>
-        </h3>
-        <p>
-            <?php p($l->t('Test Authentication by supplying username and password that are checked against privacyIDEA:')); ?>
         <table>
             <tr>
                 <td>
@@ -173,7 +165,6 @@ script('twofactor_privacyidea', 'settings-admin');
         </table>
         <input id="pitestauthentication" type="button" value="<?php p($l->t('Test')); ?>"/>
         <span id="pitestauthentication_msg" class="msg"></span>
-        </p>
         <hr>
         <h3>
             <?php p($l->t('Challenge Response')); ?>
@@ -216,6 +207,7 @@ script('twofactor_privacyidea', 'settings-admin');
             <input id="piserviceaccount_test" type="button" value="<?php p($l->t('Check Credentials')); ?>"/>
             <span id="piserviceaccount_msg" class="msg"></span>
         </div>
-
+        <hr>
+        <hr>
     </div>
 </div>

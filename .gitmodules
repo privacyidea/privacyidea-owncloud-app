@@ -1,0 +1,3 @@
+[submodule "twofactor_privacyidea/js/webauthn-client"]
+	path = twofactor_privacyidea/js/webauthn-client
+	url = https://github.com/privacyidea/webauthn-client.git
