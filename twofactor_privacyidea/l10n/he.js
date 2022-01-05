@@ -6,6 +6,7 @@ OC.L10N.register(
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "התקשורת לשרת ה- privacyIDEA נוצרה בהצלחה. אבל, המשתמש נכשל באימות.",
     "The service account credentials are correct!" : "אישורי האימות של חשבון השירות נכונים!",
     "But we recommend to update your privacyIDEA server." : "אבל אנו ממליצים על עדכון שרת privacyIDEA .",
+    "Verify" : "אימות",
     "Check if service account has correct permissions" : "יש לבדוק אם לחשבון השירות יש הרשאות מתאימות",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "נכשל באחזור חתימת ייצוג מאומתת. קוד HTTP חוזר שגוי:",
     "Failed to fetch authentication token." : "נכשל הניסיון לאחזר מחרוזת אימות.",

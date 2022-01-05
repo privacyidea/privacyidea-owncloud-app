@@ -4,6 +4,7 @@
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "A comunicación con privacyIDEA foi satisfactoria. Porén non foi posíbel autenticar ao usuario.",
     "The service account credentials are correct!" : "As credenciais do servizo da conta son correctas!",
     "But we recommend to update your privacyIDEA server." : "Mais recomendamoslle que actualice o seu servidor de privacyIDEA.",
+    "Verify" : "Verificar",
     "Check if service account has correct permissions" : "Comprobe se o servizo da cuenta ten os permisos necesarios ",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Produciuse un fallo ao obter o testemuño de autenticación. Código de retorno HTTP incorrecto: ",
     "Failed to fetch authentication token." : "Produciuse un fallo ao obter o testemuño de autenticación.",

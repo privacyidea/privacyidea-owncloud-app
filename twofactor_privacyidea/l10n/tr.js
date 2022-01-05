@@ -6,6 +6,7 @@ OC.L10N.register(
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "privacyIDEA sunucusuna başarıyla bağlantı sağlandı. Ancak kullanıcı doğrulaması başarısız.",
     "The service account credentials are correct!" : "Servis hesabının kimlik bilgileri doğru!",
     "But we recommend to update your privacyIDEA server." : "Fakat privacyIDEA sunucusunu güncellemenizi tavsiye ederiz.",
+    "Verify" : "Doğrula",
     "Check if service account has correct permissions" : "Servis hesabının doğru izinlere sahip olup olmadığını kontrol edin",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Kimlik doğrulama belirteci getirilemedi. Yanlış HTTP dönüş kodu:",
     "Failed to fetch authentication token." : "Kimlik doğrulama jetonu alınırken başarısız olundu.",

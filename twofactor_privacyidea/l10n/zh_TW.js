@@ -6,6 +6,7 @@ OC.L10N.register(
     "Communication to the privacyIDEA server succeeded. However, the user failed to authenticate." : "成功連線至 privacyIDEA 伺服器。但是無法驗證使用者。",
     "The service account credentials are correct!" : "服務帳號認證正確！",
     "But we recommend to update your privacyIDEA server." : "但我們建議您更新您的 privacyIDEA 伺服器。",
+    "Verify" : "驗證",
     "Check if service account has correct permissions" : "檢查服務帳號是否有正確權限",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "無法取得驗證憑證。錯誤 HTTP 返回碼：",
     "Failed to fetch authentication token." : "無法取得驗證憑證。",
