@@ -28,13 +28,12 @@ script('twofactor_privacyidea', 'webauthn-client/pi-webauthn');
         <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']): ?>
             <label>
                 <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off" autocorrect="off"
-                       required
-                       autofocus>
+                       required autofocus style="width:230px; align:center; text-align:center; margin:0 0 5px">
             </label>
             <input id="submitButton" type="submit" class="button" value="<?php if (isset($_['verify']))
             {
                 p($_['verify']);
-            } ?>" style="width: 100%">
+            } ?>" style="width:251px; margin:0 224px">
         <?php endif; ?>
 
         <!-- Hidden input which store the info about changes -->
