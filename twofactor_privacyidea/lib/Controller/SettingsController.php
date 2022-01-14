@@ -81,11 +81,14 @@ class SettingsController extends Controller
         $status = "error";
         try
         {
-            $result = $provider->authenticate($user, $pass);
-            if ($result)
+            $result = $provider->validateCheck($user, $pass);
+            if ($result->result->status == true)
             {
                 $message = $this->trans->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
                 $status = "success";
+            }
+            elseif ($result->result->status == false) {
+                $message = $this->trans->t("Failed to authenticate.") . $result->result->error->message;
             }
             else
             {

@@ -365,7 +365,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @throws ProcessPIResponseException
      * @throws Exception
      */
-    private function validateCheck(string $username, string $pass, string $transactionID = null)
+    public function validateCheck(string $username, string $pass, string $transactionID = null)
     {
         $options["body"] = [
             "user" => $username,
