@@ -17,5 +17,5 @@ Nevertheless you can test the priacyIDEA ownCloud App in your test environment.
 
 ## Install
 
-Copy the directory twofactor_privacyidea to your ``<owncloud>/apps/`` directory
+Copy the directory twofactor_privacyidea to your ``<owncloud>/apps-external/`` directory
 or install the privacyIDEA app via the [ownCloud marketplace](https://marketplace.owncloud.com/apps/twofactor_privacyidea).
