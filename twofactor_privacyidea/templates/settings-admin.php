@@ -141,7 +141,7 @@ script('twofactor_privacyidea', 'settings-admin');
         <label for="noproxy">
             <?php p($l->t('Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly.')); ?>
         </label>
-        <?php p($l->t('Test')); ?>
+        <br>
         <p>
             <?php p($l->t('Test authentication by supplying username and password that are checked against privacyIDEA:')); ?>
         </p>

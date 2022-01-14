@@ -365,7 +365,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @throws ProcessPIResponseException
      * @throws Exception
      */
-    private function validateCheck(string $username, string $pass, string $transactionID = null)
+    public function validateCheck(string $username, string $pass, string $transactionID = null)
     {
         $options["body"] = [
             "user" => $username,
@@ -449,6 +449,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     {
         $clientOptions = $this->getClientOptions();
         $options = array_merge($clientOptions, $options);
+        $realm = $this->getAppValue('realm', '');
+        if (!empty($realm))
+        {
+            $options['body']['realm'] = $realm;
+        }
+
+        $this->log("debug", "Send request to " . $endpoint);
+        $this->log("debug", "With options: " . http_build_query($options["body"], "", ", "));
+
+
         $client = $this->httpClientService->newClient();
 
         if ($isGET)
@@ -457,7 +467,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         else
         {
-            $options['body']['realm'] = $this->getAppValue('realm', '');
             $res = $client->post($this->getBaseUrl() . $endpoint, $options);
         }
         return $res;
@@ -525,7 +534,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $mode = $this->request->getParam("mode", "otp");
 
         $body = json_decode($result->getBody());
-        $this->log("debug", print_r(json_encode($body, JSON_PRETTY_PRINT), true));
+        $this->log("debug", print_r(json_encode($body), true));
 
         if ($mode === "push" || $mode === "tiqr")
         {

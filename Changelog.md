@@ -1,3 +1,14 @@
+# 3.0, 2022-01-11
+
+## Features
+* Add WebAuthn.
+
+## Fixes
+* Fix multiple challenge response.
+* Fix/update settings.
+* Show PI error messages in UI.
+* PassOnNoUser (user doesn't exist or user have no token assigned) is now working in every scenario.
+
 2.7, 2020-06-04
 
 * Add PassOnNoUser
