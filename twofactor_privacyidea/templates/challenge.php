@@ -30,10 +30,11 @@ script('twofactor_privacyidea', 'webauthn-client/pi-webauthn');
                 <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off" autocorrect="off"
                        required autofocus style="width:230px; align:center; text-align:center; margin:0 0 5px">
             </label>
+        <br>
             <input id="submitButton" type="submit" class="button" value="<?php if (isset($_['verify']))
             {
                 p($_['verify']);
-            } ?>" style="width:251px; margin:0 224px">
+            } ?>" style="width:251px; display: inline !important; text-align:center !important; align:center !important">
         <?php endif; ?>
 
         <!-- Hidden input which store the info about changes -->
