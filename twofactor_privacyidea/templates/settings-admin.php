@@ -126,10 +126,10 @@ script('twofactor_privacyidea', 'settings-admin');
             </tr>
             <tr>
                 <td>
-                    <label for="preferredtokentype"><?php p($l->t('Preferred token type')); ?></label>
+                    <label for="pipreferredtokentype"><?php p($l->t('Preferred token type')); ?></label>
                 </td>
                 <td>
-                    <input type="text" id="preferredtokentype" size="40"/>
+                    <input type="text" id="pipreferredtokentype" size="40"/>
                 </td>
                 <td>
                     <em>

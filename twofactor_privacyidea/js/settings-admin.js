@@ -126,6 +126,19 @@ $(document).ready(function ()
         setValue("realm", value);
     });
 
+    /* privacyIDEA preferred token type */
+    getValue("preferredtokentype", function (preferredtokentype)
+    {
+        $("#piSettings #pipreferredtokentype").val(preferredtokentype);
+    });
+    $("#piSettings #pipreferredtokentype").change(function ()
+    {
+        console.log("pi: Saving preferred token type");
+        var value = $("#piSettings #pipreferredtokentype").val();
+        console.log(value);
+        setValue("preferredtokentype", value);
+    });
+
     /* Enable/Disable challenge triggering */
     var displayServerCredentials = function (show)
     {
