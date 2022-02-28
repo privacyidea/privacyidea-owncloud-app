@@ -564,29 +564,47 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         {
                             for ($i = 0; $i < count($multiChallenge); $i++)
                             {
+                                $triggeredTokenTypes = array();
+
                                 switch ($multiChallenge[$i]->type)
                                 {
                                     case "u2f":
                                         $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
+                                        array_push($triggeredTokenTypes);
                                         break;
                                     case "webauthn":
                                         $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
+                                        array_push($triggeredTokenTypes);
                                         break;
                                     case "push":
                                         $this->session->set("pi_pushAvailable", "1");
+                                        array_push($triggeredTokenTypes);
                                         break;
                                     case "tiqr":
                                         $this->session->set("pi_tiqrAvailable", "1");
                                         $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
+                                        array_push($triggeredTokenTypes);
                                         break;
                                     case "otp":
                                         $this->session->set("pi_otpAvailable", "1");
+                                        array_push($triggeredTokenTypes);
                                         break;
                                     default:
                                         $this->session->set("pi_hideOTPField", "0");
                                         $this->session->set("pi_otpAvailable", "1");
                                         $this->session->set("pi_pushAvailable", "0");
                                         $this->session->set("pi_tiqrAvailable", "0");
+                                }
+
+                                // Check if preferred token type was triggered and set mode to this
+                                $triggered = array_unique($triggeredTokenTypes);
+                                if (!empty($this->getAppValue("preferredTokenType", "")) && !empty($triggered))
+                                {
+                                    $preferred = $this->getAppValue("preferredTokenType", "");
+                                    if (in_array($preferred, $triggered))
+                                    {
+                                        $this->session->set("pi_mode", $preferred);
+                                    }
                                 }
                             }
                         }
@@ -613,7 +631,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             return $errorMessage;
         }
     }
-
+    
     /**
      * Authenticate the service account against the privacyIDEA instance and return the generated JWT token.
      * In case authentication fails, an AdminAuthException is thrown.

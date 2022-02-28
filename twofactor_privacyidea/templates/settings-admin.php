@@ -124,6 +124,19 @@ script('twofactor_privacyidea', 'settings-admin');
                     </em>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    <label for="preferredtokentype"><?php p($l->t('Preferred token type')); ?></label>
+                </td>
+                <td>
+                    <input type="text" id="preferredtokentype" size="40"/>
+                </td>
+                <td>
+                    <em>
+                        <?php p($l->t('Select the token type, which should be used first if triggered.')) ?>
+                    </em>
+                </td>
+            </tr>
         </table>
         <input id="checkssl" type="checkbox" class="checkbox" checked>
         <label for="checkssl">

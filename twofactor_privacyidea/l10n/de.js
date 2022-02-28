@@ -35,6 +35,8 @@ OC.L10N.register(
     "Password" : "Kennwort",
     "Test" : "Testen",
     "Challenge Response" : "Challenge-Response",
+    "Preferred token type" : "Bevorzugter Token-Typ",
+    "Select the token type, which should be used first if triggered." : "Wählen Sie den Token-Typ aus, der bei Auslösung zuerst verwendet werden soll.",
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "Challenges für Challenge-Response-Token auslösen. Aktiviere diese Konfiguration, wenn du bspw. SMS oder E-Mail-Token verwenden möchtest.",
     "Let the user log in if the user is not found in privacyIDEA." : "Lassen Sie den Benutzer einloggen, obwohl er nicht in privacyIDEA gefunden wurde.",
     "Username of privacyIDEA service account" : "Benutzername des privacyIDEA-Dienstekontos",
