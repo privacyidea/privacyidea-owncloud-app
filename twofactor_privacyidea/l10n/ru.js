@@ -31,6 +31,7 @@ OC.L10N.register(
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n                    Выберите область пользователя, если не та, что по умолчанию.\n                ",
     "\n                    Verify the SSL certificate.\n                " : "\n                    Проверить сертификат SSL.\n                ",
     "\n                        Do not uncheck this in productive environments!\n                    " : "\n                        Не отключайте это в эксплуатационной среде!\n                    ",
+    "Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly." : "Игнорировать общесистемные настройки прокси и отправлять запросы аутентификации непосредственно в privacyIDEA.",
     "User" : "Пользователь",
     "Password" : "Пароль",
     "Test" : "Проверка",
