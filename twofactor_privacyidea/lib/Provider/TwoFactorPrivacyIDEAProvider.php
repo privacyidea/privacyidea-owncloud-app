@@ -600,10 +600,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                             // Check if preferred token type was triggered and set mode to this
                             $triggered = array_unique($triggeredTokenTypes);
                             $preferred = $this->getAppValue("preferredtokentype", "");
-                            $this->log("error", "here first: " . $preferred . "and " . print_r($triggered, true)); //todo rm
 
                             if (!empty($preferred) && !empty($triggered))
-                                $this->log("error", "hi: " . $preferred . "and " . print_r($triggered, true)); //todo rm
                             {
                                 if (in_array($preferred, $triggered))
                                 {
