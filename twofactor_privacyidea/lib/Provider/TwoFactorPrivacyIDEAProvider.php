@@ -396,7 +396,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $options['body']["signaturedata"] = $u2fSignResponse['signatureData'];
         $options['body']["clientdata"] = $u2fSignResponse['clientData'];
 
-//        $res = $client->post($this->getBaseUrl() . "validate/check", $options);
         $res = $this->sendRequest("validate/check", $options);
         return $this->processPIResponse($res);
     }
@@ -458,7 +457,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->log("debug", "Send request to " . $endpoint);
         $this->log("debug", "With options: " . http_build_query($options["body"], "", ", "));
 
-
         $client = $this->httpClientService->newClient();
 
         if ($isGET)
@@ -500,7 +498,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $options["body"] = ["user" => $username, "realm" => $realm];
         $options["headers"] = ["PI-Authorization" => $token];
 
-
         $client = $this->httpClientService->newClient();
         $result = $client->post($url, $options);
         $ret = $this->processPIResponse($result);
@@ -530,7 +527,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     {
         $passOnNoToken = $this->getAppValue('passOnNoUser', false);
         $errorMessage = "";
-
         $mode = $this->request->getParam("mode", "otp");
 
         $body = json_decode($result->getBody());

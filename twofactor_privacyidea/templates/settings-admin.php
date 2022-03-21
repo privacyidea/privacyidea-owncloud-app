@@ -129,7 +129,12 @@ script('twofactor_privacyidea', 'settings-admin');
                     <label for="pipreferredtokentype"><?php p($l->t('Preferred token type')); ?></label>
                 </td>
                 <td>
-                    <input type="text" id="pipreferredtokentype" size="40"/>
+                    <select name="Preferred token type" id="pipreferredtokentype">
+                        <option value="otp">OTP</option>
+                        <option value="push">PUSH</option>
+                        <option value="webauthn">WebAuthn</option>
+                        <option value="u2f">U2F</option>
+                    </select>
                 </td>
                 <td>
                     <em>
