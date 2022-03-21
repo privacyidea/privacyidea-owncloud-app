@@ -124,6 +124,24 @@ script('twofactor_privacyidea', 'settings-admin');
                     </em>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    <label for="pipreferredtokentype"><?php p($l->t('Preferred token type')); ?></label>
+                </td>
+                <td>
+                    <select name="Preferred token type" id="pipreferredtokentype">
+                        <option value="otp">OTP</option>
+                        <option value="push">PUSH</option>
+                        <option value="webauthn">WebAuthn</option>
+                        <option value="u2f">U2F</option>
+                    </select>
+                </td>
+                <td>
+                    <em>
+                        <?php p($l->t('Select the token type, which should be used first if triggered.')) ?>
+                    </em>
+                </td>
+            </tr>
         </table>
         <input id="checkssl" type="checkbox" class="checkbox" checked>
         <label for="checkssl">

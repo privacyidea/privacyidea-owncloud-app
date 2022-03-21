@@ -396,7 +396,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $options['body']["signaturedata"] = $u2fSignResponse['signatureData'];
         $options['body']["clientdata"] = $u2fSignResponse['clientData'];
 
-//        $res = $client->post($this->getBaseUrl() . "validate/check", $options);
         $res = $this->sendRequest("validate/check", $options);
         return $this->processPIResponse($res);
     }
@@ -458,7 +457,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->log("debug", "Send request to " . $endpoint);
         $this->log("debug", "With options: " . http_build_query($options["body"], "", ", "));
 
-
         $client = $this->httpClientService->newClient();
 
         if ($isGET)
@@ -500,7 +498,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $options["body"] = ["user" => $username, "realm" => $realm];
         $options["headers"] = ["PI-Authorization" => $token];
 
-
         $client = $this->httpClientService->newClient();
         $result = $client->post($url, $options);
         $ret = $this->processPIResponse($result);
@@ -530,7 +527,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     {
         $passOnNoToken = $this->getAppValue('passOnNoUser', false);
         $errorMessage = "";
-
         $mode = $this->request->getParam("mode", "otp");
 
         $body = json_decode($result->getBody());
@@ -562,31 +558,50 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         }
                         else
                         {
+                            $triggeredTokenTypes = array();
+
                             for ($i = 0; $i < count($multiChallenge); $i++)
                             {
                                 switch ($multiChallenge[$i]->type)
                                 {
                                     case "u2f":
                                         $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
+                                        $triggeredTokenTypes[] = "u2f";
                                         break;
                                     case "webauthn":
                                         $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
+                                        $triggeredTokenTypes[] = "webauthn";
                                         break;
                                     case "push":
                                         $this->session->set("pi_pushAvailable", "1");
+                                        $triggeredTokenTypes[] = "push";
                                         break;
                                     case "tiqr":
                                         $this->session->set("pi_tiqrAvailable", "1");
                                         $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
+                                        $triggeredTokenTypes[] = "tiqr";
                                         break;
                                     case "otp":
                                         $this->session->set("pi_otpAvailable", "1");
+                                        $triggeredTokenTypes[] = "otp";
                                         break;
                                     default:
                                         $this->session->set("pi_hideOTPField", "0");
                                         $this->session->set("pi_otpAvailable", "1");
                                         $this->session->set("pi_pushAvailable", "0");
                                         $this->session->set("pi_tiqrAvailable", "0");
+                                }
+                            }
+
+                            // Check if preferred token type was triggered and set mode to this
+                            $triggered = array_unique($triggeredTokenTypes);
+                            $preferred = $this->getAppValue("preferredtokentype", "");
+
+                            if (!empty($preferred) && !empty($triggered))
+                            {
+                                if (in_array($preferred, $triggered))
+                                {
+                                    $this->session->set("pi_mode", $preferred);
                                 }
                             }
                         }
