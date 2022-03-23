@@ -28,6 +28,8 @@
     "\n\t\t                    You can either add single IPs like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15\n\t\t                " : "\n\t\t                    Ose mund të shtoni IP teke, p.sh., 10.0.1.12,10.0.1.13, një interval, p.sh., 10.0.1.12-10.0.1.113, ose një ndërthurje, p.sh., 10.0.1.12-10.0.1.113,192.168.0.15\n\t\t                ",
     "User Realm" : "Hapësirë Përdoruesi",
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n                    Përzgjidhni hapësirën e përdoruesit, nëse s’është ajo parazgjedhje.\n                ",
+    "Preferred token type" : "Lloj i parapëlqyer token-ësh",
+    "Select the token type, which should be used first if triggered." : "Përzgjidhni llojin e token-ëve që duhen përdorur të parët, nëse vjen puna.",
     "\n                    Verify the SSL certificate.\n                " : "\n                    Verifiko dëshminë SSL.\n                ",
     "\n                        Do not uncheck this in productive environments!\n                    " : "\n                        Mos ia hiqni shenjën kësaj në mjedise sajtesh faktikë!\n                    ",
     "Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly." : "Shpërfilli rregullimet për ndërmjetës, të vlefshme për krejt sistemin dhe dërgo kërkesa mirëfilltësimi drejt e te privacyIDEA.",
