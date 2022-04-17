@@ -28,6 +28,8 @@
     "\n\t\t                    You can either add single IPs like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15\n\t\t                " : "\n\t\t                    Você pode adicionar um simples IP como 10.0.1.12,10.0.1.13, uma faixa como 10.0.1.12-10.0.1.113 ou combinações como 10.0.1.12-10.0.1.113,192.168.0.15\n\t\t                ",
     "User Realm" : "Domínio do Usuário",
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n                    Selecione a região do usuário, se não for a padrão.\n                ",
+    "Preferred token type" : "Tipo de token preferido",
+    "Select the token type, which should be used first if triggered." : "Selecione o tipo de token, que deve ser usado primeiro se acionado.",
     "\n                    Verify the SSL certificate.\n                " : "\n                    Verifique o certificado SSL.\n                ",
     "\n                        Do not uncheck this in productive environments!\n                    " : "\n                        Não desmarque isso em ambientes produtivos!\n                    ",
     "Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly." : "Ignore as configurações de proxy de todo o sistema e envie solicitações de autenticação para privacyIDEA diretamente.",
