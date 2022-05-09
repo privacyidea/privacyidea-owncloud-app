@@ -5,6 +5,7 @@
     "The service account credentials are correct!" : "¡Las credenciales de servicio de la cuenta son correctas!",
     "But we recommend to update your privacyIDEA server." : "Pero recomendamos que actualice su servidor privacyIDEA.",
     "Verify" : "Verificar",
+    "Alternate Login Options" : "Opciones de Inicios de sesión alternativos",
     "Check if service account has correct permissions" : "Verifique si el servicio de la cuenta posee los permisos necesarios",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Error al obtener el vale de autentificación. Código de error HTTP:",
     "Failed to fetch authentication token." : "Fallo al descargar el vale de autenticación.",
