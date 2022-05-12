@@ -31,6 +31,7 @@ OC.L10N.register(
     "User Realm" : "Benutzer-Bereich",
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n Wähle den Benutzerbereich aus, wenn es sich nicht um den Standardbereich handelt.",
     "Preferred token type" : "Bevorzugter Tokentyp",
+    "Select the token type, which should be used first if triggered." : "Wähle den Token Typ der zuerst benutzt wird wenn angefordert.",
     "\n                    Verify the SSL certificate.\n                " : "\nDas SSL Zertifikat überprüfen.",
     "\n                        Do not uncheck this in productive environments!\n                    " : "\nBitte deaktiviere dies nicht in einer produktiven Umgebung!",
     "Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly." : "Die systemweiten Proxy-Einstellungen ignorieren und den HTTP-Request für die Authentifizierung direkt an privacyIDEA senden.",
