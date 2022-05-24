@@ -46,4 +46,4 @@ OC.L10N.register(
     "Password of privacyIDEA service account" : "Senha da conta de serviço privacyIDEA",
     "Check Credentials" : "Conferir Credenciais"
 },
-"nplurals=2; plural=(n > 1);");
+"nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

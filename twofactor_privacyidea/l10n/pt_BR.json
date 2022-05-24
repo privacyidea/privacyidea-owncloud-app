@@ -43,5 +43,5 @@
     "Username of privacyIDEA service account" : "Nome de usuário da conta de serviço privacyIDEA",
     "Password of privacyIDEA service account" : "Senha da conta de serviço privacyIDEA",
     "Check Credentials" : "Conferir Credenciais"
-},"pluralForm" :"nplurals=2; plural=(n > 1);"
+},"pluralForm" :"nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 }
