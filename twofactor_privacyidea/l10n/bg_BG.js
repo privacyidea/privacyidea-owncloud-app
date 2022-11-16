@@ -8,7 +8,7 @@ OC.L10N.register(
     "But we recommend to update your privacyIDEA server." : "Но ви препоръчваме да актуализирате сървъра на privacyIDEA.",
     "Verify" : "Проверка",
     "Alternate Login Options" : "Алтернативни опции за вход",
-    "Check if service account has correct permissions" : "Проверете дали поддържаният профил има правилни разрешения",
+    "Check if service account has correct permissions" : "Проверете дали профилът на услугата има правилни права за достъп",
     "Failed to fetch authentication token. Wrong HTTP return code: " : "Неуспешно е извличането на токен за удостоверяване. Върнат е грешен HTTP код:",
     "Failed to fetch authentication token." : "Неуспешно извличане на токен за удостоверяване.",
     "privacyIDEA 2FA" : "privacyIDEA 2FA",
