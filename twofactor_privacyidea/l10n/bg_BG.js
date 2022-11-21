@@ -21,7 +21,7 @@ OC.L10N.register(
     "\n                            Please use the base URL of your privacyIDEA instance.\n                            For compatibility reasons, you may also specify the URL of the /validate/check endpoint.\n                        " : "\n                            Моля, използвайте базовия URL адрес на вашата инстанция на privacyIDEA. \n                             С оглед на съвместимостта можете да посочите и URL адреса на крайната точка /validate/check.",
     "Timeout" : "Време за изчакване",
     "default is 5" : "по подразбиране е 5",
-    "\n                            Sets timeout to privacyIDEA for login in seconds.\n                        " : "\n Задава време за изчакване на privacyIDEA за влизане в секунди.",
+    "\n                            Sets timeout to privacyIDEA for login in seconds.\n                        " : "\n      Задава време в секунди за изчакване на privacyIDEA за влизане.",
     "Include groups" : "Включване на групи",
     "Exclude groups" : "Изключване на групи",
     "\n\t\t                    If include is selected, just the groups in this field need to do 2FA.\n\t\t                " : "\n\t\t                    Ако е избрано включване, само групите в това поле е необходимо да използват 2FA.\n\t\t",
