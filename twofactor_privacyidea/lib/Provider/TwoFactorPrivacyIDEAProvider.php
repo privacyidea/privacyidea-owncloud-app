@@ -481,6 +481,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @param string $username user for which privacyIDEA should trigger challenges
      * @return string
      * @throws AdminAuthException
+     * @throws ProcessPIResponseException
      * @throws Exception
      */
     private function triggerChallenge(string $username): string
