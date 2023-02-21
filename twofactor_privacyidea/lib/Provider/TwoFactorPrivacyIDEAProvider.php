@@ -1,5 +1,5 @@
 <?php
-/**
+/*
  * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
  * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
  *
@@ -335,7 +335,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function pollTransaction(string $transactionID): bool
     {
-        $options["body"] = ["transaction_id" => $transactionID];
+        $options["form_params"] = ["transaction_id" => $transactionID];
         $res = $this->sendRequest("validate/polltransaction", $options, true);
         $ret = $this->processPIResponse($res);
         if (is_string($ret))
@@ -367,7 +367,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function validateCheck(string $username, string $pass, string $transactionID = null)
     {
-        $options["body"] = [
+        $options["form_params"] = [
             "user" => $username,
             "transaction_id" => $transactionID,
             "pass" => $pass];
@@ -387,7 +387,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function validateCheckU2F(string $username, string $transactionID, array $u2fSignResponse)
     {
-        $options["body"] = [
+        $options["form_params"] = [
             "user" => $username,
             "pass" => "",
             "transaction_id" => $transactionID];
@@ -413,7 +413,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function validateCheckWebAuthn(string $username, string $transactionID, array $webAuthnSignResponse, string $origin)
     {
-        $options["body"] = [
+        $options["form_params"] = [
             "user" => $username,
             "pass" => "",
             "transaction_id" => $transactionID,
@@ -451,11 +451,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $realm = $this->getAppValue('realm', '');
         if (!empty($realm))
         {
-            $options['body']['realm'] = $realm;
+            $options['form_params']['realm'] = $realm;
         }
 
         $this->log("debug", "Send request to " . $endpoint);
-        $this->log("debug", "With options: " . http_build_query($options["body"], "", ", "));
+        $this->log("debug", "With options: " . http_build_query($options["form_params"], "", ", "));
 
         $client = $this->httpClientService->newClient();
 
@@ -495,7 +495,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         $this->session->set("pi_authorization", $token);
 
-        $options["body"] = ["user" => $username, "realm" => $realm];
+        $options["form_params"] = ["user" => $username, "realm" => $realm];
         $options["headers"] = ["PI-Authorization" => $token];
 
         $client = $this->httpClientService->newClient();
@@ -517,11 +517,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * Takes relevant info from privacyIDEAs response
      * and adds them to the session, like:
      * - which types challenges have been triggered
-     * - the messages or errors if any occured
+     * - the messages or errors if any occurred
      * And also document when an exception is thrown, when an empty string is returned
      *
      * @param IResponse $result
      * @return mixed|string
+     * @throws ProcessPIResponseException
      */
     private function processPIResponse(IResponse $result)
     {
@@ -624,6 +625,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             {
                 $errorMessage = $body->result->error->message;
                 $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
+                throw new ProcessPIResponseException($errorMessage);
             }
             return $errorMessage;
         }
@@ -647,7 +649,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         try
         {
             $client = $this->httpClientService->newClient();
-            $options["body"] = ["username" => $username, "password" => $password];
+            $options["form_params"] = ["username" => $username, "password" => $password];
             $result = $client->post($url, $options);
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200)
