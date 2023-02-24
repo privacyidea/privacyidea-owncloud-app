@@ -58,6 +58,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private $request;
     /** @var IGroupManager */
     private $groupManager;
+    /** @var string Adjust the request option up to the OC version.*/
+    private $requestOption;
 
     /**
      * @param IClientService $httpClientService
@@ -83,6 +85,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->request = $request;
         $this->groupManager = $groupManager;
         $this->session = $session;
+        
+        $this->requestOption = $this->getRequestOption();
     }
 
     /**
@@ -335,7 +339,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function pollTransaction(string $transactionID): bool
     {
-        $options[$this->defineRequestOption()] = ["transaction_id" => $transactionID];
+        $options[$this->requestOption] = ["transaction_id" => $transactionID];
         $res = $this->sendRequest("validate/polltransaction", $options, true);
         $ret = $this->processPIResponse($res);
         if (is_string($ret))
@@ -367,7 +371,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function validateCheck(string $username, string $pass, string $transactionID = null)
     {
-        $options[$this->defineRequestOption()] = [
+        $options[$this->requestOption] = [
             "user" => $username,
             "transaction_id" => $transactionID,
             "pass" => $pass];
@@ -387,14 +391,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function validateCheckU2F(string $username, string $transactionID, array $u2fSignResponse)
     {
-        $options[$this->defineRequestOption()] = [
+        $options[$this->requestOption] = [
             "user" => $username,
             "pass" => "",
             "transaction_id" => $transactionID];
 
         // here we add the signatureData and the clientData in case of U2F
-        $options[$this->defineRequestOption()]["signaturedata"] = $u2fSignResponse['signatureData'];
-        $options[$this->defineRequestOption()]["clientdata"] = $u2fSignResponse['clientData'];
+        $options[$this->requestOption]["signaturedata"] = $u2fSignResponse['signatureData'];
+        $options[$this->requestOption]["clientdata"] = $u2fSignResponse['clientData'];
 
         $res = $this->sendRequest("validate/check", $options);
         return $this->processPIResponse($res);
@@ -413,7 +417,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function validateCheckWebAuthn(string $username, string $transactionID, array $webAuthnSignResponse, string $origin)
     {
-        $options[$this->defineRequestOption()] = [
+        $options[$this->requestOption] = [
             "user" => $username,
             "pass" => "",
             "transaction_id" => $transactionID,
@@ -423,11 +427,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             "authenticatordata" => $webAuthnSignResponse['authenticatordata']];
         if (!empty($webAuthnSignResponse['userhandle']))
         {
-            $options[$this->defineRequestOption()]['userhandle'] = $webAuthnSignResponse['userhandle'];
+            $options[$this->requestOption]['userhandle'] = $webAuthnSignResponse['userhandle'];
         }
         if (!empty($webAuthnSignResponse['assertionclientextensions']))
         {
-            $options[$this->defineRequestOption()]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
+            $options[$this->requestOption]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
         }
         $options['headers']['Origin'] = $origin;
 
@@ -451,11 +455,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $realm = $this->getAppValue('realm', '');
         if (!empty($realm))
         {
-            $options[$this->defineRequestOption()]['realm'] = $realm;
+            $options[$this->requestOption]['realm'] = $realm;
         }
 
         $this->log("debug", "Send request to " . $endpoint);
-        $this->log("debug", "With options: " . http_build_query($options[$this->defineRequestOption()], "", ", "));
+        $this->log("debug", "With options: " . http_build_query($options[$this->requestOption], "", ", "));
 
         $client = $this->httpClientService->newClient();
 
@@ -496,7 +500,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         $this->session->set("pi_authorization", $token);
 
-        $options[$this->defineRequestOption()] = ["user" => $username, "realm" => $realm];
+        $options[$this->requestOption] = ["user" => $username, "realm" => $realm];
         $options["headers"] = ["PI-Authorization" => $token];
 
         $client = $this->httpClientService->newClient();
@@ -650,7 +654,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         try
         {
             $client = $this->httpClientService->newClient();
-            $options[$this->defineRequestOption()] = ["username" => $username, "password" => $password];
+            $options[$this->requestOption] = ["username" => $username, "password" => $password];
             $result = $client->post($url, $options);
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200)
@@ -798,7 +802,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      *
      * @return string
      */
-    private function defineRequestOption(): string
+    private function getRequestOption(): string
     {
         $ocVersion = \OC_Util::getVersion();
         // The first array value represents a major version number, the second value is a minor version.
