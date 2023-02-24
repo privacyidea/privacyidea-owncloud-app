@@ -1,5 +1,5 @@
 <?php
-/**
+/*
  * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
  * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
  *
@@ -24,21 +24,21 @@ namespace OCA\TwoFactor_privacyIDEA\Provider;
 require_once(dirname(__FILE__) . '/AdminAuthException.php');
 require_once(dirname(__FILE__) . '/ProcessPIResponseException.php');
 
-use OCP\Http\Client\IResponse;
-use OCP\IUser;
-use OCP\IGroupManager;
-use OCP\Template;
+use Exception;
+use OCP\Authentication\TwoFactorAuth\IProvider;
+use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 use OCP\Http\Client\IClientService;
-use OCP\ILogger;
+use OCP\Http\Client\IResponse;
 use OCP\IConfig;
+use OCP\IGroupManager;
+use OCP\IL10N;
+use OCP\ILogger;
 use OCP\IRequest;
 use OCP\ISession;
-use Exception;
+use OCP\IUser;
+use OCP\Template;
 
 // For OC < 9.2 the TwoFactorException does not exist. So we need to handle this in the method verifyChallenge
-use OCP\Authentication\TwoFactorAuth\TwoFactorException;
-use OCP\Authentication\TwoFactorAuth\IProvider;
-use OCP\IL10N;
 
 class TwoFactorPrivacyIDEAProvider implements IProvider
 {
@@ -58,6 +58,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private $request;
     /** @var IGroupManager */
     private $groupManager;
+    /** @var string Adjust the request option up to the OC version.*/
+    private $requestOption;
 
     /**
      * @param IClientService $httpClientService
@@ -83,6 +85,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->request = $request;
         $this->groupManager = $groupManager;
         $this->session = $session;
+        
+        $this->requestOption = $this->getRequestOption();
     }
 
     /**
@@ -335,7 +339,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function pollTransaction(string $transactionID): bool
     {
-        $options["body"] = ["transaction_id" => $transactionID];
+        $options[$this->requestOption] = ["transaction_id" => $transactionID];
         $res = $this->sendRequest("validate/polltransaction", $options, true);
         $ret = $this->processPIResponse($res);
         if (is_string($ret))
@@ -367,7 +371,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function validateCheck(string $username, string $pass, string $transactionID = null)
     {
-        $options["body"] = [
+        $options[$this->requestOption] = [
             "user" => $username,
             "transaction_id" => $transactionID,
             "pass" => $pass];
@@ -387,14 +391,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function validateCheckU2F(string $username, string $transactionID, array $u2fSignResponse)
     {
-        $options["body"] = [
+        $options[$this->requestOption] = [
             "user" => $username,
             "pass" => "",
             "transaction_id" => $transactionID];
 
         // here we add the signatureData and the clientData in case of U2F
-        $options['body']["signaturedata"] = $u2fSignResponse['signatureData'];
-        $options['body']["clientdata"] = $u2fSignResponse['clientData'];
+        $options[$this->requestOption]["signaturedata"] = $u2fSignResponse['signatureData'];
+        $options[$this->requestOption]["clientdata"] = $u2fSignResponse['clientData'];
 
         $res = $this->sendRequest("validate/check", $options);
         return $this->processPIResponse($res);
@@ -413,7 +417,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function validateCheckWebAuthn(string $username, string $transactionID, array $webAuthnSignResponse, string $origin)
     {
-        $options["body"] = [
+        $options[$this->requestOption] = [
             "user" => $username,
             "pass" => "",
             "transaction_id" => $transactionID,
@@ -423,11 +427,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             "authenticatordata" => $webAuthnSignResponse['authenticatordata']];
         if (!empty($webAuthnSignResponse['userhandle']))
         {
-            $options['body']['userhandle'] = $webAuthnSignResponse['userhandle'];
+            $options[$this->requestOption]['userhandle'] = $webAuthnSignResponse['userhandle'];
         }
         if (!empty($webAuthnSignResponse['assertionclientextensions']))
         {
-            $options['body']['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
+            $options[$this->requestOption]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
         }
         $options['headers']['Origin'] = $origin;
 
@@ -451,11 +455,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $realm = $this->getAppValue('realm', '');
         if (!empty($realm))
         {
-            $options['body']['realm'] = $realm;
+            $options[$this->requestOption]['realm'] = $realm;
         }
 
         $this->log("debug", "Send request to " . $endpoint);
-        $this->log("debug", "With options: " . http_build_query($options["body"], "", ", "));
+        $this->log("debug", "With options: " . http_build_query($options[$this->requestOption], "", ", "));
 
         $client = $this->httpClientService->newClient();
 
@@ -481,6 +485,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @param string $username user for which privacyIDEA should trigger challenges
      * @return string
      * @throws AdminAuthException
+     * @throws ProcessPIResponseException
      * @throws Exception
      */
     private function triggerChallenge(string $username): string
@@ -495,7 +500,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         $this->session->set("pi_authorization", $token);
 
-        $options["body"] = ["user" => $username, "realm" => $realm];
+        $options[$this->requestOption] = ["user" => $username, "realm" => $realm];
         $options["headers"] = ["PI-Authorization" => $token];
 
         $client = $this->httpClientService->newClient();
@@ -517,11 +522,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * Takes relevant info from privacyIDEAs response
      * and adds them to the session, like:
      * - which types challenges have been triggered
-     * - the messages or errors if any occured
+     * - the messages or errors if any occurred
      * And also document when an exception is thrown, when an empty string is returned
      *
      * @param IResponse $result
      * @return mixed|string
+     * @throws ProcessPIResponseException
      */
     private function processPIResponse(IResponse $result)
     {
@@ -624,6 +630,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             {
                 $errorMessage = $body->result->error->message;
                 $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
+                throw new ProcessPIResponseException($errorMessage);
             }
             return $errorMessage;
         }
@@ -647,7 +654,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         try
         {
             $client = $this->httpClientService->newClient();
-            $options["body"] = ["username" => $username, "password" => $password];
+            $options[$this->requestOption] = ["username" => $username, "password" => $password];
             $result = $client->post($url, $options);
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200)
@@ -786,6 +793,27 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         $this->log("debug", "[isTwoFactorAuthEnabledForUser] privacyIDEA is not enabled.");
         return false;
+    }
+
+    /**
+     * Choose the right request option.
+     * OC v10.11 require using a "form_params" option.
+     * All older OC versions require using a "body" option.
+     *
+     * @return string
+     */
+    private function getRequestOption(): string
+    {
+        $ocVersion = \OC_Util::getVersion();
+        // The first array value represents a major version number, the second value is a minor version.
+        if ($ocVersion[0] <= 10 && $ocVersion[1] < 11)
+        {
+            return "body";
+        }
+        else
+        {
+            return "form_params";
+        }
     }
 
     /**
