@@ -17,12 +17,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
  */
 
 namespace OCA\TwoFactor_privacyIDEA\Provider;
-require_once(dirname(__FILE__) . '/AdminAuthException.php');
-require_once(dirname(__FILE__) . '/ProcessPIResponseException.php');
 
 use Exception;
 use OCP\Authentication\TwoFactorAuth\IProvider;
@@ -58,7 +55,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private $request;
     /** @var IGroupManager */
     private $groupManager;
-    /** @var string Adjust the request option up to the OC version.*/
+    /** @var string Adjust the request option up to the OC version. */
     private $requestOption;
 
     /**
@@ -85,7 +82,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->request = $request;
         $this->groupManager = $groupManager;
         $this->session = $session;
-        
         $this->requestOption = $this->getRequestOption();
     }
 
@@ -97,7 +93,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function getTemplate(IUser $user): Template
     {
-        // Triggerchallenge
+        // TriggerChallenge
         if ($this->getAppValue('triggerchallenges', '') === '1')
         {
             if ($this->session->get("pi_TriggerChallengeSuccess") !== true)
@@ -183,9 +179,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      *         If privacyIDEA returned an HTTP 200 and result->status=true, but
      *         result->value=false, the exception has a code 1 (i.e. if the user
      *         could be found, but the password was incorrect).
-     * @throws TwoFactorException
-     * @throws ProcessPIResponseException
-     * @throws Exception
+     * @throws TwoFactorException|ProcessPIResponseException|Exception
      */
     public function verifyChallenge(IUser $user, $challenge): bool
     {
@@ -197,7 +191,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $password = $challenge;
         $username = $user->getUID();
 
-        // Read mode and transactionID
+        // Get mode and transactionID
         $transactionID = $this->session->get("pi_transactionId");
         $mode = $this->request->getParam("mode");
         $this->session->set("pi_mode", $mode);
@@ -330,44 +324,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
-     * Call /validate/polltransaction using transaction_id
-     *
-     * @param string $transactionID
-     * @return bool
-     * @throws ProcessPIResponseException
-     * @throws Exception
-     */
-    private function pollTransaction(string $transactionID): bool
-    {
-        $options[$this->requestOption] = ["transaction_id" => $transactionID];
-        $res = $this->sendRequest("validate/polltransaction", $options, true);
-        $ret = $this->processPIResponse($res);
-        if (is_string($ret))
-        {
-            return $ret;
-        }
-        else
-        {
-            if ($ret->result->status === true && $ret->result->value === true)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
-
-    /**
      * Handle validateCheck using user's username, password and if challenge response - transaction ID.
      *
      * @param string $username
      * @param string $pass
      * @param string|null $transactionID
      * @return mixed|string
-     * @throws ProcessPIResponseException
-     * @throws Exception
+     * @throws ProcessPIResponseException|Exception
      */
     public function validateCheck(string $username, string $pass, string $transactionID = null)
     {
@@ -378,100 +341,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         $res = $this->sendRequest("validate/check", $options);
         return $this->processPIResponse($res);
-    }
-
-    /**
-     * Sends a request to /validate/check with the data required to authenticate a U2F token.
-     *
-     * @param string $username
-     * @param string $transactionID
-     * @param array $u2fSignResponse
-     * @return void
-     * @throws Exception
-     */
-    private function validateCheckU2F(string $username, string $transactionID, array $u2fSignResponse)
-    {
-        $options[$this->requestOption] = [
-            "user" => $username,
-            "pass" => "",
-            "transaction_id" => $transactionID];
-
-        // here we add the signatureData and the clientData in case of U2F
-        $options[$this->requestOption]["signaturedata"] = $u2fSignResponse['signatureData'];
-        $options[$this->requestOption]["clientdata"] = $u2fSignResponse['clientData'];
-
-        $res = $this->sendRequest("validate/check", $options);
-        return $this->processPIResponse($res);
-    }
-
-    /**
-     * Sends a request to /validate/check with the data required to authenticate a WebAuthn token.
-     *
-     * @param string $username
-     * @param string $transactionID
-     * @param array $webAuthnSignResponse
-     * @param string $origin
-     * @return mixed|string
-     * @throws ProcessPIResponseException
-     * @throws Exception
-     */
-    private function validateCheckWebAuthn(string $username, string $transactionID, array $webAuthnSignResponse, string $origin)
-    {
-        $options[$this->requestOption] = [
-            "user" => $username,
-            "pass" => "",
-            "transaction_id" => $transactionID,
-            "signaturedata" => $webAuthnSignResponse['signaturedata'],
-            "clientdata" => $webAuthnSignResponse['clientdata'],
-            "credentialid" => $webAuthnSignResponse['credentialid'],
-            "authenticatordata" => $webAuthnSignResponse['authenticatordata']];
-        if (!empty($webAuthnSignResponse['userhandle']))
-        {
-            $options[$this->requestOption]['userhandle'] = $webAuthnSignResponse['userhandle'];
-        }
-        if (!empty($webAuthnSignResponse['assertionclientextensions']))
-        {
-            $options[$this->requestOption]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
-        }
-        $options['headers']['Origin'] = $origin;
-
-        $res = $this->sendRequest("validate/check", $options);
-        return $this->processPIResponse($res);
-    }
-
-    /**
-     * Prepare and send request to httpClientService
-     *
-     * @param string $endpoint
-     * @param array $options
-     * @param bool $isGET
-     * @return IResponse
-     * @throws Exception
-     */
-    private function sendRequest(string $endpoint, array $options, bool $isGET = false): IResponse
-    {
-        $clientOptions = $this->getClientOptions();
-        $options = array_merge($clientOptions, $options);
-        $realm = $this->getAppValue('realm', '');
-        if (!empty($realm))
-        {
-            $options[$this->requestOption]['realm'] = $realm;
-        }
-
-        $this->log("debug", "Send request to " . $endpoint);
-        $this->log("debug", "With options: " . http_build_query($options[$this->requestOption], "", ", "));
-
-        $client = $this->httpClientService->newClient();
-
-        if ($isGET)
-        {
-            $res = $client->get($this->getBaseUrl() . $endpoint, $options);
-        }
-        else
-        {
-            $res = $client->post($this->getBaseUrl() . $endpoint, $options);
-        }
-        return $res;
     }
 
     /**
@@ -515,6 +384,162 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             return $ret->detail->message;
         }
+    }
+
+    /**
+     * Sends a request to /validate/check with the data required to authenticate a U2F token.
+     *
+     * @param string $username
+     * @param string $transactionID
+     * @param array $u2fSignResponse
+     * @return void
+     * @throws Exception
+     */
+    private function validateCheckU2F(string $username, string $transactionID, array $u2fSignResponse)
+    {
+        $options[$this->requestOption] = [
+            "user" => $username,
+            "pass" => "",
+            "transaction_id" => $transactionID];
+
+        // here we add the signatureData and the clientData in case of U2F
+        $options[$this->requestOption]["signaturedata"] = $u2fSignResponse['signatureData'];
+        $options[$this->requestOption]["clientdata"] = $u2fSignResponse['clientData'];
+
+        $res = $this->sendRequest("validate/check", $options);
+        return $this->processPIResponse($res);
+    }
+
+    /**
+     * Sends a request to /validate/check with the data required to authenticate a WebAuthn token.
+     *
+     * @param string $username
+     * @param string $transactionID
+     * @param array $webAuthnSignResponse
+     * @param string $origin
+     * @return mixed|string
+     * @throws ProcessPIResponseException|Exception
+     */
+    private function validateCheckWebAuthn(string $username, string $transactionID, array $webAuthnSignResponse, string $origin)
+    {
+        $options[$this->requestOption] = [
+            "user" => $username,
+            "pass" => "",
+            "transaction_id" => $transactionID,
+            "signaturedata" => $webAuthnSignResponse['signaturedata'],
+            "clientdata" => $webAuthnSignResponse['clientdata'],
+            "credentialid" => $webAuthnSignResponse['credentialid'],
+            "authenticatordata" => $webAuthnSignResponse['authenticatordata']];
+        if (!empty($webAuthnSignResponse['userhandle']))
+        {
+            $options[$this->requestOption]['userhandle'] = $webAuthnSignResponse['userhandle'];
+        }
+        if (!empty($webAuthnSignResponse['assertionclientextensions']))
+        {
+            $options[$this->requestOption]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
+        }
+        $options['headers']['Origin'] = $origin;
+
+        $res = $this->sendRequest("validate/check", $options);
+        return $this->processPIResponse($res);
+    }
+
+    /**
+     * Call /validate/polltransaction using transaction_id
+     *
+     * @param string $transactionID
+     * @return bool
+     * @throws ProcessPIResponseException|Exception
+     */
+    private function pollTransaction(string $transactionID): bool
+    {
+        $options[$this->requestOption] = ["transaction_id" => $transactionID];
+        $res = $this->sendRequest("validate/polltransaction", $options, true);
+        $ret = $this->processPIResponse($res);
+        if (is_string($ret))
+        {
+            return $ret;
+        }
+        else
+        {
+            if ($ret->result->status === true && $ret->result->value === true)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Authenticate the service account against the privacyIDEA instance and return the generated JWT token.
+     * In case authentication fails, an AdminAuthException is thrown.
+     *
+     * @param string $username service account username
+     * @param string $password service account password
+     * @return string JWT token
+     * @throws AdminAuthException
+     */
+    public function getAuthToken(string $username, string $password): string
+    {
+        $errorMessage = "";
+        $url = $this->getBaseUrl() . "auth";
+        $options = $this->getClientOptions();
+        $result = 0;
+        try
+        {
+            $client = $this->httpClientService->newClient();
+            $options[$this->requestOption] = ["username" => $username, "password" => $password];
+            $result = $client->post($url, $options);
+            $body = json_decode($result->getBody());
+            if ($result->getStatusCode() === 200)
+            {
+                if ($body->result->status === true)
+                {
+                    $piOutdated = true;
+                    foreach ($this->recommendedPIVersions as $version)
+                    {
+                        if (strpos($body->versionnumber, $version) === 0)
+                        {
+                            $piOutdated = false;
+                        }
+                    }
+                    if ($piOutdated)
+                    {
+                        $this->session->set("pi_outdated", true);
+                        $this->log("error", "We recommend to update your privacyIDEA server");
+                    }
+                    if (in_array("triggerchallenge", $body->result->value->rights))
+                    {
+                        return $body->result->value->token;
+                    }
+                    else
+                    {
+                        $errorMessage = $this->trans->t("Check if service account has correct permissions");
+                        $this->log("error", "[fetchAuthToken] privacyIDEA error message: Missing permissions for service account");
+                    }
+                }
+            }
+            else
+            {
+                $errorMessage = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
+                $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
+                $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
+            }
+        }
+        catch (Exception $e)
+        {
+            if ($result !== 0)
+            {
+                $this->log("error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode());
+            }
+            $this->log("error", "[fetchAuthToken] " . $e->getMessage());
+            $this->log("debug", $e);
+            $errorMessage = $this->trans->t("Failed to fetch authentication token.");
+        }
+        throw new AdminAuthException($errorMessage);
     }
 
     /**
@@ -637,72 +662,38 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
-     * Authenticate the service account against the privacyIDEA instance and return the generated JWT token.
-     * In case authentication fails, an AdminAuthException is thrown.
+     * Prepare and send request to httpClientService
      *
-     * @param string $username service account username
-     * @param string $password service account password
-     * @return string JWT token
-     * @throws AdminAuthException
+     * @param string $endpoint
+     * @param array $options
+     * @param bool $isGET
+     * @return IResponse
+     * @throws Exception
      */
-    public function getAuthToken(string $username, string $password): string
+    private function sendRequest(string $endpoint, array $options, bool $isGET = false): IResponse
     {
-        $errorMessage = "";
-        $url = $this->getBaseUrl() . "auth";
-        $options = $this->getClientOptions();
-        $result = 0;
-        try
+        $clientOptions = $this->getClientOptions();
+        $options = array_merge($clientOptions, $options);
+        $realm = $this->getAppValue('realm', '');
+        if (!empty($realm))
         {
-            $client = $this->httpClientService->newClient();
-            $options[$this->requestOption] = ["username" => $username, "password" => $password];
-            $result = $client->post($url, $options);
-            $body = json_decode($result->getBody());
-            if ($result->getStatusCode() === 200)
-            {
-                if ($body->result->status === true)
-                {
-                    $piOutdated = true;
-                    foreach ($this->recommendedPIVersions as $version)
-                    {
-                        if (strpos($body->versionnumber, $version) === 0)
-                        {
-                            $piOutdated = false;
-                        }
-                    }
-                    if ($piOutdated)
-                    {
-                        $this->session->set("pi_outdated", true);
-                        $this->log("error", "We recommend to update your privacyIDEA server");
-                    }
-                    if (in_array("triggerchallenge", $body->result->value->rights))
-                    {
-                        return $body->result->value->token;
-                    }
-                    else
-                    {
-                        $errorMessage = $this->trans->t("Check if service account has correct permissions");
-                        $this->log("error", "[fetchAuthToken] privacyIDEA error message: Missing permissions for service account");
-                    }
-                }
-            }
-            else
-            {
-                $errorMessage = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
-                $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
-                $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
-            }
+            $options[$this->requestOption]['realm'] = $realm;
         }
-        catch (Exception $e)
+
+        $this->log("debug", "Send request to " . $endpoint);
+        $this->log("debug", "With options: " . http_build_query($options[$this->requestOption], "", ", "));
+
+        $client = $this->httpClientService->newClient();
+
+        if ($isGET)
         {
-            if ($result !== 0)
-            {
-                $this->log("error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode());
-            }
-            $this->log("error", "[fetchAuthToken] " . $e->getMessage());
-            $this->log("debug", $e);
-            $errorMessage = $this->trans->t("Failed to fetch authentication token.");
+            $res = $client->get($this->getBaseUrl() . $endpoint, $options);
         }
-        throw new AdminAuthException($errorMessage);
+        else
+        {
+            $res = $client->post($this->getBaseUrl() . $endpoint, $options);
+        }
+        return $res;
     }
 
     /**

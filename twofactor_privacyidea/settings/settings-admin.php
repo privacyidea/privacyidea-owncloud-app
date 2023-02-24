@@ -6,5 +6,7 @@
  * and open the template in the editor.
  */
 
-$tmpl = new \OCP\Template('twofactor_privacyidea', 'settings-admin');
+use OCP\Template;
+
+$tmpl = new Template('twofactor_privacyidea', 'settings-admin');
 return $tmpl->fetchPage();
