@@ -580,15 +580,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         $pref = $detail["preferred_client_mode"];
                         if ($pref === "poll")
                         {
-                            $this->session->set("preferredClientMode", "push");
+                            $this->session->set("pi_preferredClientMode", "push");
                         }
                         elseif ($pref === "interactive")
                         {
-                            $this->session->set("preferredClientMode", "otp");
+                            $this->session->set("pi_preferredClientMode", "otp");
                         }
                         else
                         {
-                            $this->session->set("preferredClientMode", $pref);
+                            $this->session->set("pi_preferredClientMode", $pref);
                         }
                     }
 
@@ -641,15 +641,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                 }
                             }
 
-                            // Check if preferred token type was triggered and set mode to this
-                            $triggered = array_unique($triggeredTokenTypes);
-                            $preferred = $this->getAppValue("preferredtokentype", "");
-
-                            if (!empty($preferred) && !empty($triggered))
+                            // Set the mode to preferred if possible
+                            if (!empty($this->session->get("preferredClientMode")))
                             {
-                                if (in_array($preferred, $triggered))
+                                $this->session->set("pi_mode", $this->session->get("preferredClientMode"));
+                            }
+                            else
+                            {
+                                $triggered = array_unique($triggeredTokenTypes);
+                                $preferred = $this->getAppValue("preferredtokentype", "");
+
+                                if (!empty($preferred) && !empty($triggered))
                                 {
-                                    $this->session->set("pi_mode", $preferred);
+                                    if (in_array($preferred, $triggered))
+                                    {
+                                        $this->session->set("pi_mode", $preferred);
+                                    }
                                 }
                             }
                         }
