@@ -1,8 +1,8 @@
 ## 3.1 03/2023
 
 ### Features
-* Add  preferred token type, to show UI in the preferred mode right after triggering challenges.
-
+* Add preferred token type, to show UI in the preferred mode right after triggering challenges.
+* Implementation of the preferred client mode.
 
 ### Fixes
 * Bugfix: Update CSS to suit the ownCloud X.

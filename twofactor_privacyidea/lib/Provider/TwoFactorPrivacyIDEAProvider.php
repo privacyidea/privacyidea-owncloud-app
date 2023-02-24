@@ -559,7 +559,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $passOnNoToken = $this->getAppValue('passOnNoUser', false);
         $errorMessage = "";
         $mode = $this->request->getParam("mode", "otp");
-
         $body = json_decode($result->getBody());
         $this->log("debug", print_r(json_encode($body), true));
 
@@ -575,6 +574,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 {
                     $detail = $body->detail;
                     $this->session->set("pi_detail", $detail);
+
+                    if (property_exists($detail, "preferred_client_mode"))
+                    {
+                        $pref = $detail["preferred_client_mode"];
+                        if ($pref === "poll")
+                        {
+                            $this->session->set("preferredClientMode", "push");
+                        }
+                        elseif ($pref === "interactive")
+                        {
+                            $this->session->set("preferredClientMode", "otp");
+                        }
+                        else
+                        {
+                            $this->session->set("preferredClientMode", $pref);
+                        }
+                    }
+
                     if (property_exists($detail, "transaction_id"))
                     {
                         $this->session->set("pi_transactionId", $detail->transaction_id);
