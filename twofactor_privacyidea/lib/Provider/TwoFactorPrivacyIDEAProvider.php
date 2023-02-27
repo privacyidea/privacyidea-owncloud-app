@@ -577,7 +577,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
                     if (property_exists($detail, "preferred_client_mode"))
                     {
-                        $pref = $detail["preferred_client_mode"];
+                        $pref = $detail->preferred_client_mode;
                         if ($pref === "poll")
                         {
                             $this->session->set("pi_preferredClientMode", "push");
@@ -640,11 +640,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                         $this->session->set("pi_tiqrAvailable", "0");
                                 }
                             }
-
                             // Set the mode to preferred if possible
-                            if (!empty($this->session->get("preferredClientMode")))
+                            if (!empty($this->session->get("pi_preferredClientMode")))
                             {
-                                $this->session->set("pi_mode", $this->session->get("preferredClientMode"));
+                                $this->session->set("pi_mode", $this->session->get("pi_preferredClientMode"));
                             }
                             else
                             {
