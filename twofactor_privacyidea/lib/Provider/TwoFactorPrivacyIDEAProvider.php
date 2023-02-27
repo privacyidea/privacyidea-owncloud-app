@@ -17,12 +17,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
  */
 
 namespace OCA\TwoFactor_privacyIDEA\Provider;
-require_once(dirname(__FILE__) . '/AdminAuthException.php');
-require_once(dirname(__FILE__) . '/ProcessPIResponseException.php');
 
 use Exception;
 use OCP\Authentication\TwoFactorAuth\IProvider;
@@ -58,7 +55,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private $request;
     /** @var IGroupManager */
     private $groupManager;
-    /** @var string Adjust the request option up to the OC version.*/
+    /** @var string Adjust the request option up to the OC version. */
     private $requestOption;
 
     /**
@@ -85,7 +82,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->request = $request;
         $this->groupManager = $groupManager;
         $this->session = $session;
-        
         $this->requestOption = $this->getRequestOption();
     }
 
@@ -97,7 +93,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function getTemplate(IUser $user): Template
     {
-        // Triggerchallenge
+        // TriggerChallenge
         if ($this->getAppValue('triggerchallenges', '') === '1')
         {
             if ($this->session->get("pi_TriggerChallengeSuccess") !== true)
@@ -183,9 +179,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      *         If privacyIDEA returned an HTTP 200 and result->status=true, but
      *         result->value=false, the exception has a code 1 (i.e. if the user
      *         could be found, but the password was incorrect).
-     * @throws TwoFactorException
-     * @throws ProcessPIResponseException
-     * @throws Exception
+     * @throws TwoFactorException|ProcessPIResponseException|Exception
      */
     public function verifyChallenge(IUser $user, $challenge): bool
     {
@@ -197,7 +191,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $password = $challenge;
         $username = $user->getUID();
 
-        // Read mode and transactionID
+        // Get mode and transactionID
         $transactionID = $this->session->get("pi_transactionId");
         $mode = $this->request->getParam("mode");
         $this->session->set("pi_mode", $mode);
@@ -330,44 +324,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
-     * Call /validate/polltransaction using transaction_id
-     *
-     * @param string $transactionID
-     * @return bool
-     * @throws ProcessPIResponseException
-     * @throws Exception
-     */
-    private function pollTransaction(string $transactionID): bool
-    {
-        $options[$this->requestOption] = ["transaction_id" => $transactionID];
-        $res = $this->sendRequest("validate/polltransaction", $options, true);
-        $ret = $this->processPIResponse($res);
-        if (is_string($ret))
-        {
-            return $ret;
-        }
-        else
-        {
-            if ($ret->result->status === true && $ret->result->value === true)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
-
-    /**
      * Handle validateCheck using user's username, password and if challenge response - transaction ID.
      *
      * @param string $username
      * @param string $pass
      * @param string|null $transactionID
      * @return mixed|string
-     * @throws ProcessPIResponseException
-     * @throws Exception
+     * @throws ProcessPIResponseException|Exception
      */
     public function validateCheck(string $username, string $pass, string $transactionID = null)
     {
@@ -378,100 +341,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         $res = $this->sendRequest("validate/check", $options);
         return $this->processPIResponse($res);
-    }
-
-    /**
-     * Sends a request to /validate/check with the data required to authenticate a U2F token.
-     *
-     * @param string $username
-     * @param string $transactionID
-     * @param array $u2fSignResponse
-     * @return void
-     * @throws Exception
-     */
-    private function validateCheckU2F(string $username, string $transactionID, array $u2fSignResponse)
-    {
-        $options[$this->requestOption] = [
-            "user" => $username,
-            "pass" => "",
-            "transaction_id" => $transactionID];
-
-        // here we add the signatureData and the clientData in case of U2F
-        $options[$this->requestOption]["signaturedata"] = $u2fSignResponse['signatureData'];
-        $options[$this->requestOption]["clientdata"] = $u2fSignResponse['clientData'];
-
-        $res = $this->sendRequest("validate/check", $options);
-        return $this->processPIResponse($res);
-    }
-
-    /**
-     * Sends a request to /validate/check with the data required to authenticate a WebAuthn token.
-     *
-     * @param string $username
-     * @param string $transactionID
-     * @param array $webAuthnSignResponse
-     * @param string $origin
-     * @return mixed|string
-     * @throws ProcessPIResponseException
-     * @throws Exception
-     */
-    private function validateCheckWebAuthn(string $username, string $transactionID, array $webAuthnSignResponse, string $origin)
-    {
-        $options[$this->requestOption] = [
-            "user" => $username,
-            "pass" => "",
-            "transaction_id" => $transactionID,
-            "signaturedata" => $webAuthnSignResponse['signaturedata'],
-            "clientdata" => $webAuthnSignResponse['clientdata'],
-            "credentialid" => $webAuthnSignResponse['credentialid'],
-            "authenticatordata" => $webAuthnSignResponse['authenticatordata']];
-        if (!empty($webAuthnSignResponse['userhandle']))
-        {
-            $options[$this->requestOption]['userhandle'] = $webAuthnSignResponse['userhandle'];
-        }
-        if (!empty($webAuthnSignResponse['assertionclientextensions']))
-        {
-            $options[$this->requestOption]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
-        }
-        $options['headers']['Origin'] = $origin;
-
-        $res = $this->sendRequest("validate/check", $options);
-        return $this->processPIResponse($res);
-    }
-
-    /**
-     * Prepare and send request to httpClientService
-     *
-     * @param string $endpoint
-     * @param array $options
-     * @param bool $isGET
-     * @return IResponse
-     * @throws Exception
-     */
-    private function sendRequest(string $endpoint, array $options, bool $isGET = false): IResponse
-    {
-        $clientOptions = $this->getClientOptions();
-        $options = array_merge($clientOptions, $options);
-        $realm = $this->getAppValue('realm', '');
-        if (!empty($realm))
-        {
-            $options[$this->requestOption]['realm'] = $realm;
-        }
-
-        $this->log("debug", "Send request to " . $endpoint);
-        $this->log("debug", "With options: " . http_build_query($options[$this->requestOption], "", ", "));
-
-        $client = $this->httpClientService->newClient();
-
-        if ($isGET)
-        {
-            $res = $client->get($this->getBaseUrl() . $endpoint, $options);
-        }
-        else
-        {
-            $res = $client->post($this->getBaseUrl() . $endpoint, $options);
-        }
-        return $res;
     }
 
     /**
@@ -518,121 +387,89 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
-     * Process and sort the privacyIDEA API Response
-     * Takes relevant info from privacyIDEAs response
-     * and adds them to the session, like:
-     * - which types challenges have been triggered
-     * - the messages or errors if any occurred
-     * And also document when an exception is thrown, when an empty string is returned
+     * Sends a request to /validate/check with the data required to authenticate a U2F token.
      *
-     * @param IResponse $result
-     * @return mixed|string
-     * @throws ProcessPIResponseException
+     * @param string $username
+     * @param string $transactionID
+     * @param array $u2fSignResponse
+     * @return void
+     * @throws Exception
      */
-    private function processPIResponse(IResponse $result)
+    private function validateCheckU2F(string $username, string $transactionID, array $u2fSignResponse)
     {
-        $passOnNoToken = $this->getAppValue('passOnNoUser', false);
-        $errorMessage = "";
-        $mode = $this->request->getParam("mode", "otp");
+        $options[$this->requestOption] = [
+            "user" => $username,
+            "pass" => "",
+            "transaction_id" => $transactionID];
 
-        $body = json_decode($result->getBody());
-        $this->log("debug", print_r(json_encode($body), true));
+        // here we add the signatureData and the clientData in case of U2F
+        $options[$this->requestOption]["signaturedata"] = $u2fSignResponse['signatureData'];
+        $options[$this->requestOption]["clientdata"] = $u2fSignResponse['clientData'];
 
-        if ($mode === "push" || $mode === "tiqr")
+        $res = $this->sendRequest("validate/check", $options);
+        return $this->processPIResponse($res);
+    }
+
+    /**
+     * Sends a request to /validate/check with the data required to authenticate a WebAuthn token.
+     *
+     * @param string $username
+     * @param string $transactionID
+     * @param array $webAuthnSignResponse
+     * @param string $origin
+     * @return mixed|string
+     * @throws ProcessPIResponseException|Exception
+     */
+    private function validateCheckWebAuthn(string $username, string $transactionID, array $webAuthnSignResponse, string $origin)
+    {
+        $options[$this->requestOption] = [
+            "user" => $username,
+            "pass" => "",
+            "transaction_id" => $transactionID,
+            "signaturedata" => $webAuthnSignResponse['signaturedata'],
+            "clientdata" => $webAuthnSignResponse['clientdata'],
+            "credentialid" => $webAuthnSignResponse['credentialid'],
+            "authenticatordata" => $webAuthnSignResponse['authenticatordata']];
+        if (!empty($webAuthnSignResponse['userhandle']))
         {
-            return $body;
+            $options[$this->requestOption]['userhandle'] = $webAuthnSignResponse['userhandle'];
+        }
+        if (!empty($webAuthnSignResponse['assertionclientextensions']))
+        {
+            $options[$this->requestOption]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
+        }
+        $options['headers']['Origin'] = $origin;
+
+        $res = $this->sendRequest("validate/check", $options);
+        return $this->processPIResponse($res);
+    }
+
+    /**
+     * Call /validate/polltransaction using transaction_id
+     *
+     * @param string $transactionID
+     * @return bool
+     * @throws ProcessPIResponseException|Exception
+     */
+    private function pollTransaction(string $transactionID): bool
+    {
+        $options[$this->requestOption] = ["transaction_id" => $transactionID];
+        $res = $this->sendRequest("validate/polltransaction", $options, true);
+        $ret = $this->processPIResponse($res);
+        if (is_string($ret))
+        {
+            return $ret;
         }
         else
         {
-            if ($result->getStatusCode() == 200)
+            if ($ret->result->status === true && $ret->result->value === true)
             {
-                if ($body->result->status === true)
-                {
-                    $detail = $body->detail;
-                    $this->session->set("pi_detail", $detail);
-                    if (property_exists($detail, "transaction_id"))
-                    {
-                        $this->session->set("pi_transactionId", $detail->transaction_id);
-                    }
-
-                    if (property_exists($detail, "multi_challenge"))
-                    {
-                        $multiChallenge = $detail->multi_challenge;
-                        if (count($multiChallenge) === 0)
-                        {
-                            $this->session->set("pi_hideOTPField", "0");
-                        }
-                        else
-                        {
-                            $triggeredTokenTypes = array();
-
-                            for ($i = 0; $i < count($multiChallenge); $i++)
-                            {
-                                switch ($multiChallenge[$i]->type)
-                                {
-                                    case "u2f":
-                                        $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
-                                        $triggeredTokenTypes[] = "u2f";
-                                        break;
-                                    case "webauthn":
-                                        $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
-                                        $triggeredTokenTypes[] = "webauthn";
-                                        break;
-                                    case "push":
-                                        $this->session->set("pi_pushAvailable", "1");
-                                        $triggeredTokenTypes[] = "push";
-                                        break;
-                                    case "tiqr":
-                                        $this->session->set("pi_tiqrAvailable", "1");
-                                        $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
-                                        $triggeredTokenTypes[] = "tiqr";
-                                        break;
-                                    case "otp":
-                                        $this->session->set("pi_otpAvailable", "1");
-                                        $triggeredTokenTypes[] = "otp";
-                                        break;
-                                    default:
-                                        $this->session->set("pi_hideOTPField", "0");
-                                        $this->session->set("pi_otpAvailable", "1");
-                                        $this->session->set("pi_pushAvailable", "0");
-                                        $this->session->set("pi_tiqrAvailable", "0");
-                                }
-                            }
-
-                            // Check if preferred token type was triggered and set mode to this
-                            $triggered = array_unique($triggeredTokenTypes);
-                            $preferred = $this->getAppValue("preferredtokentype", "");
-
-                            if (!empty($preferred) && !empty($triggered))
-                            {
-                                if (in_array($preferred, $triggered))
-                                {
-                                    $this->session->set("pi_mode", $preferred);
-                                }
-                            }
-                        }
-                    }
-                    return $body;
-                }
-            }
-            elseif ($result->getStatusCode() == 400 && $passOnNoToken)
-            {
-                if ($body->result->error != null && $body->result->error->code == 904)
-                {
-                    $this->session->set("pi_noAuthRequired", true);
-                    $this->session->set("pi_autoSubmit", true);
-                    $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
-                    return "No token found for your user, Login is still enabled.";
-                }
-                $errorMessage = $body->result->error->message;
+                return true;
             }
             else
             {
-                $errorMessage = $body->result->error->message;
-                $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
-                throw new ProcessPIResponseException($errorMessage);
+                return false;
             }
-            return $errorMessage;
         }
     }
 
@@ -703,6 +540,183 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $errorMessage = $this->trans->t("Failed to fetch authentication token.");
         }
         throw new AdminAuthException($errorMessage);
+    }
+
+    /**
+     * Process and sort the privacyIDEA API Response
+     * Takes relevant info from privacyIDEAs response
+     * and adds them to the session, like:
+     * - which types challenges have been triggered
+     * - the messages or errors if any occurred
+     * And also document when an exception is thrown, when an empty string is returned
+     *
+     * @param IResponse $result
+     * @return mixed|string
+     * @throws ProcessPIResponseException
+     */
+    private function processPIResponse(IResponse $result)
+    {
+        $passOnNoToken = $this->getAppValue('passOnNoUser', false);
+        $errorMessage = "";
+        $mode = $this->request->getParam("mode", "otp");
+        $body = json_decode($result->getBody());
+        $this->log("debug", print_r(json_encode($body), true));
+
+        if ($mode === "push" || $mode === "tiqr")
+        {
+            return $body;
+        }
+        else
+        {
+            if ($result->getStatusCode() == 200)
+            {
+                if ($body->result->status === true)
+                {
+                    $detail = $body->detail;
+                    $this->session->set("pi_detail", $detail);
+
+                    if (property_exists($detail, "preferred_client_mode"))
+                    {
+                        $pref = $detail->preferred_client_mode;
+                        if ($pref === "poll")
+                        {
+                            $this->session->set("pi_preferredClientMode", "push");
+                        }
+                        elseif ($pref === "interactive")
+                        {
+                            $this->session->set("pi_preferredClientMode", "otp");
+                        }
+                        else
+                        {
+                            $this->session->set("pi_preferredClientMode", $pref);
+                        }
+                    }
+
+                    if (property_exists($detail, "transaction_id"))
+                    {
+                        $this->session->set("pi_transactionId", $detail->transaction_id);
+                    }
+
+                    if (property_exists($detail, "multi_challenge"))
+                    {
+                        $multiChallenge = $detail->multi_challenge;
+                        if (count($multiChallenge) === 0)
+                        {
+                            $this->session->set("pi_hideOTPField", "0");
+                        }
+                        else
+                        {
+                            $triggeredTokenTypes = array();
+
+                            for ($i = 0; $i < count($multiChallenge); $i++)
+                            {
+                                switch ($multiChallenge[$i]->type)
+                                {
+                                    case "u2f":
+                                        $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
+                                        $triggeredTokenTypes[] = "u2f";
+                                        break;
+                                    case "webauthn":
+                                        $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
+                                        $triggeredTokenTypes[] = "webauthn";
+                                        break;
+                                    case "push":
+                                        $this->session->set("pi_pushAvailable", "1");
+                                        $triggeredTokenTypes[] = "push";
+                                        break;
+                                    case "tiqr":
+                                        $this->session->set("pi_tiqrAvailable", "1");
+                                        $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
+                                        $triggeredTokenTypes[] = "tiqr";
+                                        break;
+                                    case "otp":
+                                        $this->session->set("pi_otpAvailable", "1");
+                                        $triggeredTokenTypes[] = "otp";
+                                        break;
+                                    default:
+                                        $this->session->set("pi_hideOTPField", "0");
+                                        $this->session->set("pi_otpAvailable", "1");
+                                        $this->session->set("pi_pushAvailable", "0");
+                                        $this->session->set("pi_tiqrAvailable", "0");
+                                }
+                            }
+                            // Set the mode to preferred if possible
+                            if (!empty($this->session->get("pi_preferredClientMode")))
+                            {
+                                $this->session->set("pi_mode", $this->session->get("pi_preferredClientMode"));
+                            }
+                            else
+                            {
+                                $triggered = array_unique($triggeredTokenTypes);
+                                $preferred = $this->getAppValue("preferredtokentype", "");
+
+                                if (!empty($preferred) && !empty($triggered))
+                                {
+                                    if (in_array($preferred, $triggered))
+                                    {
+                                        $this->session->set("pi_mode", $preferred);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return $body;
+                }
+            }
+            elseif ($result->getStatusCode() == 400 && $passOnNoToken)
+            {
+                if ($body->result->error != null && $body->result->error->code == 904)
+                {
+                    $this->session->set("pi_noAuthRequired", true);
+                    $this->session->set("pi_autoSubmit", true);
+                    $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
+                    return "No token found for your user, Login is still enabled.";
+                }
+                $errorMessage = $body->result->error->message;
+            }
+            else
+            {
+                $errorMessage = $body->result->error->message;
+                $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
+                throw new ProcessPIResponseException($errorMessage);
+            }
+            return $errorMessage;
+        }
+    }
+
+    /**
+     * Prepare and send request to httpClientService
+     *
+     * @param string $endpoint
+     * @param array $options
+     * @param bool $isGET
+     * @return IResponse
+     * @throws Exception
+     */
+    private function sendRequest(string $endpoint, array $options, bool $isGET = false): IResponse
+    {
+        $clientOptions = $this->getClientOptions();
+        $options = array_merge($clientOptions, $options);
+        $realm = $this->getAppValue('realm', '');
+        if (!empty($realm))
+        {
+            $options[$this->requestOption]['realm'] = $realm;
+        }
+
+        $this->log("debug", "Send request to " . $endpoint);
+        $this->log("debug", "With options: " . http_build_query($options[$this->requestOption], "", ", "));
+
+        $client = $this->httpClientService->newClient();
+
+        if ($isGET)
+        {
+            $res = $client->get($this->getBaseUrl() . $endpoint, $options);
+        }
+        else
+        {
+            $res = $client->post($this->getBaseUrl() . $endpoint, $options);
+        }
+        return $res;
     }
 
     /**

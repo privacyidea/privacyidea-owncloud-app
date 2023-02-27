@@ -1,5 +1,4 @@
 <?php
-
 /* 
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -11,13 +10,13 @@ namespace OCA\TwoFactor_privacyIDEA\Controller;
 use Exception;
 use OC;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\QueryException;
+use OCP\Authentication\TwoFactorAuth\TwoFactorException;
+use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\IConfig;
 use OCP\ISession;
-use OCP\AppFramework\Http\DataResponse;
-use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 
 class SettingsController extends Controller
 {
@@ -35,8 +34,11 @@ class SettingsController extends Controller
      * @param IConfig $config
      * @param ISession $session
      */
-    public function __construct($appName, IRequest $request, IL10N $trans,
-                                IConfig $config, ISession $session)
+    public function __construct(string   $appName,
+                                IRequest $request,
+                                IL10N    $trans,
+                                IConfig  $config,
+                                ISession $session)
     {
         parent::__construct($appName, $request);
         $this->trans = $trans;
@@ -78,16 +80,17 @@ class SettingsController extends Controller
     {
         // instantiate our very own twofactor provider
         $provider = OC::$server->query("OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider");
-        $status = "error";
+        $status = "";
         try
         {
             $result = $provider->validateCheck($user, $pass);
-            if ($result->result->status == true)
+            if ($result->result->status)
             {
                 $message = $this->trans->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
                 $status = "success";
             }
-            elseif ($result->result->status == false) {
+            elseif (!$result->result->status)
+            {
                 $message = $this->trans->t("Failed to authenticate.") . $result->result->error->message;
             }
             else
@@ -125,7 +128,7 @@ class SettingsController extends Controller
     public function testServiceAccount(string $user, string $pass): DataResponse
     {
         $provider = OC::$server->query("OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider");
-        $status = "error";
+        $status = "";
         try
         {
             $token = $provider->getAuthToken($user, $pass);

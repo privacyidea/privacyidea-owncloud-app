@@ -1,8 +1,9 @@
 <?php
-/**
+/*
  * @author Cornelis Kölbel <cornelius.koelbel@netknights.it>
+ * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
  *
- * privacyIDEA two factor authentication
+ * privacyIDEA two-factor authentication
  *
  * This code is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -15,7 +16,6 @@
  *
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
  */
 
 namespace OCA\TwoFactor_privacyIDEA\AppInfo;

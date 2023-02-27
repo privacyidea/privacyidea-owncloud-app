@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  */
-var BASE_URL = '/apps/twofactor_privacyidea/';
+const BASE_URL = '/apps/twofactor_privacyidea/';
 
 $(document).ready(function ()
 {
@@ -119,7 +119,7 @@ $(document).ready(function ()
     });
     $("#piSettings #pirealm").change(function ()
     {
-        // We simple save the value always ;-)
+        // Always save the value
         console.log("pi: Saving Realm");
         var value = $("#piSettings #pirealm").val();
         console.log(value);
