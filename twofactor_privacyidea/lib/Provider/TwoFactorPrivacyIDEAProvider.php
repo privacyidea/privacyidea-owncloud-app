@@ -83,6 +83,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->groupManager = $groupManager;
         $this->session = $session;
         $this->requestOption = $this->getRequestOption();
+        $this->session->set("pi_step", "1");
     }
 
     /**
@@ -155,6 +156,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
         }
 
+        if ($this->session->get("pi_imgU2F") !== null)
+        {
+            $template->assign("imgU2F", $this->session->get("pi_imgU2F"));
+        }
+        if ($this->session->get("pi_imgWebauthn") !== null)
+        {
+            $template->assign("imgWebauthn", $this->session->get("pi_imgWebauthn"));
+        }
+        if ($this->session->get("pi_imgPush") !== null)
+        {
+            $template->assign("imgPush", $this->session->get("pi_imgPush"));
+        }
+        if ($this->session->get("pi_imgOTP") !== null)
+        {
+            $template->assign("imgOTP", $this->session->get("pi_imgOTP"));
+        }
+
         $loads = 1;
         if ($this->session->get("pi_loadCounter") !== null)
         {
@@ -166,6 +184,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $template->assign("verify", $this->trans->t("Verify"));
         $template->assign("alternateLoginOptions", $this->trans->t("Alternate Login Options"));
 
+        $this->session->set("pi_step", "2");
         return $template;
     }
 
@@ -615,25 +634,37 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                     case "u2f":
                                         $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
                                         $triggeredTokenTypes[] = "u2f";
+                                        if (!empty($multiChallenge[$i]->image) && !empty($multiChallenge[$i]->client_mode) && $multiChallenge[$i]->client_mode === "u2f")
+                                        {
+                                            $this->session->set("pi_imgU2F", $multiChallenge[$i]->image);
+                                        }
                                         break;
                                     case "webauthn":
                                         $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
                                         $triggeredTokenTypes[] = "webauthn";
+                                        if (!empty($multiChallenge[$i]->image) && !empty($multiChallenge[$i]->client_mode) && $multiChallenge[$i]->client_mode === "webauthn")
+                                        {
+                                            $this->session->set("pi_imgWebauthn", $multiChallenge[$i]->image);
+                                        }
                                         break;
                                     case "push":
                                         $this->session->set("pi_pushAvailable", "1");
                                         $triggeredTokenTypes[] = "push";
+                                        if (!empty($multiChallenge[$i]->image) && !empty($multiChallenge[$i]->client_mode) && $multiChallenge[$i]->client_mode === "poll")
+                                        {
+                                            $this->session->set("pi_imgPush", $multiChallenge[$i]->image);
+                                        }
                                         break;
                                     case "tiqr":
                                         $this->session->set("pi_tiqrAvailable", "1");
                                         $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
                                         $triggeredTokenTypes[] = "tiqr";
                                         break;
-                                    case "otp":
-                                        $this->session->set("pi_otpAvailable", "1");
-                                        $triggeredTokenTypes[] = "otp";
-                                        break;
                                     default:
+                                        if (!empty($multiChallenge[$i]->image) && !empty($multiChallenge[$i]->client_mode && $multiChallenge[$i]->client_mode === "interactive"))
+                                        {
+                                            $this->session->set("pi_imgOTP", $multiChallenge[$i]->image);
+                                        }
                                         $this->session->set("pi_hideOTPField", "0");
                                         $this->session->set("pi_otpAvailable", "1");
                                         $this->session->set("pi_pushAvailable", "0");
@@ -641,20 +672,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                 }
                             }
                             // Set the mode to preferred if possible
-                            if (!empty($this->session->get("pi_preferredClientMode")))
+                            if ($this->session->get("pi_step") === "1")
                             {
-                                $this->session->set("pi_mode", $this->session->get("pi_preferredClientMode"));
-                            }
-                            else
-                            {
-                                $triggered = array_unique($triggeredTokenTypes);
-                                $preferred = $this->getAppValue("preferredtokentype", "");
-
-                                if (!empty($preferred) && !empty($triggered))
+                                if (!empty($this->session->get("pi_preferredClientMode")))
                                 {
-                                    if (in_array($preferred, $triggered))
+                                    $this->session->set("pi_mode", $this->session->get("pi_preferredClientMode"));
+                                }
+                                else
+                                {
+                                    $triggered = array_unique($triggeredTokenTypes);
+                                    $preferred = $this->getAppValue("preferredtokentype", "");
+
+                                    if (!empty($preferred) && !empty($triggered))
                                     {
-                                        $this->session->set("pi_mode", $preferred);
+                                        if (in_array($preferred, $triggered))
+                                        {
+                                            $this->session->set("pi_mode", $preferred);
+                                        }
                                     }
                                 }
                             }
