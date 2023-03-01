@@ -65,18 +65,17 @@ window.onload = function ()
         disable("useOTPButton");
     }
 
-    if (value("mode") !== "tiqr")
-    {
-        disable("tiqrImage");
-    }
-
     if (value("mode") === "webauthn")
     {
+        disable("otp");
+        disable("submitButton");
         doWebAuthn();
     }
 
     if (value("mode") === "u2f")
     {
+        disable("otp");
+        disable("submitButton");
         doU2F();
     }
 
