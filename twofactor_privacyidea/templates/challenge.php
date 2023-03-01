@@ -24,13 +24,13 @@ if (!empty($_['imgOTP']) && $_['mode'] === "otp"): ?>
 
     <form method="POST" id="piLoginForm" name="piLoginForm">
         <?php
-        if (isset($_['redirect_url']))
+        if (!empty($_['redirect_url']))
         {
             ?>
             <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
             <?php
         }
-        if (isset($_['tiqrImage']))
+        if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr")
         {
             ?>
             <img id="tiqrImage" width="250" src="<?php p($_['tiqrImage']); ?>" alt="TiQR Image"><br>
