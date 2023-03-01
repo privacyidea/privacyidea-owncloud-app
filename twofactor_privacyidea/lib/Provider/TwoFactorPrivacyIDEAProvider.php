@@ -83,7 +83,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->groupManager = $groupManager;
         $this->session = $session;
         $this->requestOption = $this->getRequestOption();
-        $this->session->set("pi_step", "1");
     }
 
     /**
@@ -672,7 +671,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                 }
                             }
                             // Set the mode to preferred if possible
-                            if ($this->session->get("pi_step") === "1")
+                            if ($this->session->get("pi_step") !== "2")
                             {
                                 if (!empty($this->session->get("pi_preferredClientMode")))
                                 {
