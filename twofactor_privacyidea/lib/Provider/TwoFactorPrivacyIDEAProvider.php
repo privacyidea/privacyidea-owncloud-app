@@ -624,50 +624,47 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         }
                         else
                         {
-                            $triggeredTokenTypes = array();
-
                             for ($i = 0; $i < count($multiChallenge); $i++)
                             {
-                                switch ($multiChallenge[$i]->type)
+                                if (!empty($multiChallenge[$i]->client_mode))
                                 {
-                                    case "u2f":
-                                        $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
-                                        $triggeredTokenTypes[] = "u2f";
-                                        if (!empty($multiChallenge[$i]->image) && !empty($multiChallenge[$i]->client_mode) && $multiChallenge[$i]->client_mode === "u2f")
-                                        {
-                                            $this->session->set("pi_imgU2F", $multiChallenge[$i]->image);
-                                        }
-                                        break;
-                                    case "webauthn":
-                                        $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
-                                        $triggeredTokenTypes[] = "webauthn";
-                                        if (!empty($multiChallenge[$i]->image) && !empty($multiChallenge[$i]->client_mode) && $multiChallenge[$i]->client_mode === "webauthn")
-                                        {
-                                            $this->session->set("pi_imgWebauthn", $multiChallenge[$i]->image);
-                                        }
-                                        break;
-                                    case "push":
-                                        $this->session->set("pi_pushAvailable", "1");
-                                        $triggeredTokenTypes[] = "push";
-                                        if (!empty($multiChallenge[$i]->image) && !empty($multiChallenge[$i]->client_mode) && $multiChallenge[$i]->client_mode === "poll")
-                                        {
-                                            $this->session->set("pi_imgPush", $multiChallenge[$i]->image);
-                                        }
-                                        break;
-                                    case "tiqr":
-                                        $this->session->set("pi_tiqrAvailable", "1");
-                                        $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
-                                        $triggeredTokenTypes[] = "tiqr";
-                                        break;
-                                    default:
-                                        if (!empty($multiChallenge[$i]->image) && !empty($multiChallenge[$i]->client_mode && $multiChallenge[$i]->client_mode === "interactive"))
-                                        {
-                                            $this->session->set("pi_imgOTP", $multiChallenge[$i]->image);
-                                        }
-                                        $this->session->set("pi_hideOTPField", "0");
-                                        $this->session->set("pi_otpAvailable", "1");
-                                        $this->session->set("pi_pushAvailable", "0");
-                                        $this->session->set("pi_tiqrAvailable", "0");
+                                    switch ($multiChallenge[$i]->client_mode)
+                                    {
+                                        case "u2f":
+                                            $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
+                                            if (!empty($multiChallenge[$i]->image))
+                                            {
+                                                $this->session->set("pi_imgU2F", $multiChallenge[$i]->image);
+                                            }
+                                            break;
+                                        case "webauthn":
+                                            $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
+                                            if (!empty($multiChallenge[$i]->image))
+                                            {
+                                                $this->session->set("pi_imgWebauthn", $multiChallenge[$i]->image);
+                                            }
+                                            break;
+                                        case "push":
+                                            $this->session->set("pi_pushAvailable", "1");
+                                            if (!empty($multiChallenge[$i]->image))
+                                            {
+                                                $this->session->set("pi_imgPush", $multiChallenge[$i]->image);
+                                            }
+                                            break;
+                                        case "tiqr":
+                                            $this->session->set("pi_tiqrAvailable", "1");
+                                            $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
+                                            break;
+                                        default:
+                                            if (!empty($multiChallenge[$i]->image))
+                                            {
+                                                $this->session->set("pi_imgOTP", $multiChallenge[$i]->image);
+                                            }
+                                            $this->session->set("pi_hideOTPField", "0");
+                                            $this->session->set("pi_otpAvailable", "1");
+                                            $this->session->set("pi_pushAvailable", "0");
+                                            $this->session->set("pi_tiqrAvailable", "0");
+                                    }
                                 }
                             }
                             // Set the mode to preferred if possible
@@ -676,19 +673,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                 if (!empty($this->session->get("pi_preferredClientMode")))
                                 {
                                     $this->session->set("pi_mode", $this->session->get("pi_preferredClientMode"));
-                                }
-                                else
-                                {
-                                    $triggered = array_unique($triggeredTokenTypes);
-                                    $preferred = $this->getAppValue("preferredtokentype", "");
-
-                                    if (!empty($preferred) && !empty($triggered))
-                                    {
-                                        if (in_array($preferred, $triggered))
-                                        {
-                                            $this->session->set("pi_mode", $preferred);
-                                        }
-                                    }
                                 }
                             }
                         }
