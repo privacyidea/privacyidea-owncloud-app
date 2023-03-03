@@ -183,7 +183,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $template->assign("verify", $this->trans->t("Verify"));
         $template->assign("alternateLoginOptions", $this->trans->t("Alternate Login Options"));
 
-        $this->session->set("pi_step", "2");
         return $template;
     }
 
@@ -593,23 +592,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     $detail = $body->detail;
                     $this->session->set("pi_detail", $detail);
 
-                    if (property_exists($detail, "preferred_client_mode"))
-                    {
-                        $pref = $detail->preferred_client_mode;
-                        if ($pref === "poll")
-                        {
-                            $this->session->set("pi_preferredClientMode", "push");
-                        }
-                        elseif ($pref === "interactive")
-                        {
-                            $this->session->set("pi_preferredClientMode", "otp");
-                        }
-                        else
-                        {
-                            $this->session->set("pi_preferredClientMode", $pref);
-                        }
-                    }
-
                     if (property_exists($detail, "transaction_id"))
                     {
                         $this->session->set("pi_transactionId", $detail->transaction_id);
@@ -617,6 +599,25 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
                     if (property_exists($detail, "multi_challenge"))
                     {
+                        // Reset the mode for each new challenge
+                        $this->session->set("pi_preferredClientMode", "otp");
+                        if (property_exists($detail, "preferred_client_mode"))
+                        {
+                            $pref = $detail->preferred_client_mode;
+                            if ($pref === "poll")
+                            {
+                                $this->session->set("pi_preferredClientMode", "push");
+                            }
+                            elseif ($pref === "interactive")
+                            {
+                                $this->session->set("pi_preferredClientMode", "otp");
+                            }
+                            else
+                            {
+                                $this->session->set("pi_preferredClientMode", $pref);
+                            }
+                        }
+
                         $multiChallenge = $detail->multi_challenge;
                         if (count($multiChallenge) === 0)
                         {
@@ -668,12 +669,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                 }
                             }
                             // Set the mode to preferred if possible
-                            if ($this->session->get("pi_step") !== "2")
+                            if (!empty($this->session->get("pi_preferredClientMode")))
                             {
-                                if (!empty($this->session->get("pi_preferredClientMode")))
-                                {
-                                    $this->session->set("pi_mode", $this->session->get("pi_preferredClientMode"));
-                                }
+                                $this->session->set("pi_mode", $this->session->get("pi_preferredClientMode"));
                             }
                         }
                     }
