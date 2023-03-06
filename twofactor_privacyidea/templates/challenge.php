@@ -3,21 +3,34 @@ script('twofactor_privacyidea', 'challenge');
 script('twofactor_privacyidea', 'webauthn-client/pi-webauthn');
 ?>
 
-<?php if (isset($_['message']) && $_['message']): ?>
+<?php if (!empty($_['message'])): ?>
     <fieldset class="warning">
         <?php p($_['message']); ?>
     </fieldset>
 <?php endif; ?>
 
+<?php if (!empty($_['imgU2F']) && $_['mode'] === "u2f"): ?>
+    <img src="<?php p($_['imgU2F']); ?>" style="text-align:center !important;" alt="U2F image"><br><br>
+<?php endif;
+if (!empty($_['imgWebauthn']) && $_['mode'] === "webauthn"): ?>
+    <img src="<?php p($_['imgWebauthn']); ?>" style="text-align:center" alt="WebAuthn image"><br><br>
+<?php endif;
+if (!empty($_['imgPush']) && $_['mode'] === "push"): ?>
+    <img src="<?php p($_['imgPush']); ?>" style="text-align:center" alt="Push image"><br><br>
+<?php endif;
+if (!empty($_['imgOTP']) && $_['mode'] === "otp"): ?>
+    <img src="<?php p($_['imgOTP']); ?>" style="text-align:center; vertical-align:unset;" alt="OTP image"><br><br>
+<?php endif; ?>
+
     <form method="POST" id="piLoginForm" name="piLoginForm">
         <?php
-        if (isset($_['redirect_url']))
+        if (!empty($_['redirect_url']))
         {
             ?>
             <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
             <?php
         }
-        if (isset($_['tiqrImage']))
+        if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr")
         {
             ?>
             <img id="tiqrImage" width="250" src="<?php p($_['tiqrImage']); ?>" alt="TiQR Image"><br>
@@ -27,14 +40,14 @@ script('twofactor_privacyidea', 'webauthn-client/pi-webauthn');
 
         <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']): ?>
             <label>
-                <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off" autocorrect="off"
-                       required autofocus style="width:230px; align:center; text-align:center; margin:0 0 5px">
+                <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off"
+                       required autofocus style="width:230px; text-align:center; margin:0 0 5px">
             </label>
         <br>
             <input id="submitButton" type="submit" class="button" value="<?php if (isset($_['verify']))
             {
                 p($_['verify']);
-            } ?>" style="width:251px; display: inline !important; text-align:center !important; align:center !important">
+            } ?>" style="width:251px; display: inline !important; text-align:center !important;">
         <?php endif; ?>
 
         <!-- Hidden input which store the info about changes -->

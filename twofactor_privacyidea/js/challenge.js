@@ -5,23 +5,23 @@ window.onload = function ()
     // Button listeners
     document.getElementById("useU2FButton").addEventListener("click", function ()
     {
-        doU2F();
+        changeMode("u2f");
     });
     document.getElementById("useWebAuthnButton").addEventListener("click", function ()
     {
-        doWebAuthn();
+        changeMode("webauthn");
     });
     document.getElementById("usePushButton").addEventListener("click", function ()
     {
-        changeMode('push');
+        changeMode("push");
     });
     document.getElementById("useTiQRButton").addEventListener("click", function ()
     {
-        changeMode('tiqr');
+        changeMode("tiqr");
     });
     document.getElementById("useOTPButton").addEventListener("click", function ()
     {
-        changeMode('otp');
+        changeMode("otp");
     });
 
     // Set alternate token button visibility
@@ -65,18 +65,17 @@ window.onload = function ()
         disable("useOTPButton");
     }
 
-    if (value("mode") !== "tiqr")
-    {
-        disable("tiqrImage");
-    }
-
     if (value("mode") === "webauthn")
     {
+        disable("otp");
+        disable("submitButton");
         doWebAuthn();
     }
 
     if (value("mode") === "u2f")
     {
+        disable("otp");
+        disable("submitButton");
         doU2F();
     }
 
