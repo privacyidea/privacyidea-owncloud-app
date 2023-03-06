@@ -13,7 +13,7 @@
 The privacyIDEA ownCloud App needs a subscription file from NetKnights GmbH to run productively.
 See https://netknights.it/en/produkte/privacyidea-owncloud-app/
 
-Nevertheless you can test the priacyIDEA ownCloud App in your test environment.
+Nevertheless, you can test the privacyIDEA ownCloud App in your test environment.
 
 ## Install
 
