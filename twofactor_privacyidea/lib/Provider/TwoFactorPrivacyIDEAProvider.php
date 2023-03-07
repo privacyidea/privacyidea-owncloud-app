@@ -645,16 +645,20 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                                 $this->session->set("pi_imgWebauthn", $multiChallenge[$i]->image);
                                             }
                                             break;
-                                        case "push":
-                                            $this->session->set("pi_pushAvailable", "1");
-                                            if (!empty($multiChallenge[$i]->image))
+                                        case "poll":
+                                            if ($multiChallenge[$i]->type === "push")
                                             {
-                                                $this->session->set("pi_imgPush", $multiChallenge[$i]->image);
+                                                $this->session->set("pi_pushAvailable", "1");
+                                                if (!empty($multiChallenge[$i]->image))
+                                                {
+                                                    $this->session->set("pi_imgPush", $multiChallenge[$i]->image);
+                                                }
                                             }
-                                            break;
-                                        case "tiqr":
-                                            $this->session->set("pi_tiqrAvailable", "1");
-                                            $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
+                                            elseif ($multiChallenge[$i]->type === "tiqr")
+                                            {
+                                                $this->session->set("pi_tiqrAvailable", "1");
+                                                $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
+                                            }
                                             break;
                                         default:
                                             if (!empty($multiChallenge[$i]->image))
