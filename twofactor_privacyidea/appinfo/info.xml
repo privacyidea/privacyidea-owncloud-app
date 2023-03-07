@@ -15,7 +15,7 @@ Yubikey, U2F tokens, key fob, OTP display cards and much more.
 	</description>
 	<licence>AGPL</licence>
 	<author>NetKnights GmbH, Cornelius Kölbel</author>
-	<version>3.0</version>
+	<version>3.1</version>
 	<namespace>TwoFactor_privacyIDEA</namespace>
 	<category>Security</category>
 	<types>
