@@ -1,4 +1,4 @@
-## 3.1 03/2023
+## 3.1.1 03/2023
 
 ### Features
 * Implementation of the preferred client mode.
