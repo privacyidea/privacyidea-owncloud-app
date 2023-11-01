@@ -369,12 +369,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * Otherwise, if the request failed for any reason, a TriggerChallengeException is raised.
      *
      * @param string $username user for which privacyIDEA should trigger challenges
-     * @return string
+     * @return string|null
      * @throws AdminAuthException
      * @throws ProcessPIResponseException
      * @throws Exception
      */
-    private function triggerChallenge(string $username): string
+    private function triggerChallenge(string $username): ?string
     {
         $this->session->set("pi_hideOTPField", true);
         $url = $this->getBaseUrl() . "validate/triggerchallenge";
