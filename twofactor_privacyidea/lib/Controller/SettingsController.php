@@ -86,8 +86,15 @@ class SettingsController extends Controller
             $result = $provider->validateCheck($user, $pass);
             if ($result->result->status)
             {
-                $message = $this->trans->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
-                $status = "success";
+                if ($result->result->value == "true")
+                {
+                    $message = $this->trans->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
+                    $status = "success";
+                }
+                else
+                {
+                    $message = $this->trans->t("Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.");
+                }
             }
             elseif (!$result->result->status)
             {
@@ -107,12 +114,15 @@ class SettingsController extends Controller
             {
                 // in this case, privacyIDEA worked correctly, but the password was wrong
                 $message = $this->trans->t("Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.");
-                $status = "error";
             }
             else
             {
                 $message = $e->getMessage();
             }
+        }
+        if ($status !== "success")
+        {
+            $status = "error";
         }
         return new DataResponse(['status' => $status, 'data' => ['message' => $message]]);
     }
