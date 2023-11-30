@@ -141,7 +141,7 @@ script('twofactor_privacyidea', 'settings-admin');
         <label for="noproxy">
             <?php p($l->t('Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly.')); ?>
         </label>
-        <br>
+        <hr>
         <p>
             <?php p($l->t('Test authentication by supplying username and password that are checked against privacyIDEA:')); ?>
         </p>
@@ -181,6 +181,15 @@ script('twofactor_privacyidea', 'settings-admin');
             <input id="passOnNoUser" type="checkbox" class="checkbox">
             <label for="passOnNoUser">
                 <?php p($l->t('Let the user log in if the user is not found in privacyIDEA.')); ?>
+            </label>
+        </p>
+
+        <p>
+            <input id="autoSubmitOTPLength" type="text" size="20"/>
+            <label for="autoSubmitOTPLength">
+                <?php p($l->t('If you want to turn on the form-auto-submit function after x number of characters 
+                are entered into the OTP input field, set the expected OTP length here. 
+                Note: Only digits as the parameter\'s value allowed here.')); ?>
             </label>
         </p>
 
