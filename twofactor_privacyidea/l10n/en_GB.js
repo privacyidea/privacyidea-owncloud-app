@@ -36,6 +36,8 @@ OC.L10N.register(
     "Test" : "Test",
     "Challenge Response" : "Challenge Response",
     "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens." : "Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens.",
+    "Let the user log in if the user is not found in privacyIDEA." : "Let the user log in if the user is not found in privacyIDEA.",
+    "If you want to turn on the form-auto-submit function after x number of characters \n                are entered into the OTP input field, set the expected OTP length here. \n                Note: Only digits as the parameter\\'s value allowed here." : "If you want to turn on the form-auto-submit function after x number of characters \n                are entered into the OTP input field, set the expected OTP length here. \n                Note: Only digits as the parameter\\'s value allowed here.",
     "Username of privacyIDEA service account" : "Username of privacyIDEA service account",
     "Password of privacyIDEA service account" : "Password of privacyIDEA service account",
     "Check Credentials" : "Check Credentials"
