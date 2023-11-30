@@ -80,18 +80,25 @@ class SettingsController extends Controller
     {
         // instantiate our very own twofactor provider
         $provider = OC::$server->query("OCA\TwoFactor_privacyIDEA\Provider\TwoFactorPrivacyIDEAProvider");
-        $status = "";
+        $status = "error";
         try
         {
             $result = $provider->validateCheck($user, $pass);
             if ($result->result->status)
             {
-                $message = $this->trans->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
-                $status = "success";
+                if ($result->result->value == "true")
+                {
+                    $message = $this->trans->t("Communication to the privacyIDEA server succeeded. The user was successfully authenticated.");
+                    $status = "success";
+                }
+                else
+                {
+                    $message = $this->trans->t("Communication to the privacyIDEA server succeeded, but the user wasn't successfully authenticated.");
+                }
             }
             elseif (!$result->result->status)
             {
-                $message = $this->trans->t("Failed to authenticate.") . $result->result->error->message;
+                $message = $this->trans->t("Failed to authenticate. ") . $result->result->error->message;
             }
             else
             {
@@ -107,7 +114,6 @@ class SettingsController extends Controller
             {
                 // in this case, privacyIDEA worked correctly, but the password was wrong
                 $message = $this->trans->t("Communication to the privacyIDEA server succeeded. However, the user failed to authenticate.");
-                $status = "error";
             }
             else
             {
