@@ -171,6 +171,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("imgOTP", $this->session->get("pi_imgOTP"));
         }
+        if ($this->session->get("pi_autoSubmitOtpLength") !== null)
+        {
+            $template->assign("autoSubmitOtpLength", $this->session->get("pi_autoSubmitOtpLength"));
+        }
 
         $loads = 1;
         if ($this->session->get("pi_loadCounter") !== null)
