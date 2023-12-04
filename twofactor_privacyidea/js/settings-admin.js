@@ -168,7 +168,20 @@ $(document).ready(function ()
         //displayServerCredentials(checked);
     });
 
-    /* in or exclude owncloud user groups */
+    /* Form-auto-submit after X digits entered */
+    getValue("autoSubmitOtpLength", function (otpLength)
+    {
+        $("#piSettings #autoSubmitOtpLength").val(otpLength);
+    });
+
+    $("#piSettings #autoSubmitOtpLength").change(function ()
+    {
+        console.log("pi: Saving otp length for auto submit.");
+        var value = $("#piSettings #autoSubmitOtpLength").val();
+        setValue("autoSubmitOtpLength", value);
+    });
+
+    /* include / exclude owncloud user groups */
     radioinclude = document.getElementById('piinclude');
     radioexclude = document.getElementById('piexclude');
     getValue("piexclude", function (piexclude)
