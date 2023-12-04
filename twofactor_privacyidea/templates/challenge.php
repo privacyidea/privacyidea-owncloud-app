@@ -41,27 +41,46 @@ if (!empty($_['imgOTP']) && $_['mode'] === "otp"): ?>
         <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']): ?>
             <label>
                 <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off"
-                       required autofocus style="width:230px; text-align:center; margin:0 0 5px">
+                       required autofocus style="width:230px; text-align:center; margin:0 0 5px"
+                       onKeyUp="autoSubmit(this, document.getElementById('autoSubmitOtpLength'))">
             </label>
+            <script>
+                'use strict';
+                function autoSubmit(inputObject, otpLength)
+                {
+                    if (otpLength != null && inputObject.value.length === otpLength)
+                    {
+                        document.forms["piLoginForm"].submit();
+                    }
+                }
+            </script>
         <br>
-            <input id="submitButton" type="submit" class="button" value="<?php if (isset($_['verify']))
+            <input id="submitButton" type="submit" class="button" value="<?php
+            if (isset($_['verify']))
             {
                 p($_['verify']);
-            } ?>" style="width:251px; display: inline !important; text-align:center !important;">
+            }?>" style="width:251px; display: inline !important; text-align:center !important;">
         <?php endif; ?>
 
         <!-- Hidden input which store the info about changes -->
         <input id="modeChanged" type="hidden" name="modeChanged" value="0"/>
 
+        <input id="autoSubmitOtpLength" type="hidden" name="autoSubmitOtpLength" value="<?php
+        if (isset($_['autoSubmitOtpLength']))
+        {
+            p($_['autoSubmitOtpLength']);
+        }?>"/>
         <input id="u2fSignRequest" type="hidden" name="u2fSignRequest"
-               value="<?php if (isset($_['u2fSignRequest']))
+               value="<?php
+               if (isset($_['u2fSignRequest']))
                {
                    p($_['u2fSignRequest']);
                } ?>"/>
         <input id="u2fSignResponse" type="hidden" name="u2fSignResponse" value=""/>
 
         <input id="webAuthnSignRequest" type="hidden" name="webAuthnSignRequest"
-               value='<?php if (isset($_['webAuthnSignRequest']))
+               value='<?php
+               if (isset($_['webAuthnSignRequest']))
                {
                    p($_['webAuthnSignRequest']);
                } ?>'/>
@@ -69,30 +88,35 @@ if (!empty($_['imgOTP']) && $_['mode'] === "otp"): ?>
         <input id="origin" type="hidden" name="origin" value=""/>
 
         <input id="pushAvailable" type="hidden" name="pushAvailable"
-               value="<?php if (isset($_['pushAvailable']))
+               value="<?php
+               if (isset($_['pushAvailable']))
                {
                    p($_['pushAvailable']);
                } ?>"/>
 
         <input id="tiqrAvailable" type="hidden" name="tiqrAvailable"
-               value="<?php if (isset($_['tiqrAvailable']))
+               value="<?php
+               if (isset($_['tiqrAvailable']))
                {
                    p($_['tiqrAvailable']);
                } ?>"/>
 
         <input id="otpAvailable" type="hidden" name="otpAvailable"
-               value="<?php if (isset($_['otpAvailable']))
+               value="<?php
+               if (isset($_['otpAvailable']))
                {
                    p($_['otpAvailable']);
                } ?>"/>
 
         <input id="loadCounter" type="hidden" name="loadCounter"
-               value="<?php if (isset($_['loadCounter']))
+               value="<?php
+               if (isset($_['loadCounter']))
                {
                    p($_['loadCounter']);
                } ?>"/>
 
-        <input id="mode" type="hidden" name="mode" value="<?php if (isset($_['mode']))
+        <input id="mode" type="hidden" name="mode" value="<?php
+        if (isset($_['mode']))
         {
             p($_['mode']);
         }
@@ -103,7 +127,8 @@ if (!empty($_['imgOTP']) && $_['mode'] === "otp"): ?>
 
         <!-- Alternate Login Options -->
         <div id="alternateLoginOptions" style="margin-top:35px">
-            <label><strong><?php if (isset($_['alternateLoginOptions']))
+            <label><strong><?php
+                    if (isset($_['alternateLoginOptions']))
                     {
                         p($_['alternateLoginOptions']);
                     } ?></strong></label>

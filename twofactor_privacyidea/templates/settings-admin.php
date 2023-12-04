@@ -185,8 +185,8 @@ script('twofactor_privacyidea', 'settings-admin');
         </p>
 
         <p>
-            <input id="autoSubmitOTPLength" type="text" size="20"/>
-            <label for="autoSubmitOTPLength">
+            <input id="autoSubmitOtpLength" type="text" size="20"/>
+            <label for="autoSubmitOtpLength">
                 <?php p($l->t('If you want to turn on the form-auto-submit function after x number of characters 
                 are entered into the OTP input field, set the expected OTP length here. 
                 Note: Only digits as the parameter\'s value allowed here.')); ?>
