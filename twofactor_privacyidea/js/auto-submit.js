@@ -1,4 +1,4 @@
 window.onload = function ()
 {
-    document.getElementById("piLoginForm").submit();
+    document.forms["piLoginForm"].submit();
 };
