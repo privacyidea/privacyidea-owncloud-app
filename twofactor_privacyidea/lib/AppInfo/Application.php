@@ -1,11 +1,12 @@
 <?php
-/*
- * @author Cornelis Kölbel <cornelius.koelbel@netknights.it>
+
+/**
+ * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
  * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
  *
- * privacyIDEA two-factor authentication
+ * @license AGPL-3.0
  *
- * This code is free software: you can redistribute it and/or modify
+ * This code is a free software: You can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
  * as published by the Free Software Foundation.
  *
@@ -15,14 +16,13 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License, version 3,
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
 
 namespace OCA\TwoFactor_privacyIDEA\AppInfo;
 
 use OCA\TwoFactor_privacyIDEA\Controller\SettingsController;
 use OCP\App;
-
 
 class Application extends \OCP\AppFramework\App
 {
