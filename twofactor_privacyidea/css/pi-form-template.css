@@ -1,0 +1,40 @@
+.pi_images
+{
+    text-align : center !important;
+}
+
+#imgOtp
+{
+    vertical-align : unset;
+}
+
+#otp
+{
+    width      : 230px;
+    text-align : center;
+    margin     : 0 0 5px;
+}
+
+#submitButton
+{
+    width      : 251px;
+    display    : inline !important;
+    text-align : center !important;
+}
+
+#alternateLoginOptions
+{
+    margin-top:35px;
+}
+
+.alternateTokenButtons
+{
+    width:140px;
+    margin:15px 10px 7px;
+}
+
+#useOTPButton
+{
+    width:140px;
+    margin:15px 15px 7px;
+}
