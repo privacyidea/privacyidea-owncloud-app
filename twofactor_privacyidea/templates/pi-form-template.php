@@ -1,6 +1,5 @@
 <?php
-script('twofactor_privacyidea', 'challenge');
-script('twofactor_privacyidea', 'event-listeners');
+script('twofactor_privacyidea', ['event-listeners', 'pi-form-template']);
 style('twofactor_privacyidea', 'pi-form-template');
 ?>
 
@@ -36,7 +35,7 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
 
     <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']): ?>
         <label>
-            <input id="otp" type="password" name="challenge"
+            <input id="otp" type="password" name="password"
                    placeholder="OTP" autocomplete="off" required autofocus>
         </label>
         <br>
@@ -56,7 +55,7 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
            } ?>"/>
     <input id="modeChanged" type="hidden" name="modeChanged" value="0"/>
     <input id="autoSubmitOtpLength" type="hidden" name="autoSubmitOtpLength"
-           value="<?php if (isset($_['autoSubmitOtpLength'])) : p($_['autoSubmitOtpLength']); endif; ?>"/>
+           value="<?php if (!empty($_['autoSubmitOtpLength'])) : p($_['autoSubmitOtpLength']); endif; ?>"/>
     <input id="u2fSignRequest" type="hidden" name="u2fSignRequest"
            value="<?php if (isset($_['u2fSignRequest'])) : p($_['u2fSignRequest']); endif; ?>"/>
     <input id="u2fSignResponse" type="hidden" name="u2fSignResponse" value=""/>
