@@ -115,7 +115,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
 
         // Set options, tokens and load counter to the template
-        $template = new Template('twofactor_privacyidea', 'challenge');
+        $template = new Template('twofactor_privacyidea', 'pi-form-template');
 
         if ($this->session->get("pi_detail") !== null)
         {
@@ -174,6 +174,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         if ($this->session->get("pi_autoSubmitOtpLength") !== null)
         {
             $template->assign("autoSubmitOtpLength", $this->session->get("pi_autoSubmitOtpLength"));
+        }
+        else
+        {
+            $template->assign("autoSubmitOtpLength", $this->getAppValue('autoSubmitOtpLength', ''));
         }
 
         $loads = 1;
