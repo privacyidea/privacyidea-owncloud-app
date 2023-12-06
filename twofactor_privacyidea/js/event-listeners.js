@@ -18,16 +18,20 @@
 
 function autoSubmit()
 {
-    if (document.getElementById("autoSubmitOtpLength") != null
-    && document.getElementById("otp").value.length === document.getElementById("autoSubmitOtpLength"))
+    if (document.getElementById("otp").value.length == document.getElementById("autoSubmitOtpLength").value)
     {
+        console.log("submitting at otp length of: " + document.getElementById("otp").value.length); //todo rm
         document.forms["piLoginForm"].submit();
     }
 }
 
-function eventListeners(){
-    document.getElementById("otp").addEventListener("onKeyUp", autoSubmit);
+function eventListeners()
+{
+    document.getElementById("otp").addEventListener("keyup", autoSubmit);
 }
 
 // Wait until the document is ready
-document.addEventListener("DOMContentLoaded", function() {eventListeners();});
+document.addEventListener("DOMContentLoaded", function ()
+{
+    eventListeners();
+});
