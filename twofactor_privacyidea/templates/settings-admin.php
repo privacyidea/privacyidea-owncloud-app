@@ -173,7 +173,7 @@ style('twofactor_privacyidea', 'settings-admin');
         </label>
         <hr>
         <p>
-            <?php p($l->t('Test the authentication by supplying username and password 
+            <?php p($l->t('Test authentication by supplying username and password 
             that should be checked against the privacyIDEA:')); ?>
         </p>
         <table>
