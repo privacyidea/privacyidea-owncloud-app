@@ -20,7 +20,6 @@ function autoSubmit()
 {
     if (document.getElementById("otp").value.length == document.getElementById("autoSubmitOtpLength").value)
     {
-        console.log("submitting at otp length of: " + document.getElementById("otp").value.length); //todo rm
         document.forms["piLoginForm"].submit();
     }
 }
