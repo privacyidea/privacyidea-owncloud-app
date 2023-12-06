@@ -116,7 +116,7 @@ window.onload = function ()
         {
             if (!window.pi_webauthn)
             {
-                window.alert("Could not load WebAuthn library. Please try again or use other token!.");
+                window.alert("Could not load WebAuthn library. Please try again or use other token!");
                 changeMode("otp");
             }
         }
