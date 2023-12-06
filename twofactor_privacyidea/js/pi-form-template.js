@@ -63,7 +63,6 @@ window.onload = function ()
     if (value("tiqrAvailable") !== "1")
     {
         disable("useTiQRButton");
-        disable("tiqrImage");
     }
 
     if (value("otpAvailable") !== "1")
