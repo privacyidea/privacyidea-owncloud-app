@@ -18,7 +18,7 @@
  */ ?>
 
 <?php
-script('twofactor_privacyidea', 'settings-admin');
+script('twofactor_privacyidea', 'pi-settings-admin');
 style('twofactor_privacyidea', 'settings-admin');
 ?>
 
