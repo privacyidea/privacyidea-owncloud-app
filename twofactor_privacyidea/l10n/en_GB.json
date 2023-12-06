@@ -29,7 +29,7 @@
     "\n                    Select the user realm, if it is not the default one.\n                " : "\n                    Select the user realm, if it is not the default one.\n                ",
     "\n                    Verify the SSL certificate.\n                " : "\n                    Verify the SSL certificate.\n                ",
     "\n                        Do not uncheck this in productive environments!\n                    " : "\n                        Do not uncheck this in productive environments!\n                    ",
-    "Test the authentication by supplying username and password that should be checked against the privacyIDEA:" : "Test the authentication by supplying username and password that should be checked against the privacyIDEA:",
+    "Test the authentication by supplying username and password \n            that should be checked against the privacyIDEA:" : "Test the authentication by supplying username and password that should be checked against the privacyIDEA:",
     "User" : "User",
     "Password" : "Password",
     "Test" : "Test",

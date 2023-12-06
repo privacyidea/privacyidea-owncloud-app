@@ -33,7 +33,7 @@
     "\n                    Verify the SSL certificate.\n                " : "\nDas SSL Zertifikat überprüfen.",
     "\n                        Do not uncheck this in productive environments!\n                    " : "\nBitte deaktiviere dies nicht in einer produktiven Umgebung!",
     "Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly." : "Die systemweiten Proxy-Einstellungen ignorieren und den HTTP-Request für die Authentifizierung direkt an privacyIDEA senden.",
-    "Test the authentication by supplying username and password that are checked against privacyIDEA:" : "Sie können die Konfiguration testen, indem Sie einen Benutzernamen und das Einmal-Passwort, das an privacyIDEA gesendet werden soll, hier eingeben:",
+    "Test the authentication by supplying username and password \n            that should be checked against the privacyIDEA:" : "Sie können die Konfiguration testen, indem Sie einen Benutzernamen und das Einmal-Passwort, das an privacyIDEA gesendet werden soll, hier eingeben:",
     "User" : "Benutzer",
     "Password" : "Kennwort",
     "Test" : "Testen",

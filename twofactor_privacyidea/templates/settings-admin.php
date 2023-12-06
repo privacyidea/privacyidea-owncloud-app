@@ -45,7 +45,7 @@ style('twofactor_privacyidea', 'settings-admin');
                 <td colspan="2">
                     <input id="piactive" type="checkbox" class="checkbox">
                     <label for="piactive">
-                        <?php p($l->t('Activate Two-Factor Authentication with privacyIDEA ')); ?>
+                        <?php p($l->t('Activate two factor authentication with privacyIDEA ')); ?>
                     </label>
                 </td>
                 <td>
@@ -173,7 +173,7 @@ style('twofactor_privacyidea', 'settings-admin');
         </label>
         <hr>
         <p>
-            <?php p($l->t('Test authentication by supplying username and password 
+            <?php p($l->t('Test the authentication by supplying username and password 
             that should be checked against the privacyIDEA:')); ?>
         </p>
         <table>
