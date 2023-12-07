@@ -1,4 +1,4 @@
-# privacyIDEA ownCloud plugin for two factor authentication with privacyIDEA
+# privacyIDEA ownCloud plugin for two-factor authentication with privacyIDEA
 
 ## Requirements
 
