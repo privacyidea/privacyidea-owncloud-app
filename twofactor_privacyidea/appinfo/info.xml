@@ -7,7 +7,7 @@
 		This is a plugin to forward the authentication requests to your own privacyIDEA Authentication System.
 		[Your own privacyIDEA Authentication System](https://netknights.it/en/produkte/privacyidea/) can run on
 		premise centrally in your network under your control.
-		The privacyIDEA can manage many different kind of authentication devices. Thus, you can assign different
+		privacyIDEA can manage many different kind of authentication devices. Thus, you can assign different
 		authentication objects to your users as a second factor.
 		The users can now authenticate against your ownCloud installation with e.g. Google Authenticator,
 		the [privacyIDEA Authenticator](https://netknights.it/en/produkte/privacyidea-authenticator-app/),
