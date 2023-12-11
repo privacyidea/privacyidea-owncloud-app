@@ -44,14 +44,7 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
 
     <!-- Hidden input that saves the changes -->
     <input id="mode" type="hidden" name="mode"
-           value="<?php if (isset($_['mode']))
-           {
-               p($_['mode']);
-           }
-           else
-           {
-               p("otp");
-           } ?>"/>
+           value="<?php if (isset($_['mode'])) {p($_['mode']);} else {p("otp");} ?>"/>
     <input id="modeChanged" type="hidden" name="modeChanged" value="0"/>
     <input id="autoSubmitOtpLength" type="hidden" name="autoSubmitOtpLength"
            value="<?php if (!empty($_['autoSubmitOtpLength'])) : p($_['autoSubmitOtpLength']); endif; ?>"/>
@@ -70,6 +63,10 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
            value="<?php if (isset($_['otpAvailable'])) : p($_['otpAvailable']); endif; ?>"/>
     <input id="loadCounter" type="hidden" name="loadCounter"
            value="<?php if (isset($_['loadCounter'])) : p($_['loadCounter']); endif; ?>"/>
+    <input id="pollInBrowser" type="hidden" name="pollInBrowser"
+           value="<?php if (isset($_['pollInBrowser'])) : p($_['pollInBrowser']); endif; ?>"/>
+    <input id="pollInBrowserUrl" type="hidden" name="pollInBrowserUrl"
+           value="<?php if (isset($_['pollInBrowserUrl'])) : p($_['pollInBrowserUrl']); endif; ?>"/>
 
     <!-- ALTERNATE LOGIN OPTIONS -->
     <div id="alternateLoginOptions">
