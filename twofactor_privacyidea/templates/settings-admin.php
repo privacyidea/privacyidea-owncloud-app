@@ -174,8 +174,13 @@ style('twofactor_privacyidea', 'settings-admin');
         <hr>
         <input id="pollinbrowser" type="checkbox" class="checkbox">
         <label for="pollinbrowser">
-            <?php p($l->t('')); ?>
+            <?php p($l->t('Poll in browser')); ?>
+            <em>
+                <?php p($l->t('Check this, to activate polling for a push token confirmation right from your browser.')) ?>
+            </em>
         </label>
+        <label for="pollinbrowserurl"><?php p($l->t('Poll in browser URL:')); ?></label>
+        <input id="pollinbrowserurl" type="text" width="300px"/>
         <hr>
         <p>
             <?php p($l->t('Test authentication by supplying username and password 
