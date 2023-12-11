@@ -183,6 +183,36 @@ $(document).ready(function ()
         setValue("autoSubmitOtpLength", value);
     });
 
+    /* Poll in browser */
+    getValue("pollInBrowser", function (pollInBrowser)
+    {
+        $("#piSettings #pollInBrowser").prop('checked', pollInBrowser === "0");
+    });
+
+    $("#piSettings #pollInBrowser").change(function ()
+    {
+        if (radioinclude.checked)
+        {
+            setValue("pollInBrowser", "1");
+        }
+        else
+        {
+            setValue("pollInBrowser", "0");
+        }
+    });
+
+    getValue("pollInBrowserUrl", function (pollInBrowserUrl)
+    {
+        $("#piSettings #pollInBrowserUrl").val(pollInBrowserUrl);
+    });
+
+    $("#piSettings #pollInBrowserUrl").change(function ()
+    {
+        console.log("pi: Saving URL for poll in browser.");
+        var value = $("#piSettings #pollInBrowserUrl").val();
+        setValue("pollInBrowserUrl", value);
+    });
+
     /* include / exclude owncloud user groups */
     radioinclude = document.getElementById('piinclude');
     radioexclude = document.getElementById('piexclude');
