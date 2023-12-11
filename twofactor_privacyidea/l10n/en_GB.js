@@ -12,6 +12,8 @@ OC.L10N.register(
     "Failed to fetch authentication token." : "Failed to fetch authentication token.",
     "privacyIDEA 2FA" : "privacyIDEA 2FA",
     "Open documentation" : "Open documentation",
+    "Poll in browser" : "Poll in browser",
+    "Poll in browser URL: " : "Poll in browser URL: ",
     "\n                In a second step of authentication, the user is asked to provide a one\n                time password. The users devices are managed in privacyIDEA. The\n                authentication request is forwarded to privacyIDEA.\n            " : "\n                In a second step of authentication, the user is asked to provide a one\n                time password. The users devices are managed in privacyIDEA. The\n                authentication request is forwarded to privacyIDEA.\n            ",
     "Configuration" : "Configuration",
     "Activate two factor authentication with privacyIDEA " : "Activate two factor authentication with privacyIDEA ",
