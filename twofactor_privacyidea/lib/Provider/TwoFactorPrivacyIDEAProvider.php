@@ -179,6 +179,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("autoSubmitOtpLength", $this->getAppValue('autoSubmitOtpLength', ''));
         }
+        if ($this->session->get("pi_pollInBrowser") !== null)
+        {
+            $template->assign("pollInBrowser", $this->session->get("pi_pollInBrowser"));
+        }
+        else
+        {
+            $template->assign("pollInBrowser", $this->getAppValue('pollInBrowser', ''));
+        }
+        if ($this->session->get("pi_pollInBrowserUrl") !== null)
+        {
+            $template->assign("pollInBrowserUrl", $this->session->get("pi_pollInBrowserUrl"));
+        }
+        else
+        {
+            $template->assign("pollInBrowserUrl", $this->getAppValue('pollInBrowserUrl', ''));
+        }
 
         $loads = 1;
         if ($this->session->get("pi_loadCounter") !== null)
