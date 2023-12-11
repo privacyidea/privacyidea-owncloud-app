@@ -33,7 +33,7 @@ style('twofactor_privacyidea', 'settings-admin');
     <span id="pi_settings_msg" class="msg"></span>
     <p>
         <em>
-            <?php p($l->t('In a second step of authentication the user is asked to provide a one time password. 
+            <?php p($l->t('In a second step of authentication, the user is asked to provide a one time password. 
             The users devices are managed in privacyIDEA. The authentication request is forwarded to privacyIDEA.')); ?>
         </em>
     </p>
