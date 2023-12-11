@@ -1,5 +1,5 @@
 <?php
-script('twofactor_privacyidea', ['event-listeners', 'pi-form-template', 'pi-webauthn', 'pi-u2f']);
+script('twofactor_privacyidea', ['event-listeners', 'pi-form-template', 'pi-webauthn', 'pi-u2f', 'pi-poll-transaction.worker']);
 style('twofactor_privacyidea', 'pi-form-template');
 ?>
 
