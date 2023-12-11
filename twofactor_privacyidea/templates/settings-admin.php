@@ -172,15 +172,15 @@ style('twofactor_privacyidea', 'settings-admin');
             send authentication requests to privacyIDEA directly')); ?>
         </label>
         <hr>
-        <input id="pollinbrowser" type="checkbox" class="checkbox">
-        <label for="pollinbrowser">
+        <input id="pollInBrowser" type="checkbox" class="checkbox">
+        <label for="pollInBrowser">
             <?php p($l->t('Poll in browser')); ?>
             <em>
                 <?php p($l->t('Check this, to activate polling for a push token confirmation right from your browser.')) ?>
             </em>
         </label>
-        <label for="pollinbrowserurl"><?php p($l->t('Poll in browser URL: ')); ?></label>
-        <input id="pollinbrowserurl" type="text" width="300px"/>
+        <label for="pollInBrowserUrl"><?php p($l->t('Poll in browser URL: ')); ?></label>
+        <input id="pollInBrowserUrl" type="text" width="300px"/>
         <hr>
         <p>
             <?php p($l->t('Test authentication by supplying username and password 
@@ -201,7 +201,7 @@ style('twofactor_privacyidea', 'settings-admin');
                 <td>
                     <label for="pitestauthentication_password">
                         <?php p($l->t('Password')); ?>
-                    </label> &nbsp;
+                    </label>
                 </td>
                 <td>
                     <input type="password" id="pitestauthentication_password" size="40"/>
