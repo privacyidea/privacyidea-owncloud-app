@@ -172,6 +172,11 @@ style('twofactor_privacyidea', 'settings-admin');
             send authentication requests to privacyIDEA directly')); ?>
         </label>
         <hr>
+        <input id="pollinbrowser" type="checkbox" class="checkbox">
+        <label for="pollinbrowser">
+            <?php p($l->t('')); ?>
+        </label>
+        <hr>
         <p>
             <?php p($l->t('Test authentication by supplying username and password 
             that should be checked against privacyIDEA:')); ?>
