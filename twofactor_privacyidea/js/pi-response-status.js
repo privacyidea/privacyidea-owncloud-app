@@ -1,5 +1,3 @@
-<?php
-
 /**
  * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
  * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
@@ -19,7 +17,20 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
 
-use OCA\TwoFactor_privacyIDEA\AppInfo\Application;
-$app = new Application();
-// register the configuration settings templates
-$app->registerSettings();
+window.onload = function ()
+{
+    setInterval(function ()
+    {
+        $.ajax({
+            url: location.href,
+            type: 'post',
+            success: window.onload = function (result)
+            {
+                if (result.search("<input type=\"hidden\" id=\"ResponseStatus\" value=\"false\">") === -1)
+                {
+                    location.reload();
+                }
+            }
+        });
+    }, 1000);
+};

@@ -1,7 +1,4 @@
-<?php
-
 /**
- * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
  * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
  *
  * @license AGPL-3.0
@@ -19,7 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
 
-use OCA\TwoFactor_privacyIDEA\AppInfo\Application;
-$app = new Application();
-// register the configuration settings templates
-$app->registerSettings();
+window.onload = function ()
+{
+    document.forms["piLoginForm"].submit();
+};

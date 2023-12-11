@@ -1,3 +1,22 @@
+/**
+ * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
+ *
+ * @license AGPL-3.0
+ *
+ * This code is a free software: You can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License, version 3,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License, version 3,
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
+ */
+
 /*jshint sub:true*/
 
 window.onload = function ()
@@ -44,7 +63,6 @@ window.onload = function ()
     if (value("tiqrAvailable") !== "1")
     {
         disable("useTiQRButton");
-        disable("tiqrImage");
     }
 
     if (value("otpAvailable") !== "1")
@@ -98,7 +116,7 @@ window.onload = function ()
         {
             if (!window.pi_webauthn)
             {
-                window.alert("Could not load WebAuthn library. Please try again or use other token!.");
+                window.alert("Could not load WebAuthn library. Please try again or use other token!");
                 changeMode("otp");
             }
         }

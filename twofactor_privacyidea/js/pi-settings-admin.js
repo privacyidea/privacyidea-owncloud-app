@@ -1,8 +1,10 @@
 /**
  * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
+ * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
+ *
  * @license AGPL-3.0
  *
- * This code is free software: you can redistribute it and/or modify
+ * This code is a free software: You can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
  * as published by the Free Software Foundation.
  *
@@ -12,9 +14,9 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License, version 3,
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
+
 const BASE_URL = '/apps/twofactor_privacyidea/';
 
 $(document).ready(function ()
@@ -168,7 +170,20 @@ $(document).ready(function ()
         //displayServerCredentials(checked);
     });
 
-    /* in or exclude owncloud user groups */
+    /* Form-auto-submit after X digits entered */
+    getValue("autoSubmitOtpLength", function (otpLength)
+    {
+        $("#piSettings #autoSubmitOtpLength").val(otpLength);
+    });
+
+    $("#piSettings #autoSubmitOtpLength").change(function ()
+    {
+        console.log("pi: Saving otp length for auto submit.");
+        var value = $("#piSettings #autoSubmitOtpLength").val();
+        setValue("autoSubmitOtpLength", value);
+    });
+
+    /* include / exclude owncloud user groups */
     radioinclude = document.getElementById('piinclude');
     radioexclude = document.getElementById('piexclude');
     getValue("piexclude", function (piexclude)
