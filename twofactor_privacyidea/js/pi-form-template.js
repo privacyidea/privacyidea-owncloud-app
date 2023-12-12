@@ -21,7 +21,8 @@
 
 window.onload = function ()
 {
-    // Button listeners
+    // BUTTON LISTENERS
+
     document.getElementById("useU2FButton").addEventListener("click", function ()
     {
         changeMode("u2f");
@@ -43,33 +44,59 @@ window.onload = function ()
         changeMode("otp");
     });
 
-    // Set alternate token button visibility
+    // ALTERNATE TOKEN BUTTON VISIBILITY
 
     if (value("webAuthnSignRequest") === "")
     {
         disable("useWebAuthnButton");
     }
-
     if (value("u2fSignRequest") === "")
     {
         disable("useU2FButton");
     }
-
     if (value("pushAvailable") !== "1")
     {
         disable("usePushButton");
     }
-
     if (value("tiqrAvailable") !== "1")
     {
         disable("useTiQRButton");
     }
-
     if (value("otpAvailable") !== "1")
     {
         disable("useOTPButton");
     }
-
+    if (value("mode") === "otp" || value("mode").length < 1)
+    {
+        disable("useOTPButton");
+    }
+    if (value("mode") === "push" || value("mode") === "tiqr")
+    {
+        disable("otp");
+        disable("submitButton");
+        if (value("mode") === "push")
+        {
+            disable("usePushButton");
+        }
+        if (value("mode") === "tiqr")
+        {
+            disable("useTiQRButton");
+            enable("tiqrImage");
+        }
+        enable("useOTPButton");
+    }
+    if (value("mode") === "webauthn")
+    {
+        disable("otp");
+        disable("submitButton");
+        doWebAuthn();
+    }
+    if (value("mode") === "u2f")
+    {
+        disable("otp");
+        disable("submitButton");
+        doU2F();
+    }
     if (value("pushAvailable") !== "1"
         && value("tiqrAvailable") !== "1"
         && value("webAuthnSignRequest").length < 1
@@ -78,25 +105,33 @@ window.onload = function ()
         disable("alternateLoginOptions");
     }
 
-    if (value("mode") === "otp" || value("mode").length < 1)
+    // POLLING BY RELOAD
+
+    if (value("mode") === "push" || value("mode") === "tiqr")
     {
-        disable("useOTPButton");
+        const pollingIntervals = [4, 3, 2, 1];
+        let refreshTime;
+        if (value("loadCounter") > (pollingIntervals.length - 1))
+        {
+            refreshTime = pollingIntervals[(pollingIntervals.length - 1)];
+        }
+        else
+        {
+            refreshTime = pollingIntervals[Number(value("loadCounter") - 1)];
+        }
+        refreshTime *= 1000;
+
+        window.setTimeout(function ()
+        {
+            document.forms["piLoginForm"].submit();
+        }, refreshTime);
     }
 
-    if (value("mode") === "webauthn")
-    {
-        disable("otp");
-        disable("submitButton");
-        doWebAuthn();
-    }
+    // HELPER FUNCTIONS
 
-    if (value("mode") === "u2f")
-    {
-        disable("otp");
-        disable("submitButton");
-        doU2F();
-    }
-
+    /**
+     * @param mode
+     */
     function ensureSecureContextAndMode(mode)
     {
         // If mode is push, we have to change it, otherwise the site will refresh while doing webauthn
@@ -185,6 +220,9 @@ window.onload = function ()
         }
     }
 
+    /**
+     * @param signRequest
+     */
     function signU2FRequest(signRequest)
     {
         const appId = signRequest["appId"];
@@ -209,42 +247,7 @@ window.onload = function ()
         });
     }
 
-    if (value("mode") === "push" || value("mode") === "tiqr")
-    {
-        const pollingIntervals = [4, 3, 2, 1];
-
-        disable("otp");
-        disable("submitButton");
-        if (value("mode") === "push")
-        {
-            disable("usePushButton");
-        }
-        if (value("mode") === "tiqr")
-        {
-            disable("useTiQRButton");
-            enable("tiqrImage");
-        }
-        enable("useOTPButton");
-
-        let refreshTime;
-
-        if (value("loadCounter") > (pollingIntervals.length - 1))
-        {
-            refreshTime = pollingIntervals[(pollingIntervals.length - 1)];
-        }
-        else
-        {
-            refreshTime = pollingIntervals[Number(value("loadCounter") - 1)];
-        }
-        refreshTime *= 1000;
-        window.setTimeout(function ()
-        {
-            document.forms["piLoginForm"].submit();
-        }, refreshTime);
-    }
-
     /**
-     *
      * @param id
      * @returns {string|*}
      */
@@ -263,7 +266,6 @@ window.onload = function ()
     }
 
     /**
-     *
      * @param id
      * @param value
      */
@@ -281,7 +283,6 @@ window.onload = function ()
     }
 
     /**
-     *
      * @param id
      */
     function disable(id)
@@ -298,7 +299,6 @@ window.onload = function ()
     }
 
     /**
-     *
      * @param id
      */
     function enable(id)
@@ -315,7 +315,6 @@ window.onload = function ()
     }
 
     /**
-     *
      * @param newMode
      */
     function changeMode(newMode)
