@@ -94,7 +94,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     public function getTemplate(IUser $user): Template
     {
         // TriggerChallenge
-        if ($this->getAppValue('triggerchallenges', '') === '1')
+        if ($this->getAppValue("triggerchallenges", "") === "1")
         {
             if ($this->session->get("pi_TriggerChallengeSuccess") !== true)
             {
@@ -115,7 +115,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
 
         // Set options, tokens and load counter to the template
-        $template = new Template('twofactor_privacyidea', 'pi-form-template');
+        $template = new Template("twofactor_privacyidea", "pi-form-template");
 
         if ($this->session->get("pi_detail") !== null)
         {
@@ -177,7 +177,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         else
         {
-            $template->assign("autoSubmitOtpLength", $this->getAppValue('autoSubmitOtpLength', ''));
+            $template->assign("autoSubmitOtpLength", $this->getAppValue("autoSubmitOtpLength", ""));
         }
         if ($this->session->get("pi_pollInBrowser") !== null)
         {
@@ -185,7 +185,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         else
         {
-            $template->assign("pollInBrowser", $this->getAppValue('pollInBrowser', ''));
+            $template->assign("pollInBrowser", $this->getAppValue("pollInBrowser", ""));
         }
         if ($this->session->get("pi_pollInBrowserUrl") !== null)
         {
@@ -193,7 +193,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         else
         {
-            $template->assign("pollInBrowserUrl", $this->getAppValue('pollInBrowserUrl', ''));
+            $template->assign("pollInBrowserUrl", $this->getAppValue("pollInBrowserUrl", ""));
+        }
+        if ($this->session->get("pi_transactionId" !== null))
+        {
+            $template->assign("transactionId", $this->session->get("pi_transactionId"));
+        }
+        else
+        {
+            $template->assign("transactionId", $this->getAppValue("transactionId", ""));
         }
 
         $loads = 1;
