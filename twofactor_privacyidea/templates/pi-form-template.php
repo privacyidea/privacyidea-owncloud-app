@@ -45,9 +45,12 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
 
         <!-- Hidden input that saves the changes -->
         <input id="mode" type="hidden" name="mode"
-               value="<?php if (isset($_['mode'])){
+               value="<?php if (isset($_['mode']))
+               {
                    p($_['mode']);
-               } else {
+               }
+               else
+               {
                    p("otp");
                } ?>"/>
         <input id="modeChanged" type="hidden" name="modeChanged" value="0"/>
@@ -73,7 +76,10 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
         <input id="pollInBrowserUrl" type="hidden" name="pollInBrowserUrl"
                value="<?php if (isset($_['pollInBrowserUrl'])) : p($_['pollInBrowserUrl']); endif; ?>"/>
         <input id="transactionId" type="hidden" name="transactionId"
-               value="<?php if (isset($_['transactionId'])) : p($_['transactionId']); endif; ?>"
+               value="<?php if (isset($_['transactionId'])) : p($_['transactionId']); endif; ?>"/>
+        <input id="errorMessage" type="hidden" name="errorMessage" value="">
+        <input id="pollInBrowserFailed" type="hidden" name="pollInBrowserFailed"
+               value="<?php if (isset($_['pollInBrowserFailed'])) : p($_['pollInBrowserFailed']); endif; ?>"/>
 
         <!-- ALTERNATE LOGIN OPTIONS -->
         <div id="alternateLoginOptions">
