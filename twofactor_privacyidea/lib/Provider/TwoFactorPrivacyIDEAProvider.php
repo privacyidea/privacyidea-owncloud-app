@@ -203,6 +203,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("transactionId", $this->getAppValue("transactionId", ""));
         }
+        if ($this->session->get("pi_pollInBrowserFailed" !== null))
+        {
+            $template->assign("pollInBrowserFailed", $this->session->get("pi_pollInBrowserFailed"));
+        }
+        else
+        {
+            $template->assign("pollInBrowserFailed", $this->getAppValue("pollInBrowserFailed", false));
+        }
+        if ($this->session->get("pi_errorMessage" !== null))
+        {
+            $template->assign("errorMessage", $this->session->get("pi_errorMessage"));
+        }
+        else
+        {
+            $template->assign("errorMessage", $this->getAppValue("errorMessage", ""));
+        }
 
         $loads = 1;
         if ($this->session->get("pi_loadCounter") !== null)
