@@ -105,7 +105,61 @@ window.onload = function ()
         disable("alternateLoginOptions");
     }
 
-    // POLLING BY RELOAD
+    // POLL IN BROWSER
+
+    let pollInBrowser = document.getElementById("pollInBrowser").value;
+    let pollInBrowserUrl = document.getElementById("pollInBrowserUrl").value;
+    let transactionId = document.getElementById("transactionId").value;
+
+    if (pollInBrowser === true && !pollInBrowserUrl.isEmpty() && !transactionId.isEmpty())
+    {
+        window.onload = () =>
+        {
+            document.getElementById("usePushButton").style.display = "none";
+            let worker;
+            if (typeof (Worker) !== "undefined")
+            {
+                if (typeof (worker) == "undefined")
+                {
+                    worker = new Worker("pi-poll-transaction.worker.js");
+                    document.getElementById("submitButton").addEventListener('click', function (e)
+                    {
+                        worker.terminate();
+                        worker = undefined;
+                    });
+                    worker.postMessage({'cmd': 'url', 'msg': pollInBrowserUrl});
+                    worker.postMessage({'cmd': 'transactionID', 'msg': transactionId});
+                    worker.postMessage({'cmd': 'start'});
+                    worker.addEventListener('message', function (e)
+                    {
+                        let data = e.data;
+                        switch (data.status)
+                        {
+                            case 'success':
+                                document.forms["piLoginForm"].submit();
+                                break;
+                            case 'error':
+                                console.log("Poll in browser error: " + data.message);
+                                document.getElementById("errorMessage").value = "Poll in browser error: " + data.message;
+                                document.getElementById("pollInBrowserFailed").value = true;
+                                document.getElementById("pushButton").style.display = "initial";
+                                worker = undefined;
+                        }
+                    });
+                }
+            }
+            else
+            {
+                console.log("Sorry! No Web Worker support.");
+                worker.terminate();
+                document.getElementById("errorMessage").value = "Poll in browser error: The browser doesn't support the Web Worker.";
+                document.getElementById("pollInBrowserFailed").value = true;
+                document.getElementById("pushButton").style.display = "initial";
+            }
+        }
+    }
+
+    // POLL BY RELOAD
 
     if (value("mode") === "push" || value("mode") === "tiqr")
     {
