@@ -22,7 +22,7 @@ window.onload = () =>
         && piGetValue("pollInBrowserUrl").length > 0
         && piGetValue("transactionId").length > 0)
     {
-        piDisableElement("usePushButton");
+        piDisableElement("pushButton");
         let worker;
         if (typeof (Worker) !== "undefined")
         {

@@ -29,23 +29,23 @@ function piEventListeners()
     document.getElementById("otp").addEventListener("keyup", autoSubmit);
 
     // BUTTON LISTENERS
-    document.getElementById("useU2FButton").addEventListener("click", function ()
+    document.getElementById("u2fButton").addEventListener("click", function ()
     {
         piChangeMode("u2f");
     });
-    document.getElementById("useWebAuthnButton").addEventListener("click", function ()
+    document.getElementById("webAuthnButton").addEventListener("click", function ()
     {
         piChangeMode("webauthn");
     });
-    document.getElementById("usePushButton").addEventListener("click", function ()
+    document.getElementById("pushButton").addEventListener("click", function ()
     {
         piChangeMode("push");
     });
-    document.getElementById("useTiQRButton").addEventListener("click", function ()
+    document.getElementById("tiqrButton").addEventListener("click", function ()
     {
         piChangeMode("tiqr");
     });
-    document.getElementById("useOTPButton").addEventListener("click", function ()
+    document.getElementById("otpButton").addEventListener("click", function ()
     {
         piChangeMode("otp");
     });

@@ -22,27 +22,27 @@ window.onload = function ()
 {
     if (piGetValue("webAuthnSignRequest") === "")
     {
-        piDisableElement("useWebAuthnButton");
+        piDisableElement("webAuthnButton");
     }
     if (piGetValue("u2fSignRequest") === "")
     {
-        piDisableElement("useU2FButton");
+        piDisableElement("u2fButton");
     }
     if (piGetValue("pushAvailable") !== "1")
     {
-        piDisableElement("usePushButton");
+        piDisableElement("pushButton");
     }
     if (piGetValue("tiqrAvailable") !== "1")
     {
-        piDisableElement("useTiQRButton");
+        piDisableElement("tiqrButton");
     }
     if (piGetValue("otpAvailable") !== "1")
     {
-        piDisableElement("useOTPButton");
+        piDisableElement("otpButton");
     }
     if (piGetValue("mode") === "otp" || piGetValue("mode").length < 1)
     {
-        piDisableElement("useOTPButton");
+        piDisableElement("otpButton");
     }
     if (piGetValue("mode") === "push" || piGetValue("mode") === "tiqr")
     {
@@ -50,14 +50,14 @@ window.onload = function ()
         piDisableElement("submitButton");
         if (piGetValue("mode") === "push")
         {
-            piDisableElement("usePushButton");
+            piDisableElement("pushButton");
         }
         if (piGetValue("mode") === "tiqr")
         {
-            piDisableElement("useTiQRButton");
+            piDisableElement("tiqrButton");
             piEnableElement("tiqrImage");
         }
-        piEnableElement("useOTPButton");
+        piEnableElement("otpButton");
     }
     if (piGetValue("mode") === "webauthn")
     {

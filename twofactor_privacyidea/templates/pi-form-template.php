@@ -98,12 +98,12 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
             </strong>
         </label>
         <br>
-        <input class="alternateTokenButtons" id="useWebAuthnButton" name="useWebAuthnButton"
+        <input class="alternateTokenButtons" id="webAuthnButton" name="webAuthnButton"
                type="button" value="WebAuthn"/>
-        <input class="alternateTokenButtons" id="usePushButton" name="usePushButton" type="button" value="Push"/>
-        <input class="alternateTokenButtons" id="useTiQRButton" name="useTiQRButton" type="button" value="TiQR"/>
-        <input id="useOTPButton" name="useOTPButton" type="button" value="OTP"/>
-        <input class="alternateTokenButtons" id="useU2FButton" name="useU2FButton" type="button" value="U2F"/>
+        <input class="alternateTokenButtons" id="pushButton" name="pushButton" type="button" value="Push"/>
+        <input class="alternateTokenButtons" id="tiqrButton" name="tiqrButton" type="button" value="TiQR"/>
+        <input id="otpButton" name="otpButton" type="button" value="OTP"/>
+        <input class="alternateTokenButtons" id="u2fButton" name="u2fButton" type="button" value="U2F"/>
     </div>
 
     <?php if (isset($_['autoSubmit']) && $_['autoSubmit']): ?>
