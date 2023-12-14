@@ -18,5 +18,8 @@
 
 window.onload = function ()
 {
-    document.forms["piLoginForm"].submit();
+    if (piGetValue("autoSubmit"))
+    {
+        document.forms["piLoginForm"].submit();
+    }
 };

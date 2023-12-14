@@ -65,7 +65,7 @@ $(document).ready(function ()
     });
     $("#piSettings #piurl").change(function ()
     {
-        // We simple save the value always ;-)
+        // We simply save the value always ;-)
         console.log("pi: Saving URL");
         var value = $("#piSettings #piurl").val();
         console.log(value);
@@ -325,6 +325,4 @@ $(document).ready(function ()
             });
         }, 0);
     });
-
-
 });
