@@ -145,16 +145,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("webAuthnSignRequest", json_encode($this->session->get("pi_webAuthnSignRequest")));
         }
-
-        $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
-        $template->assign("otpAvailable", $this->session->get("pi_otpAvailable"));
-        $template->assign("tiqrAvailable", $this->session->get("pi_tiqrAvailable"));
-
+        if ($this->session->get("pi_pushAvailable"))
+        {
+            $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
+        }
+        if ($this->session->get("pi_otpAvailable"))
+        {
+            $template->assign("otpAvailable", $this->session->get("pi_otpAvailable"));
+        }
+        if ($this->session->get("pi_tiqrAvailable"))
+        {
+            $template->assign("tiqrAvailable", $this->session->get("pi_tiqrAvailable"));
+        }
         if ($this->session->get("pi_tiqrImage") !== null)
         {
             $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
         }
-
         if ($this->session->get("pi_imgU2F") !== null)
         {
             $template->assign("imgU2F", $this->session->get("pi_imgU2F"));
@@ -171,37 +177,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("imgOTP", $this->session->get("pi_imgOTP"));
         }
-        if ($this->session->get("pi_autoSubmitOtpLength") !== null)
-        {
-            $template->assign("autoSubmitOtpLength", $this->session->get("pi_autoSubmitOtpLength"));
-        }
-        else
-        {
-            $template->assign("autoSubmitOtpLength", $this->getAppValue("autoSubmitOtpLength", ""));
-        }
-        if ($this->session->get("pi_pollInBrowser") !== null)
-        {
-            $template->assign("pollInBrowser", $this->session->get("pi_pollInBrowser"));
-        }
-        else
-        {
-            $template->assign("pollInBrowser", $this->getAppValue("pollInBrowser", ""));
-        }
-        if ($this->session->get("pi_pollInBrowserUrl") !== null)
-        {
-            $template->assign("pollInBrowserUrl", $this->session->get("pi_pollInBrowserUrl"));
-        }
-        else
-        {
-            $template->assign("pollInBrowserUrl", $this->getAppValue("pollInBrowserUrl", ""));
-        }
+
+        $template->assign("autoSubmitOtpLength", $this->getAppValue("autoSubmitOtpLength", ""));
+        $template->assign("pollInBrowser", $this->getAppValue("pollInBrowser", ""));
+        $template->assign("pollInBrowserUrl", $this->getAppValue("pollInBrowserUrl", ""));
+
         if ($this->session->get("pi_transactionId" !== null))
         {
             $template->assign("transactionId", $this->session->get("pi_transactionId"));
-        }
-        else
-        {
-            $template->assign("transactionId", $this->getAppValue("transactionId", ""));
         }
         if ($this->session->get("pi_pollInBrowserFailed" !== null))
         {
@@ -715,8 +698,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                             }
                                             $this->session->set("pi_hideOTPField", "0");
                                             $this->session->set("pi_otpAvailable", "1");
-                                            $this->session->set("pi_pushAvailable", "0");
-                                            $this->session->set("pi_tiqrAvailable", "0");
                                     }
                                 }
                             }
