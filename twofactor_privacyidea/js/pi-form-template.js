@@ -18,7 +18,7 @@
 
 /*jshint sub:true*/
 
-window.onload = function ()
+function piFormTemplate()
 {
     if (piGetValue("webAuthnSignRequest") === "")
     {
@@ -197,3 +197,9 @@ window.onload = function ()
         });
     }
 };
+
+// Wait until the document is ready
+document.addEventListener("DOMContentLoaded", function ()
+{
+    piFormTemplate();
+});
