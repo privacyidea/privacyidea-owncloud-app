@@ -1,7 +1,7 @@
 <?php
 script('twofactor_privacyidea', [
     'pi-utils',
-    'pi-form-template',
+    'pi-form-template', //todo doesn't work!
     'pi-event-listeners',
     'pi-webauthn',
     'pi-u2f',
@@ -13,7 +13,7 @@ style('twofactor_privacyidea', 'pi-form-template');
 ?>
 
 <!-- MESSAGES -->
-<?php if (!empty($_['message'])): ?>
+<?php if (!empty($_['message'])) : ?>
     <fieldset class="warning">
         <?php p($_['message']); ?>
     </fieldset>
@@ -21,19 +21,19 @@ style('twofactor_privacyidea', 'pi-form-template');
 
 <!-- IMAGES -->
 <?php if (!empty($_['imgU2F']) && $_['mode'] === "u2f") : ?>
-    <img class="pi_images" src="<?php p($_['imgU2F']); ?>" alt="U2F image"><br><br>
+    <img class="tokenImages" src="<?php p($_['imgU2F']); ?>" alt="U2F image"><br><br>
 <?php endif;
 if (!empty($_['imgWebauthn']) && $_['mode'] === "webauthn") : ?>
-    <img class="pi_images" src="<?php p($_['imgWebauthn']); ?>" alt="WebAuthn image"><br><br>
+    <img class="tokenImages" src="<?php p($_['imgWebauthn']); ?>" alt="WebAuthn image"><br><br>
 <?php endif;
 if (!empty($_['imgPush']) && $_['mode'] === "push") : ?>
-    <img class="pi_images" src="<?php p($_['imgPush']); ?>" alt="Push image"><br><br>
+    <img class="tokenImages" src="<?php p($_['imgPush']); ?>" alt="Push image"><br><br>
 <?php endif;
 if (!empty($_['imgOTP']) && $_['mode'] === "otp") : ?>
-    <img class="pi_images" id="imgOtp" src="<?php p($_['imgOTP']); ?>" alt="OTP image"><br><br>
+    <img class="tokenImages" id="imgOtp" src="<?php p($_['imgOTP']); ?>" alt="OTP image"><br><br>
 <?php endif;
 if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
-    <img class="pi_images" id="tiqrImage" width="250" src="<?php p($_['tiqrImage']); ?>" alt="TiQR Image"><br>
+    <img class="tokenImages" id="tiqrImage" width="250" src="<?php p($_['tiqrImage']); ?>" alt="TiQR Image"><br>
 <?php endif; ?>
 
 <!-- FORM -->
@@ -42,7 +42,7 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
         <input type="hidden" name="redirect_url" value="<?php p($_['redirect_url']); ?>">
     <?php endif; ?>
 
-    <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']): ?>
+    <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']) : ?>
         <label>
             <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off" required
                    autofocus>
@@ -82,6 +82,8 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
            value="<?php if (isset($_['loadCounter'])) : p($_['loadCounter']); endif; ?>"/>
     <input id="pollInBrowserUrl" type="hidden" name="pollInBrowserUrl"
            value="<?php if (isset($_['pollInBrowserUrl'])) : p($_['pollInBrowserUrl']); endif; ?>"/>
+    <input id="pollInBrowser" type="hidden" name="pollInBrowser"
+           value="<?php if (isset($_['pollInBrowser'])) : p($_['pollInBrowser']); endif; ?>"/>
     <input id="transactionId" type="hidden" name="transactionId"
            value="<?php if (isset($_['transactionId'])) : p($_['transactionId']); endif; ?>"/>
     <input id="errorMessage" type="hidden" name="errorMessage" value="">
@@ -102,8 +104,8 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
                type="button" value="WebAuthn"/>
         <input class="alternateTokenButtons" id="pushButton" name="pushButton" type="button" value="Push"/>
         <input class="alternateTokenButtons" id="tiqrButton" name="tiqrButton" type="button" value="TiQR"/>
-        <input id="otpButton" name="otpButton" type="button" value="OTP"/>
         <input class="alternateTokenButtons" id="u2fButton" name="u2fButton" type="button" value="U2F"/>
+        <input id="otpButton" name="otpButton" type="button" value="OTP"/>
     </div>
 
     <?php if (isset($_['autoSubmit']) && $_['autoSubmit']): ?>
