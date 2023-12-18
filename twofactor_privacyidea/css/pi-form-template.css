@@ -1,4 +1,4 @@
-.pi_images
+.tokenImages
 {
     text-align : center !important;
 }
@@ -33,7 +33,7 @@
     margin:15px 10px 7px !important;
 }
 
-#useOTPButton
+#otpButton
 {
     width:140px !important;
     margin:15px 15px 7px !important;
