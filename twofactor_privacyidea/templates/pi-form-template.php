@@ -1,7 +1,7 @@
 <?php
 script('twofactor_privacyidea', [
     'pi-utils',
-    'pi-form-template', //todo doesn't work!
+    'pi-form-template',
     'pi-event-listeners',
     'pi-webauthn',
     'pi-u2f',

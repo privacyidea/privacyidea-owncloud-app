@@ -28,7 +28,7 @@ window.onload = () =>
         {
             if (typeof (worker) == "undefined")
             {
-                worker = new Worker("pi-poll-transaction.worker.js");
+                worker = new Worker("/apps-external/twofactor_privacyidea/js/pi-poll-transaction.worker.js");
                 document.getElementById("submitButton").addEventListener('click', function (e)
                 {
                     worker.terminate();
