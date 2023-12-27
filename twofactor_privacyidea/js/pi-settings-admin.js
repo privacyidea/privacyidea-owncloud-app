@@ -191,14 +191,8 @@ $(document).ready(function ()
 
     $("#piSettings #pollInBrowser").change(function ()
     {
-        if (radioinclude.checked)
-        {
-            setValue("pollInBrowser", "1");
-        }
-        else
-        {
-            setValue("pollInBrowser", "0");
-        }
+        var checked = $(this).is(":checked");
+        setValue("pollInBrowser", checked ? "1" : "0");
     });
 
     getValue("pollInBrowserUrl", function (pollInBrowserUrl)
