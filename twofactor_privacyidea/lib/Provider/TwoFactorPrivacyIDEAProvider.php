@@ -182,11 +182,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $template->assign("pollInBrowser", $this->getAppValue("pollInBrowser", ""));
         $template->assign("pollInBrowserUrl", $this->getAppValue("pollInBrowserUrl", ""));
 
-        if ($this->session->get("pi_transactionId" !== null))
+        if ($this->session->get("pi_transactionId") !== null)
         {
             $template->assign("transactionId", $this->session->get("pi_transactionId"));
         }
-        if ($this->session->get("pi_pollInBrowserFailed" !== null))
+        if ($this->session->get("pi_pollInBrowserFailed") !== null)
         {
             $template->assign("pollInBrowserFailed", $this->session->get("pi_pollInBrowserFailed"));
         }
@@ -194,7 +194,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("pollInBrowserFailed", $this->getAppValue("pollInBrowserFailed", false));
         }
-        if ($this->session->get("pi_errorMessage" !== null))
+        if ($this->session->get("pi_errorMessage") !== null)
         {
             $template->assign("errorMessage", $this->session->get("pi_errorMessage"));
         }
