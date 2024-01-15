@@ -16,7 +16,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
 
-function autoSubmit()
+function autoSubmitByLength()
 {
     if (piGetValue('otp').length === parseInt(piGetValue("autoSubmitOtpLength")))
     {
@@ -26,7 +26,7 @@ function autoSubmit()
 
 function piEventListeners()
 {
-    document.getElementById("otp").addEventListener("keyup", autoSubmit);
+    document.getElementById("otp").addEventListener("keyup", autoSubmitByLength);
 
     // BUTTON LISTENERS
     document.getElementById("u2fButton").addEventListener("click", function ()
