@@ -94,7 +94,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     public function getTemplate(IUser $user): Template
     {
         // TriggerChallenge
-        if ($this->getAppValue('triggerchallenges', '') === '1')
+        if ($this->getAppValue("triggerchallenges", "") === "1")
         {
             if ($this->session->get("pi_TriggerChallengeSuccess") !== true)
             {
@@ -115,7 +115,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
 
         // Set options, tokens and load counter to the template
-        $template = new Template('twofactor_privacyidea', 'pi-form-template');
+        $template = new Template("twofactor_privacyidea", "pi-form-template");
 
         if ($this->session->get("pi_detail") !== null)
         {
@@ -145,16 +145,22 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("webAuthnSignRequest", json_encode($this->session->get("pi_webAuthnSignRequest")));
         }
-
-        $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
-        $template->assign("otpAvailable", $this->session->get("pi_otpAvailable"));
-        $template->assign("tiqrAvailable", $this->session->get("pi_tiqrAvailable"));
-
+        if ($this->session->get("pi_pushAvailable"))
+        {
+            $template->assign("pushAvailable", $this->session->get("pi_pushAvailable"));
+        }
+        if ($this->session->get("pi_otpAvailable"))
+        {
+            $template->assign("otpAvailable", $this->session->get("pi_otpAvailable"));
+        }
+        if ($this->session->get("pi_tiqrAvailable"))
+        {
+            $template->assign("tiqrAvailable", $this->session->get("pi_tiqrAvailable"));
+        }
         if ($this->session->get("pi_tiqrImage") !== null)
         {
             $template->assign("tiqrImage", $this->session->get("pi_tiqrImage"));
         }
-
         if ($this->session->get("pi_imgU2F") !== null)
         {
             $template->assign("imgU2F", $this->session->get("pi_imgU2F"));
@@ -171,13 +177,30 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("imgOTP", $this->session->get("pi_imgOTP"));
         }
-        if ($this->session->get("pi_autoSubmitOtpLength") !== null)
+
+        $template->assign("autoSubmitOtpLength", $this->getAppValue("autoSubmitOtpLength", ""));
+        $template->assign("pollInBrowser", $this->getAppValue("pollInBrowser", ""));
+        $template->assign("pollInBrowserUrl", $this->getAppValue("pollInBrowserUrl", ""));
+
+        if ($this->session->get("pi_transactionId") !== null)
         {
-            $template->assign("autoSubmitOtpLength", $this->session->get("pi_autoSubmitOtpLength"));
+            $template->assign("transactionId", $this->session->get("pi_transactionId"));
+        }
+        if ($this->session->get("pi_pollInBrowserFailed") !== null)
+        {
+            $template->assign("pollInBrowserFailed", $this->session->get("pi_pollInBrowserFailed"));
         }
         else
         {
-            $template->assign("autoSubmitOtpLength", $this->getAppValue('autoSubmitOtpLength', ''));
+            $template->assign("pollInBrowserFailed", $this->getAppValue("pollInBrowserFailed", false));
+        }
+        if ($this->session->get("pi_errorMessage") !== null)
+        {
+            $template->assign("errorMessage", $this->session->get("pi_errorMessage"));
+        }
+        else
+        {
+            $template->assign("errorMessage", $this->getAppValue("errorMessage", ""));
         }
 
         $loads = 1;
@@ -675,8 +698,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                             }
                                             $this->session->set("pi_hideOTPField", "0");
                                             $this->session->set("pi_otpAvailable", "1");
-                                            $this->session->set("pi_pushAvailable", "0");
-                                            $this->session->set("pi_tiqrAvailable", "0");
                                     }
                                 }
                             }

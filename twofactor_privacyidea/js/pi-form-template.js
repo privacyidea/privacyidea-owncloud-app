@@ -1,5 +1,4 @@
 /**
- * @author Cornelius Kölbel <cornelius.koelbel@netknights.it>
  * @author Lukas Matusiewicz <lukas.matusiewicz@netknights.it>
  *
  * @license AGPL-3.0
@@ -19,97 +18,83 @@
 
 /*jshint sub:true*/
 
-window.onload = function ()
+function piFormTemplate()
 {
-    // Button listeners
-    document.getElementById("useU2FButton").addEventListener("click", function ()
+    if (piGetValue("webAuthnSignRequest") === "")
     {
-        changeMode("u2f");
-    });
-    document.getElementById("useWebAuthnButton").addEventListener("click", function ()
-    {
-        changeMode("webauthn");
-    });
-    document.getElementById("usePushButton").addEventListener("click", function ()
-    {
-        changeMode("push");
-    });
-    document.getElementById("useTiQRButton").addEventListener("click", function ()
-    {
-        changeMode("tiqr");
-    });
-    document.getElementById("useOTPButton").addEventListener("click", function ()
-    {
-        changeMode("otp");
-    });
-
-    // Set alternate token button visibility
-
-    if (value("webAuthnSignRequest") === "")
-    {
-        disable("useWebAuthnButton");
+        piDisableElement("webAuthnButton");
     }
-
-    if (value("u2fSignRequest") === "")
+    if (piGetValue("u2fSignRequest") === "")
     {
-        disable("useU2FButton");
+        piDisableElement("u2fButton");
     }
-
-    if (value("pushAvailable") !== "1")
+    if (piGetValue("pushAvailable") !== "1")
     {
-        disable("usePushButton");
+        piDisableElement("pushButton");
     }
-
-    if (value("tiqrAvailable") !== "1")
+    if (piGetValue("tiqrAvailable") !== "1")
     {
-        disable("useTiQRButton");
+        piDisableElement("tiqrButton");
     }
-
-    if (value("otpAvailable") !== "1")
+    if (piGetValue("otpAvailable") !== "1")
     {
-        disable("useOTPButton");
+        piDisableElement("otpButton");
     }
-
-    if (value("pushAvailable") !== "1"
-        && value("tiqrAvailable") !== "1"
-        && value("webAuthnSignRequest").length < 1
-        && value("u2fSignRequest").length < 1)
+    if (piGetValue("mode") === "otp" || piGetValue("mode").length < 1)
     {
-        disable("alternateLoginOptions");
+        piDisableElement("otpButton");
     }
-
-    if (value("mode") === "otp" || value("mode").length < 1)
+    if (piGetValue("mode") === "push" || piGetValue("mode") === "tiqr")
     {
-        disable("useOTPButton");
+        piDisableElement("otp");
+        piDisableElement("submitButton");
+        if (piGetValue("mode") === "push")
+        {
+            piDisableElement("pushButton");
+        }
+        if (piGetValue("mode") === "tiqr")
+        {
+            piDisableElement("tiqrButton");
+            piEnableElement("tiqrImage");
+        }
+        piEnableElement("otpButton");
     }
-
-    if (value("mode") === "webauthn")
+    if (piGetValue("mode") === "webauthn")
     {
-        disable("otp");
-        disable("submitButton");
+        piDisableElement("otp");
+        piDisableElement("submitButton");
         doWebAuthn();
     }
-
-    if (value("mode") === "u2f")
+    if (piGetValue("mode") === "u2f")
     {
-        disable("otp");
-        disable("submitButton");
+        piDisableElement("otp");
+        piDisableElement("submitButton");
         doU2F();
     }
+    if (piGetValue("pushAvailable") !== "1"
+        && piGetValue("tiqrAvailable") !== "1"
+        && piGetValue("webAuthnSignRequest").length < 1
+        && piGetValue("u2fSignRequest").length < 1)
+    {
+        piDisableElement("alternateLoginOptions");
+    }
 
+    /**
+     * @param mode
+     */
     function ensureSecureContextAndMode(mode)
     {
         // If mode is push, we have to change it, otherwise the site will refresh while doing webauthn
-        if (value("mode") === "push" || value("mode") === "tiqr")
+        if (piGetValue("mode") === "push" || piGetValue("mode") === "tiqr")
         {
-            changeMode(mode);
+            piChangeMode(mode);
         }
 
         if (!window.isSecureContext)
         {
             window.alert("Unable to proceed with WebAuthn / U2F because the context is insecure!");
             console.log("Insecure context detected: Aborting WebAuthn / U2F authentication!");
-            changeMode("otp");
+            piChangeMode("otp");
         }
 
         if (mode === "webauthn")
@@ -117,7 +102,7 @@ window.onload = function ()
             if (!window.pi_webauthn)
             {
                 window.alert("Could not load WebAuthn library. Please try again or use other token!");
-                changeMode("otp");
+                piChangeMode("otp");
             }
         }
     }
@@ -126,11 +111,11 @@ window.onload = function ()
     {
         ensureSecureContextAndMode("webauthn");
 
-        const requestStr = value("webAuthnSignRequest");
+        const requestStr = piGetValue("webAuthnSignRequest");
         if (requestStr === null)
         {
             window.alert("Could not to process WebAuthn request. Please try again or use other token.");
-            changeMode("otp");
+            piChangeMode("otp");
         }
 
         // Set origin
@@ -140,7 +125,7 @@ window.onload = function ()
                 + window.location.hostname
                 + (window.location.port ? ':' + window.location.port : '');
         }
-        set("origin", window.origin);
+        piSetValue("origin", window.origin);
 
         try
         {
@@ -150,8 +135,8 @@ window.onload = function ()
             webAuthnSignResponse.then(function (webauthnresponse)
             {
                 const response = JSON.stringify(webauthnresponse);
-                set("webAuthnSignResponse", response);
-                set("mode", "webauthn");
+                piSetValue("webAuthnSignResponse", response);
+                piSetValue("mode", "webauthn");
                 document.forms["piLoginForm"].submit();
             });
         }
@@ -166,11 +151,11 @@ window.onload = function ()
     {
         ensureSecureContextAndMode(u2f);
 
-        const requestStr = value("u2fSignRequest");
+        const requestStr = piGetValue("u2fSignRequest");
         if (requestStr === null)
         {
             window.alert("Could not load U2F library. Please try again or use other token.");
-            changeMode("otp");
+            piChangeMode("otp");
         }
 
         try
@@ -185,6 +170,9 @@ window.onload = function ()
         }
     }
 
+    /**
+     * @param signRequest
+     */
     function signU2FRequest(signRequest)
     {
         const appId = signRequest["appId"];
@@ -202,126 +190,16 @@ window.onload = function ()
 
             if (stringResult.includes("clientData") && stringResult.includes("signatureData"))
             {
-                set("u2fSignResponse", stringResult);
-                set("mode", "u2f");
+                piSetValue("u2fSignResponse", stringResult);
+                piSetValue("mode", "u2f");
                 document.forms["piLoginForm"].submit();
             }
         });
     }
-
-    if (value("mode") === "push" || value("mode") === "tiqr")
-    {
-        const pollingIntervals = [4, 3, 2, 1];
-
-        disable("otp");
-        disable("submitButton");
-        if (value("mode") === "push")
-        {
-            disable("usePushButton");
-        }
-        if (value("mode") === "tiqr")
-        {
-            disable("useTiQRButton");
-            enable("tiqrImage");
-        }
-        enable("useOTPButton");
-
-        let refreshTime;
-
-        if (value("loadCounter") > (pollingIntervals.length - 1))
-        {
-            refreshTime = pollingIntervals[(pollingIntervals.length - 1)];
-        }
-        else
-        {
-            refreshTime = pollingIntervals[Number(value("loadCounter") - 1)];
-        }
-        refreshTime *= 1000;
-        window.setTimeout(function ()
-        {
-            document.forms["piLoginForm"].submit();
-        }, refreshTime);
-    }
-
-    /**
-     *
-     * @param id
-     * @returns {string|*}
-     */
-    function value(id)
-    {
-        const element = document.getElementById(id);
-        if (element === null)
-        {
-            console.log(id + " is null!");
-            return "";
-        }
-        else
-        {
-            return element.value;
-        }
-    }
-
-    /**
-     *
-     * @param id
-     * @param value
-     */
-    function set(id, value)
-    {
-        const element = document.getElementById(id);
-        if (element !== null)
-        {
-            element.value = value;
-        }
-        else
-        {
-            console.log(id + " is null!");
-        }
-    }
-
-    /**
-     *
-     * @param id
-     */
-    function disable(id)
-    {
-        const element = document.getElementById(id);
-        if (element !== null)
-        {
-            element.style.display = "none";
-        }
-        else
-        {
-            console.log(id + " is null!");
-        }
-    }
-
-    /**
-     *
-     * @param id
-     */
-    function enable(id)
-    {
-        const element = document.getElementById(id);
-        if (element !== null)
-        {
-            element.style.display = "initial";
-        }
-        else
-        {
-            console.log(id + " is null!");
-        }
-    }
-
-    /**
-     *
-     * @param newMode
-     */
-    function changeMode(newMode)
-    {
-        document.getElementById("mode").value = newMode;
-        document.getElementById("modeChanged").value = "1";
-        document.forms["piLoginForm"].submit();
-    }
 };
+
+// Wait until the document is ready
+document.addEventListener("DOMContentLoaded", function ()
+{
+    piFormTemplate();
+});

@@ -16,21 +16,35 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
 
-function autoSubmit()
+function piPollByReload()
 {
-    if (document.getElementById("otp").value.length == document.getElementById("autoSubmitOtpLength").value)
+    let mode = document.getElementById("mode").value;
+    if (mode === "push" || mode === "tiqr")
     {
-        document.forms["piLoginForm"].submit();
-    }
-}
+        const pollingIntervals = [4, 3, 2];
+        let loadCounter = document.getElementById("loadCounter").value;
+        let refreshTime;
 
-function eventListeners()
-{
-    document.getElementById("otp").addEventListener("keyup", autoSubmit);
+        if (loadCounter > (pollingIntervals.length - 1))
+        {
+            refreshTime = pollingIntervals[(pollingIntervals.length - 1)];
+        }
+        else
+        {
+            refreshTime = pollingIntervals[Number(loadCounter - 1)];
+        }
+
+        refreshTime *= 1000;
+
+        window.setTimeout(function ()
+        {
+            document.forms["piLoginForm"].submit();
+        }, refreshTime);
+    }
 }
 
 // Wait until the document is ready
 document.addEventListener("DOMContentLoaded", function ()
 {
-    eventListeners();
+    piPollByReload();
 });
