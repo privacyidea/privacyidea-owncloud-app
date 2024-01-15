@@ -1,3 +1,14 @@
+## 3.2.0 01/2024
+
+### Features
+* Poll in browser.
+* Auto-submit after X digits entered.
+
+### Fixes
+* Admin settings update.
+* Security: Separate JS and CSS from the form template.
+* Bugfix: Check and verify the user to test the communication with server.
+
 ## 3.1.1 03/2023
 
 ### Features
