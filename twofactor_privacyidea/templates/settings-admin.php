@@ -176,7 +176,7 @@ style('twofactor_privacyidea', 'settings-admin');
         <label for="pollInBrowser">
             <?php p($l->t('Poll in browser')); ?>
             <em>
-                <?php p($l->t('Check this, to activate polling for a push token confirmation right from your browser.')) ?>
+                <?php p($l->t('Check this to activate polling for a push token confirmation right from your browser.')) ?>
             </em>
         </label>
         <br>

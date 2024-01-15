@@ -15,7 +15,7 @@ OC.L10N.register(
     "Open documentation" : "Dokumentation öffnen",
     "Poll in browser" : "Poll in browser",
     "Poll in browser URL: " : "Poll in browser URL: ",
-    "Check this, to activate polling for a push token confirmation right from your browser." : "Check this, to activate polling for a push token confirmation right from your browser.",
+    "Check this to activate polling for a push token confirmation right from your browser." : "Check this to activate polling for a push token confirmation right from your browser.",
     "\n                In a second step of authentication, the user is asked to provide a one\n                time password. The users devices are managed in privacyIDEA. The\n                authentication request is forwarded to privacyIDEA.\n            " : "\nIn einem zweiten Schritt wird der Benutzer aufgefordert, ein Einmal-Passwort einzugeben. Die Authentisierungs-Geräte der Benutzer werden im privacyIDEA Server verwaltet. Die Anmelde-Anfrage wird an den privacyIDEA Server geschickt.",
     "Configuration" : "Konfiguration",
     "Activate two factor authentication with privacyIDEA " : "Zwei-Faktor-Authentifzierung mit privacyIDEA einschalten ",
