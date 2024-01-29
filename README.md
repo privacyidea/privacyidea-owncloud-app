@@ -4,7 +4,6 @@
 
 * ownCloud >= 9.1 or
 * Nextcloud 12 + 13
-
 * privacyIDEA server 3.1+
 * privacyIDEA server 3.2+ for Push Token support
 

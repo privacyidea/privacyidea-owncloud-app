@@ -1,4 +1,4 @@
-## 3.2.0 01/2024
+## 3.2.0 02/2024
 
 ### Features
 * Poll in browser.
