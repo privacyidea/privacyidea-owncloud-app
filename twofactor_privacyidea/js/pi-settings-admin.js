@@ -186,7 +186,7 @@ $(document).ready(function ()
     /* Poll in browser */
     getValue("pollInBrowser", function (pollInBrowser)
     {
-        $("#piSettings #pollInBrowser").prop('checked', pollInBrowser === "0");
+        $("#piSettings #pollInBrowser").prop('checked', pollInBrowser === "1");
     });
 
     $("#piSettings #pollInBrowser").change(function ()

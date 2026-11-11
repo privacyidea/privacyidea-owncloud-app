@@ -22,6 +22,7 @@
 namespace OCA\TwoFactor_privacyIDEA\Provider;
 
 use Exception;
+use OCA\TwoFactor_privacyIDEA\Util\IpMatcher;
 use OCP\Authentication\TwoFactorAuth\IProvider;
 use OCP\Authentication\TwoFactorAuth\TwoFactorException;
 use OCP\Http\Client\IClientService;
@@ -35,12 +36,16 @@ use OCP\ISession;
 use OCP\IUser;
 use OCP\Template;
 
-// For OC < 9.2 the TwoFactorException does not exist. So we need to handle this in the method verifyChallenge
-
 class TwoFactorPrivacyIDEAProvider implements IProvider
 {
     /** @var string[] We can enter multiple strings, the version number should start with */
     private $recommendedPIVersions = array("3.");
+    /** @var string[] Session keys that hold the state of one login. They are removed after a successful login. */
+    private const SESSION_KEYS = [
+        "pi_message", "pi_TriggerChallengeSuccess", "pi_detail", "pi_mode", "pi_autoSubmit", "pi_hideOTPField",
+        "pi_u2fSignRequest", "pi_webAuthnSignRequest", "pi_pushAvailable", "pi_otpAvailable", "pi_tiqrAvailable",
+        "pi_tiqrImage", "pi_imgU2F", "pi_imgWebauthn", "pi_imgPush", "pi_imgOTP", "pi_transactionId",
+        "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired"];
     /** @var IClientService */
     private $httpClientService;
     /** @var IConfig */
@@ -55,8 +60,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private $request;
     /** @var IGroupManager */
     private $groupManager;
-    /** @var string Adjust the request option up to the OC version. */
-    private $requestOption;
 
     /**
      * @param IClientService $httpClientService
@@ -82,7 +85,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->request = $request;
         $this->groupManager = $groupManager;
         $this->session = $session;
-        $this->requestOption = $this->getRequestOption();
     }
 
     /**
@@ -109,7 +111,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 }
                 catch (Exception $e)
                 {
-                    $message = $e->getMessage();
+                    // Show the OTP field again. Without it the user can not enter anything.
+                    $this->session->set("pi_hideOTPField", false);
+                    $this->log("error", "[getTemplate] " . $e->getMessage());
+                    $message = $this->userMessage($e);
                 }
             }
         }
@@ -223,13 +228,42 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @param IUser $user
      * @param string $challenge
      * @return Bool True in case of success. In case of failure, this raises
-     *         a TwoFactorException (for OC >= 9.2) with a descriptive error message.
-     *         If privacyIDEA returned an HTTP 200 and result->status=true, but
-     *         result->value=false, the exception has a code 1 (i.e. if the user
-     *         could be found, but the password was incorrect).
-     * @throws TwoFactorException|ProcessPIResponseException|Exception
+     *         a TwoFactorException with an error message for the user.
+     *         Every other error (privacyIDEA is not reachable, the answer is wrong) is logged
+     *         and also raised as a TwoFactorException. ownCloud shows its message on the login page.
+     * @throws TwoFactorException
      */
     public function verifyChallenge(IUser $user, $challenge): bool
+    {
+        try
+        {
+            $result = $this->verifyChallengeInternal($user, $challenge);
+        }
+        catch (TwoFactorException $e)
+        {
+            throw $e;
+        }
+        catch (\Throwable $e)
+        {
+            $this->log("error", "[verifyChallenge] " . $e->getMessage());
+            throw new TwoFactorException($this->userMessage($e));
+        }
+
+        if ($result)
+        {
+            // The login is done. Remove the state, so that no old value is left in the session.
+            $this->clearLoginState();
+        }
+        return $result;
+    }
+
+    /**
+     * @param IUser $user
+     * @param string $challenge
+     * @return bool
+     * @throws TwoFactorException|ProcessPIResponseException|Exception
+     */
+    private function verifyChallengeInternal(IUser $user, $challenge): bool
     {
         if ($this->session->get("pi_noAuthRequired"))
         {
@@ -246,7 +280,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         if ($this->request->getParam("modeChanged") === "1")
         {
-            throw new TwoFactorException($this->session->get("pi_message"));
+            throw new TwoFactorException((string)$this->session->get("pi_message"));
         }
 
         $ret = 0;
@@ -324,9 +358,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $errorMessage = $ret;
         }
+        elseif (!is_object($ret) || !isset($ret->result))
+        {
+            // No usable answer. For example, the browser did not send a U2F or WebAuthn response,
+            // or the push message is not confirmed yet.
+            $errorMessage = ($mode === "push" || $mode === "tiqr")
+                ? (string)$this->session->get("pi_message")
+                : $this->trans->t("Failed to authenticate.");
+        }
         else
         {
-            if (!empty($ret) && $ret->result->status === true)
+            if ($ret->result->status === true)
             {
                 if ($ret->result->value === true)
                 {
@@ -341,33 +383,54 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     }
                     else
                     {
-                        $errorMessage = $ret->detail->message;
-                        $this->log("debug", "privacyIDEA:" . $ret->detail->message);
+                        $errorMessage = $ret->detail->message ?? $this->trans->t("Failed to authenticate.");
+                        $this->log("debug", "privacyIDEA:" . $errorMessage);
                     }
                     $this->session->set("pi_message", $errorMessage);
                 }
             }
             elseif ($mode === "push" || $mode === "tiqr")
             {
-                $errorMessage = $this->session->get("pi_message");
+                $errorMessage = (string)$this->session->get("pi_message");
             }
             else
             {
                 // status == false
-                $this->log("error", "[authenticate] privacyIDEA error code: " . $ret->result->error->code);
-                $this->log("error", "[authenticate] privacyIDEA error message: " . $ret->result->error->message);
-                $errorMessage = $this->trans->t("Failed to authenticate.") . " " . $ret->result->error->message;
+                $code = $ret->result->error->code ?? "";
+                $message = $ret->result->error->message ?? "";
+                $this->log("error", "[authenticate] privacyIDEA error code: " . $code);
+                $this->log("error", "[authenticate] privacyIDEA error message: " . $message);
+                $errorMessage = $this->trans->t("Failed to authenticate.") . " " . $message;
             }
         }
-        if (class_exists('OCP\Authentication\TwoFactorAuth\TwoFactorException'))
+        throw new TwoFactorException($errorMessage);
+    }
+
+    /**
+     * The text that the user sees for an exception.
+     * Messages of this app and of privacyIDEA are shown. Messages of the HTTP client and of PHP stay in the log,
+     * because they can contain the internal URL of the privacyIDEA server.
+     *
+     * @param \Throwable $e
+     * @return string
+     */
+    private function userMessage(\Throwable $e): string
+    {
+        if ($e instanceof AdminAuthException || $e instanceof ProcessPIResponseException || $e instanceof TwoFactorException)
         {
-            // This is the behaviour for OC >= 9.2
-            throw new TwoFactorException($errorMessage);
+            return $e->getMessage();
         }
-        else
+        return $this->trans->t("Failed to communicate with privacyIDEA.");
+    }
+
+    /**
+     * Remove the state of the login from the session.
+     */
+    private function clearLoginState()
+    {
+        foreach (self::SESSION_KEYS as $key)
         {
-            // This is the behaviour for OC == 9.1 and NC.
-            return false;
+            $this->session->remove($key);
         }
     }
 
@@ -380,9 +443,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * @return mixed|string
      * @throws ProcessPIResponseException|Exception
      */
-    public function validateCheck(string $username, string $pass, string $transactionID = null)
+    public function validateCheck(string $username, string $pass, ?string $transactionID = null)
     {
-        $options[$this->requestOption] = [
+        $options["form_params"] = [
             "user" => $username,
             "transaction_id" => $transactionID,
             "pass" => $pass];
@@ -415,10 +478,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $realm = $this->getAppValue('realm', '');
         $token = $this->getAuthToken($adminUser, $adminPassword);
 
-        $this->session->set("pi_authorization", $token);
-
-        $options[$this->requestOption] = ["user" => $username, "realm" => $realm];
-        $options["headers"] = ["PI-Authorization" => $token];
+        $options["form_params"] = ["user" => $username, "realm" => $realm];
+        $options["headers"]["PI-Authorization"] = $token;
 
         $client = $this->httpClientService->newClient();
         $result = $client->post($url, $options);
@@ -430,7 +491,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         else
         {
-            return $ret->detail->message;
+            return (string)($ret->detail->message ?? "");
         }
     }
 
@@ -445,14 +506,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function validateCheckU2F(string $username, string $transactionID, array $u2fSignResponse)
     {
-        $options[$this->requestOption] = [
+        $options["form_params"] = [
             "user" => $username,
             "pass" => "",
             "transaction_id" => $transactionID];
 
         // here we add the signatureData and the clientData in case of U2F
-        $options[$this->requestOption]["signaturedata"] = $u2fSignResponse['signatureData'];
-        $options[$this->requestOption]["clientdata"] = $u2fSignResponse['clientData'];
+        $options["form_params"]["signaturedata"] = $u2fSignResponse['signatureData'];
+        $options["form_params"]["clientdata"] = $u2fSignResponse['clientData'];
 
         $res = $this->sendRequest("validate/check", $options);
         return $this->processPIResponse($res);
@@ -470,7 +531,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function validateCheckWebAuthn(string $username, string $transactionID, array $webAuthnSignResponse, string $origin)
     {
-        $options[$this->requestOption] = [
+        $options["form_params"] = [
             "user" => $username,
             "pass" => "",
             "transaction_id" => $transactionID,
@@ -480,11 +541,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             "authenticatordata" => $webAuthnSignResponse['authenticatordata']];
         if (!empty($webAuthnSignResponse['userhandle']))
         {
-            $options[$this->requestOption]['userhandle'] = $webAuthnSignResponse['userhandle'];
+            $options["form_params"]['userhandle'] = $webAuthnSignResponse['userhandle'];
         }
         if (!empty($webAuthnSignResponse['assertionclientextensions']))
         {
-            $options[$this->requestOption]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
+            $options["form_params"]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
         }
         $options['headers']['Origin'] = $origin;
 
@@ -501,24 +562,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function pollTransaction(string $transactionID): bool
     {
-        $options[$this->requestOption] = ["transaction_id" => $transactionID];
+        $options["form_params"] = ["transaction_id" => $transactionID];
         $res = $this->sendRequest("validate/polltransaction", $options, true);
         $ret = $this->processPIResponse($res);
-        if (is_string($ret))
-        {
-            return $ret;
-        }
-        else
-        {
-            if ($ret->result->status === true && $ret->result->value === true)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
+        // In push and TiQR mode processPIResponse() returns the decoded body without a check.
+        return is_object($ret)
+            && isset($ret->result->status, $ret->result->value)
+            && $ret->result->status === true
+            && $ret->result->value === true;
     }
 
     /**
@@ -539,17 +590,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         try
         {
             $client = $this->httpClientService->newClient();
-            $options[$this->requestOption] = ["username" => $username, "password" => $password];
+            $options["form_params"] = ["username" => $username, "password" => $password];
             $result = $client->post($url, $options);
             $body = json_decode($result->getBody());
             if ($result->getStatusCode() === 200)
             {
-                if ($body->result->status === true)
+                if (isset($body->result->status) && $body->result->status === true)
                 {
                     $piOutdated = true;
                     foreach ($this->recommendedPIVersions as $version)
                     {
-                        if (strpos($body->versionnumber, $version) === 0)
+                        if (strpos((string)($body->versionnumber ?? ""), $version) === 0)
                         {
                             $piOutdated = false;
                         }
@@ -559,7 +610,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         $this->session->set("pi_outdated", true);
                         $this->log("error", "We recommend to update your privacyIDEA server");
                     }
-                    if (in_array("triggerchallenge", $body->result->value->rights))
+                    if (in_array("triggerchallenge", (array)($body->result->value->rights ?? [])))
                     {
                         return $body->result->value->token;
                     }
@@ -569,12 +620,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         $this->log("error", "[fetchAuthToken] privacyIDEA error message: Missing permissions for service account");
                     }
                 }
+                else
+                {
+                    $this->log("error", "[fetchAuthToken] The answer of privacyIDEA has no valid result.");
+                }
             }
             else
             {
-                $errorMessage = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: " . $result->getStatusCode());
-                $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . $body->result->error->code);
-                $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . $body->result->error->message);
+                // The HTTP client does not throw for an error status, so the body can be anything.
+                $errorMessage = $this->trans->t("Failed to fetch authentication token. Wrong HTTP return code: %s",
+                                                [$result->getStatusCode()]);
+                $this->log("error", "[fetchAuthToken] privacyIDEA error code: " . ($body->result->error->code ?? ""));
+                $this->log("error", "[fetchAuthToken] privacyIDEA error message: " . ($body->result->error->message ?? ""));
             }
         }
         catch (Exception $e)
@@ -616,9 +673,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         else
         {
-            if ($result->getStatusCode() == 200)
+            // The HTTP client does not throw for an error status, so the body can be anything (for example
+            // the error page of a proxy). Every path below either returns or throws.
+            $status = $result->getStatusCode();
+            if (!is_object($body) || !isset($body->result))
             {
-                if ($body->result->status === true)
+                $this->log("error", "[processPIResponse] Unexpected answer from privacyIDEA. HTTP status: " . $status);
+                throw new ProcessPIResponseException($this->trans->t("Unexpected answer from privacyIDEA."));
+            }
+
+            if ($status == 200)
+            {
+                if (isset($body->result->status) && $body->result->status === true)
                 {
                     $detail = $body->detail;
                     $this->session->set("pi_detail", $detail);
@@ -710,25 +776,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     }
                     return $body;
                 }
+                // HTTP 200, but result.status is not true.
+                $this->log("error", "[processPIResponse] privacyIDEA answered with HTTP 200 and result.status that is not true.");
+                throw new ProcessPIResponseException($this->trans->t("Unexpected answer from privacyIDEA."));
             }
-            elseif ($result->getStatusCode() == 400 && $passOnNoToken)
+            elseif ($status == 400 && $passOnNoToken && ($body->result->error->code ?? null) == 904)
             {
-                if ($body->result->error != null && $body->result->error->code == 904)
-                {
-                    $this->session->set("pi_noAuthRequired", true);
-                    $this->session->set("pi_autoSubmit", true);
-                    $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
-                    return "No token found for your user, Login is still enabled.";
-                }
-                $errorMessage = $body->result->error->message;
+                // Error 904: privacyIDEA does not know the user.
+                $this->session->set("pi_noAuthRequired", true);
+                $this->session->set("pi_autoSubmit", true);
+                $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
+                return $this->trans->t("No token found for your user, Login is still enabled.");
             }
             else
             {
-                $errorMessage = $body->result->error->message;
-                $this->log("error", "[processPIResponse] privacyIDEA error message: " . $body->result->error->message);
+                $errorMessage = $body->result->error->message ?? $this->trans->t("Unexpected answer from privacyIDEA.");
+                $this->log("error", "[processPIResponse] privacyIDEA error message: " . $errorMessage);
                 throw new ProcessPIResponseException($errorMessage);
             }
-            return $errorMessage;
         }
     }
 
@@ -748,11 +813,29 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $realm = $this->getAppValue('realm', '');
         if (!empty($realm))
         {
-            $options[$this->requestOption]['realm'] = $realm;
+            $options["form_params"]['realm'] = $realm;
         }
 
+        $params = $options["form_params"];
+        if ($isGET)
+        {
+            // A GET request has no body. Guzzle 7 (ownCloud 11) does not send "form_params" with GET,
+            // and privacyIDEA then answers with "Missing parameter".
+            $options["query"] = $params;
+            unset($options["form_params"]);
+        }
+
+        // The log must never contain the OTP or the PIN.
+        $loggedParams = $params;
+        foreach (["pass", "password"] as $secret)
+        {
+            if (isset($loggedParams[$secret]))
+            {
+                $loggedParams[$secret] = "***";
+            }
+        }
         $this->log("debug", "Send request to " . $endpoint);
-        $this->log("debug", "With options: " . http_build_query($options[$this->requestOption], "", ", "));
+        $this->log("debug", "With options: " . http_build_query($loggedParams, "", ", "));
 
         $client = $this->httpClientService->newClient();
 
@@ -787,28 +870,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             // 2FA is basically enabled
             if ($piExcludeIPs)
             {
-                // We can exclude clients with specified ips from 2FA
-                $ipAddresses = explode(",", $piExcludeIPs);
-                $clientIP = ip2long($this->getClientIP());
-                foreach ($ipAddresses as $address)
+                // We can exclude clients with specified ips from 2FA.
+                // getRemoteAddress() only believes the X-Forwarded-For header when the connection comes from
+                // a proxy that the admin listed in "trusted_proxies" in config.php. A client can not fake the address.
+                $clientIP = $this->request->getRemoteAddress();
+                if (IpMatcher::matches($clientIP, $piExcludeIPs))
                 {
-                    if (strpos($address, '-') !== false)
-                    {
-                        $range = explode('-', $address);
-                        $startIP = ip2long($range[0]);
-                        $endIP = ip2long($range[1]);
-                        if ($clientIP >= $startIP && $clientIP <= $endIP)
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        if ($clientIP === ip2long($address))
-                        {
-                            return false;
-                        }
-                    }
+                    $this->log("debug", "[isTwoFactorAuthEnabledForUser] The client IP " . $clientIP . " is excluded from 2FA.");
+                    return false;
                 }
             }
             if ($piExcludeGroups)
@@ -858,47 +927,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
-     * Choose the right request option.
-     * OC v10.11 require using a "form_params" option.
-     * All older OC versions require using a "body" option.
-     *
-     * @return string
-     */
-    private function getRequestOption(): string
-    {
-        $ocVersion = \OC_Util::getVersion();
-        // The first array value represents a major version number, the second value is a minor version.
-        if ($ocVersion[0] <= 10 && $ocVersion[1] < 11)
-        {
-            return "body";
-        }
-        else
-        {
-            return "form_params";
-        }
-    }
-
-    /**
-     * @return mixed|string
-     */
-    public function getClientIP()
-    {
-        if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER))
-        {
-            return $_SERVER["HTTP_X_FORWARDED_FOR"];
-        }
-        else if (array_key_exists('REMOTE_ADDR', $_SERVER))
-        {
-            return $_SERVER["REMOTE_ADDR"];
-        }
-        else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER))
-        {
-            return $_SERVER["HTTP_CLIENT_IP"];
-        }
-        return '';
-    }
-
-    /**
      * Return an associative array that contains the options that should be passed to
      * the HTTP client service when creating HTTP requests.
      * @return array
@@ -909,12 +937,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $noProxy = $this->getAppValue('noproxy', '');
         $timeout = $this->getAppValue('pitimeout', '5');
         $options = ['headers' => ['user-agent' => "ownCloud Plugin"],
-            // NOTE: Here, we check for `!== '0'` instead of `=== '1'` in order to verify certificates
-            // by default just after app installation.
-            'verify' => $checkSSL !== '0',
-            'debug' => false,
-            'exceptions' => false,
+            // Do not throw an exception for an HTTP error status. The code reads the status and the body.
+            // (The old option name "exceptions" is ignored since Guzzle 6.)
+            'http_errors' => false,
             'timeout' => $timeout];
+        // NOTE: Here, we check for `=== '0'` instead of `!== '1'` in order to verify certificates
+        // by default just after app installation. Without a "verify" option, the HTTP client of ownCloud
+        // uses its own CA bundle. This bundle contains the certificates that the admin imported with
+        // "occ security:certificates:import".
+        if ($checkSSL === '0')
+        {
+            $options['verify'] = false;
+        }
         if ($noProxy === "1")
         {
             $options["proxy"] = ["https" => "", "http" => ""];

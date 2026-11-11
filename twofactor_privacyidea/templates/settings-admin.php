@@ -182,6 +182,11 @@ style('twofactor_privacyidea', 'settings-admin');
         <br>
         <label for="pollInBrowserUrl"><?php p($l->t('Poll in browser URL: ')); ?></label>
         <input id="pollInBrowserUrl" type="text" width="300px"/>
+        <br>
+        <em>
+            <?php p($l->t('The browser of the user sends the requests to this address. If it is not on the same origin as ownCloud,
+            privacyIDEA must allow it with CORS headers. A reverse proxy that serves both under one origin also works.')); ?>
+        </em>
         <hr>
         <p>
             <?php p($l->t('Test authentication by supplying username and password 

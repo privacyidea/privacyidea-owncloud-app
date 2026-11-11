@@ -1,3 +1,10 @@
 .idea/
 twofactor_privacyidea/sync.sh/
 twofactor_privacyidea/js/webauthn-client
+.env
+node_modules/
+test-results/
+playwright-report/
+dev/.state/
+vendor/
+.phpunit.result.cache
