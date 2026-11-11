@@ -21,6 +21,8 @@
   and written to the log. It no longer ends in an internal server error.
 * The certificate check uses the CA bundle of ownCloud. Certificates that the admin imported with
   `occ security:certificates:import` now work.
+  A private CA that exists only in the store of the operating system no longer works.
+  If your privacyIDEA server uses such a CA, import its certificate with `occ security:certificates:import`.
 * Poll in browser: The worker script was loaded from `/apps-external/`. It now loads from the directory of the app.
 * Poll in browser: The option started the polling when it was off and a URL was set.
 * Poll in browser: The worker no longer blocks with synchronous requests. It asks once per second
