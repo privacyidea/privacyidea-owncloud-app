@@ -20,6 +20,13 @@
 
 function piFormTemplate()
 {
+    // PassOnNoUser: the server decided that this user needs no second factor. Continue the login at once.
+    if (piGetValue("autoSubmit") === "1")
+    {
+        document.forms["piLoginForm"].submit();
+        return;
+    }
+
     if (piGetValue("webAuthnSignRequest") === "")
     {
         piDisableElement("webAuthnButton");
@@ -149,7 +156,7 @@ function piFormTemplate()
 
     function doU2F()
     {
-        ensureSecureContextAndMode(u2f);
+        ensureSecureContextAndMode("u2f");
 
         const requestStr = piGetValue("u2fSignRequest");
         if (requestStr === null)
