@@ -1,0 +1,54 @@
+name: PHP tests
+
+# Syntax check and PHPUnit on the oldest and the newest PHP that the app supports.
+# ownCloud 10.16 runs on PHP 7.4. ownCloud 11 needs PHP 8.3.
+# The same checks run locally with dev/lint-php.sh and dev/test-unit.sh.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: php-tests-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  php-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['7.4', '8.3']
+
+    name: php${{ matrix.php-version }} (lint, phpunit)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up php${{ matrix.php-version }}
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: dom, json, libxml, mbstring, tokenizer, xml, xmlwriter
+          coverage: none
+          ini-file: development
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: Lint (php -l)
+        run: composer run lint
+
+      - name: Unit tests (phpunit)
+        run: composer run test:unit

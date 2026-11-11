@@ -11,6 +11,10 @@
             "Tests\\Unit\\": "tests/unit/"
         }
     },
+    "scripts": {
+        "lint": "find twofactor_privacyidea tests -name '*.php' -print0 | xargs -0 -n1 php -l",
+        "test:unit": "phpunit --configuration phpunit.xml.dist"
+    },
     "config": {
         "platform": {
             "php": "7.4.33"
