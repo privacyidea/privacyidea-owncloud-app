@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # The GitHub actions are pinned by commit SHA. Dependabot updates the SHA and the version comment.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "03:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 10
+  # PHPUnit for the unit tests.
+  - package-ecosystem: composer
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "03:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 10
+  # Playwright for the end-to-end tests.
+  - package-ecosystem: npm
+    directory: "/tests/e2e"
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "03:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 10

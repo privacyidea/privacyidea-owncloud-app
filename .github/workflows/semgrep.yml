@@ -1,0 +1,60 @@
+name: Semgrep
+
+# Static analysis for security problems. Copied from privacyidea-nextcloud-app.
+# Findings do not fail the job. They show as code scanning alerts.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: semgrep-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # Needed to upload the SARIF report to the "Security" tab of GitHub.
+      security-events: write
+
+    # Run inside the official Semgrep image, so that the CLI and its dependencies are fixed.
+    container:
+      # Pinned by digest. This is the digest that privacyidea-nextcloud-app uses.
+      image: semgrep/semgrep@sha256:59fbed6127ea7c5dde3ba6a85142733bb20ea9aaa36120c953904f1539aaf66e
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run Semgrep
+        # No SEMGREP_APP_TOKEN is needed. The rulesets are fetched without login.
+        # --sarif writes a report. Add --error to make findings block the job
+        # after somebody has read the first results.
+        run: |
+          semgrep scan \
+            --config=p/php \
+            --config=p/javascript \
+            --config=p/security-audit \
+            --config=p/secrets \
+            --exclude=vendor \
+            --exclude=node_modules \
+            --exclude=l10n \
+            --sarif --output=semgrep.sarif
+
+      - name: Upload SARIF to GitHub code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep

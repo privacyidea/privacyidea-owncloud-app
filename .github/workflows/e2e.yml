@@ -1,0 +1,116 @@
+name: E2E tests
+
+# Runs the Playwright tests in tests/e2e against the Docker stack of compose-dev.yml:
+# a real ownCloud, a real privacyIDEA, and a real browser. See dev/README.md.
+#
+# Pull requests and pushes to master use the pinned versions 10.16.7 and 11.1.0.
+# Every night the workflow runs against the floating tags 10 and 11. This finds a
+# problem with a new ownCloud release without a change in this repository.
+# Start it by hand to test any image tag of owncloud/server.
+#
+# Update the pinned versions below when ownCloud releases a new version.
+
+on:
+  workflow_dispatch:
+    inputs:
+      owncloud-version:
+        description: 'Tag of the owncloud/server image, for example 11.1.0 or 11. Empty: the pinned versions.'
+        required: false
+        default: ''
+        type: string
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '23 3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  versions:
+    name: Select the ownCloud versions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+
+    steps:
+      - name: Select the versions
+        id: select
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT: ${{ inputs.owncloud-version }}
+        run: |
+          if [ -n "$INPUT" ]; then
+            matrix="$(jq -cn --arg v "$INPUT" '[$v]')"
+          elif [ "$EVENT" = schedule ]; then
+            matrix='["10","11"]'
+          else
+            matrix='["10.16.7","11.1.0"]'
+          fi
+          echo "Versions: $matrix"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  e2e:
+    name: e2e (ownCloud ${{ matrix.owncloud }})
+    needs: versions
+    # Not ubuntu-latest. That label is Ubuntu 26.04 now, and Playwright 1.56 does not support it.
+    # Change this when you update Playwright.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        owncloud: ${{ fromJSON(needs.versions.outputs.matrix) }}
+
+    env:
+      # compose-dev.yml reads this variable.
+      OWNCLOUD_VERSION: ${{ matrix.owncloud }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install the test tools
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Start the stack and prepare it
+        run: ./dev/setup.sh
+
+      - name: Run the tests
+        run: ./dev/test-e2e.sh
+
+      - name: Collect the logs
+        if: failure()
+        run: |
+          docker compose -f compose-dev.yml ps -a || true
+          docker compose -f compose-dev.yml logs --no-color --tail 300 > stack.log 2>&1 || true
+          docker compose -f compose-dev.yml exec -T owncloud sh -c 'tail -n 300 /mnt/data/files/owncloud.log' > owncloud.log 2>&1 || true
+
+      - name: Upload the logs and the Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-owncloud-${{ matrix.owncloud }}
+          path: |
+            stack.log
+            owncloud.log
+            tests/e2e/test-results
+          retention-days: 7
+          if-no-files-found: ignore

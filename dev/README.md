@@ -114,6 +114,25 @@ On Windows with Docker in WSL, use a path that WSL can read, for example `/mnt/c
   `docker compose -f compose-dev.yml exec owncloud occ user:unlock <user>`.
 - The test stack uses `http://localhost`. The browser treats it as a secure context, so WebAuthn can work there.
 
+## Continuous integration
+
+The workflows are in `.github/workflows/`. Every GitHub action is pinned by commit SHA.
+Dependabot updates the pins. Before you pin a new action, compare the SHA with the release tag.
+
+| Workflow | When | What it does |
+| --- | --- | --- |
+| `php-tests.yml` | Pull request, push to `master` | `composer run lint` and `composer run test:unit` on PHP 7.4 and 8.3. |
+| `e2e.yml` | Pull request, push to `master`, every night, by hand | The Playwright tests against ownCloud 10.16.7 and 11.1.0 (pinned). At night: the floating tags `10` and `11`. |
+| `semgrep.yml` | Pull request, push to `master` | Security scan. The findings do not fail the job. They show as code scanning alerts. |
+| `fixup.yml` | Pull request | Blocks `fixup!` and `squash!` commits. |
+
+Update the pinned ownCloud versions in `e2e.yml` when ownCloud releases a new version.
+To run the tests against one image tag, start `e2e.yml` by hand and enter the tag, for example `11.1.0`.
+If the nightly run fails, a new ownCloud release probably broke something. Open the logs and traces in the run.
+
+The workflows `php-tests.yml` and `e2e.yml` run the same commands as `dev/lint-php.sh`, `dev/test-unit.sh` and `dev/setup.sh` with `dev/test-e2e.sh`.
+The stack pulls images from Docker Hub. Docker Hub limits the pulls without login. A run can fail for this reason alone.
+
 ## Problems with Docker in WSL
 
 - Docker runs in a WSL distro on some Windows hosts. WSL stops the distro when no session is open.
@@ -130,4 +149,6 @@ On Windows with Docker in WSL, use a path that WSL can read, for example `/mnt/c
 - A mock privacyIDEA server. It would let tests force HTTP 500, timeouts and slow answers.
 - Tests for real push tokens and WebAuthn.
   Chromium can emulate a WebAuthn device through the DevTools protocol.
-- A CI workflow.
+- A code style check (php-cs-fixer). The code has no style configuration yet.
+- Static analysis (psalm) against the ownCloud API. ownCloud has no package with API stubs.
+  One option: read `lib/public` from a shallow clone of `owncloud/core` for each supported version.

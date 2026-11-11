@@ -7,8 +7,10 @@ export default defineConfig({
   workers: 1,
   fullyParallel: false,
   timeout: 90_000,
-  retries: 0,
-  reporter: [["list"]],
+  // On CI a test that fails once and passes at the retry is reported as "flaky".
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI ? [["list"], ["github"]] : [["list"]],
   use: {
     baseURL: process.env.OWNCLOUD_URL || `http://localhost:${process.env.OWNCLOUD_PORT || 8080}`,
     trace: "retain-on-failure",
