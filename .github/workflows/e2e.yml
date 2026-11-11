@@ -59,7 +59,9 @@ jobs:
   e2e:
     name: e2e (ownCloud ${{ matrix.owncloud }})
     needs: versions
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest. That label is Ubuntu 26.04 now, and Playwright 1.56 does not support it.
+    # Change this when you update Playwright.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     strategy:
