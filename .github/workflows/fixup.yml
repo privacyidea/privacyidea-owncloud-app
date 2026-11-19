@@ -11,15 +11,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: fixup-${{ github.head_ref || github.run_id }}
+  group: fixup-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   commit-message-check:
     if: github.event.pull_request.draft == false
 
+    # The action only reads the list of commits of the pull request. It needs no write access.
     permissions:
-      pull-requests: write
+      pull-requests: read
     name: Block fixup and squash commits
 
     runs-on: ubuntu-latest
