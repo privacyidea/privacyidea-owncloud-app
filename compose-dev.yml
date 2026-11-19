@@ -22,7 +22,8 @@ services:
       privacyidea:
         condition: service_healthy
     ports:
-      - "${OWNCLOUD_PORT:-8080}:8080"
+      # Only this computer can reach the stack. It has the passwords admin/admin.
+      - "127.0.0.1:${OWNCLOUD_PORT:-8080}:8080"
     environment:
       OWNCLOUD_DOMAIN: localhost:${OWNCLOUD_PORT:-8080}
       OWNCLOUD_TRUSTED_DOMAINS: localhost
@@ -50,9 +51,11 @@ services:
 
   privacyidea:
     # Unofficial community image (not from NetKnights). Runs gunicorn with SQLite.
-    image: gpappsoft/privacyidea-docker:${PRIVACYIDEA_VERSION:-3.13.3}
+    # Pinned by digest, because the owner of a tag can push other content under it.
+    # To test another version, change the tag and the digest here.
+    image: gpappsoft/privacyidea-docker:3.13.3@sha256:ac96b57a2cd23a486c91be8dfd8699df282d78bf84296afcc2f1915136bcef48
     ports:
-      - "${PRIVACYIDEA_PORT:-8081}:8080"
+      - "127.0.0.1:${PRIVACYIDEA_PORT:-8081}:8080"
     environment:
       PI_ADDRESS: 0.0.0.0
       PI_PORT: "8080"
