@@ -6,7 +6,6 @@ script('twofactor_privacyidea', [
     'pi-webauthn',
     'pi-u2f',
     'pi-poll-by-reload',
-    'pi-poll-transaction.worker',
     'pi-poll-in-browser'
 ]);
 style('twofactor_privacyidea', 'pi-form-template');

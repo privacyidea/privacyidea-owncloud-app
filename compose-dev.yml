@@ -1,0 +1,149 @@
+# Local test stack for the privacyIDEA ownCloud app.
+#
+#   docker compose -f compose-dev.yml up -d --wait
+#   ./dev/setup.sh            # one time: users, tokens, app configuration
+#
+# See dev/README.md for the full workflow.
+#
+# Versions are pinned. Override them in a `.env` file or in the shell, for example
+#   OWNCLOUD_VERSION=10.16.7 docker compose -f compose-dev.yml up -d
+# to run the same app against the old ownCloud release.
+
+name: pi-owncloud-dev
+
+# Shared by the two privacyIDEA services below. The image is the official image of NetKnights
+# (https://harbor.netknights.it). It is pinned by tag and digest. To test another version, change both.
+# The image runs as the user "nonroot". The volume is mounted on /etc/privacyidea, because that
+# directory belongs to this user. The database is a SQLite file, so the web service has one worker.
+x-privacyidea: &privacyidea
+  image: harbor.netknights.it/privacyidea/privacyidea:3.14@sha256:df426709e99100a50ae75ef15cb075ce37c8e8ec72e72820fb5d156dbc748bfe
+  environment: &privacyidea-env
+    SQLALCHEMY_DATABASE_URI: sqlite:////etc/privacyidea/pi.db
+    PI_ENCFILE: /etc/privacyidea/enckey
+    PI_PEPPER: dev-pepper-change-me
+    PI_SECRET_KEY: dev-secret-change-me
+    PI_WORKERS: "1"
+    # Without a key pair for the audit log, the image refuses to start unless this is set.
+    PRIVACYIDEA_PI_AUDIT_NO_SIGN: "true"
+  volumes:
+    - privacyidea_data:/etc/privacyidea
+    - ./dev/privacyidea/users.passwd:/etc/privacyidea/users.passwd:ro
+
+services:
+  owncloud:
+    image: owncloud/server:${OWNCLOUD_VERSION:-11.1.0}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      privacyidea:
+        condition: service_healthy
+    ports:
+      # Only this computer can reach the stack. It has the passwords admin/admin.
+      - "127.0.0.1:${OWNCLOUD_PORT:-8080}:8080"
+    environment:
+      OWNCLOUD_DOMAIN: localhost:${OWNCLOUD_PORT:-8080}
+      OWNCLOUD_TRUSTED_DOMAINS: localhost
+      OWNCLOUD_DB_TYPE: mysql
+      OWNCLOUD_DB_NAME: owncloud
+      OWNCLOUD_DB_USERNAME: owncloud
+      OWNCLOUD_DB_PASSWORD: owncloud
+      OWNCLOUD_DB_HOST: mariadb
+      OWNCLOUD_MYSQL_UTF8MB4: "true"
+      OWNCLOUD_ADMIN_USERNAME: admin
+      OWNCLOUD_ADMIN_PASSWORD: admin
+      OWNCLOUD_REDIS_ENABLED: "true"
+      OWNCLOUD_REDIS_HOST: redis
+      OWNCLOUD_LOG_LEVEL: "0"
+    healthcheck:
+      test: ["CMD", "/usr/bin/healthcheck"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    volumes:
+      - oc_data:/mnt/data
+      # The image keeps external apps in /mnt/data/apps (/var/www/owncloud/custom, URL /custom).
+      # APP_DIR lets you test another checkout or a patched copy of the app.
+      - ${APP_DIR:-./twofactor_privacyidea}:/mnt/data/apps/twofactor_privacyidea
+
+  # The official image of NetKnights. The init service creates the database, the encryption key and the
+  # admin. The web service starts when the init service has finished.
+  privacyidea-init:
+    <<: *privacyidea
+    entrypoint: ["sh", "/init.sh"]
+    environment:
+      <<: *privacyidea-env
+      PI_INIT_ONLY: "true"
+      PI_CREATE_TABLES: "true"
+      PI_RUN_MIGRATIONS: "true"
+      PI_BOOTSTRAP_ADMIN: admin
+      PI_BOOTSTRAP_ADMIN_PASSWORD: admin
+    healthcheck:
+      disable: true
+    restart: "no"
+    volumes:
+      - privacyidea_data:/etc/privacyidea
+      - ./dev/privacyidea/init.sh:/init.sh:ro
+
+  privacyidea:
+    <<: *privacyidea
+    depends_on:
+      privacyidea-init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${PRIVACYIDEA_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz/readyz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  # One-shot job. Creates the realm, tokens and policies in privacyIDEA. Run with
+  #   docker compose -f compose-dev.yml run --rm setup-pi
+  setup-pi:
+    image: node:22-alpine
+    profiles: ["tools"]
+    depends_on:
+      privacyidea:
+        condition: service_healthy
+    working_dir: /scripts
+    volumes:
+      - ./dev:/scripts:ro
+      - ./dev/.state:/scripts/.state
+    environment:
+      PI_URL: http://privacyidea:8080
+      DEV_STATE: ${DEV_STATE:-default}
+    command: ["node", "setup-privacyidea.mjs"]
+
+  mariadb:
+    image: mariadb:10.11
+    environment:
+      MYSQL_ROOT_PASSWORD: owncloud
+      MYSQL_USER: owncloud
+      MYSQL_PASSWORD: owncloud
+      MYSQL_DATABASE: owncloud
+      MARIADB_AUTO_UPGRADE: "1"
+    command: ["--max-allowed-packet=128M", "--innodb-log-file-size=64M"]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    command: ["--databases", "1"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  oc_data:
+  mariadb_data:
+  privacyidea_data:

@@ -16,69 +16,61 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
 
-let url;
-let params;
+// This file runs as a web worker. Do not load it as a normal script.
+// It asks privacyIDEA every second if the push message is confirmed.
+// Messages to the worker: {cmd: 'url', msg: <base URL of privacyIDEA>}, {cmd: 'transactionId', msg: <id>}, {cmd: 'start'}.
+// Messages from the worker: {status: 'success' | 'error', message: <text>}. The worker closes itself after both.
+
+const POLL_INTERVAL_MS = 1000;
+
+let pollUrl = "";
+let transactionId = "";
+
 self.addEventListener('message', function (e)
 {
-    let data = e.data;
+    const data = e.data;
 
     switch (data.cmd)
     {
         case 'url':
-            url = data.msg + "/validate/polltransaction";
+            pollUrl = String(data.msg).replace(/\/+$/, "") + "/validate/polltransaction";
             break;
         case 'transactionId':
-            params = "transaction_id=" + data.msg;
+            transactionId = String(data.msg);
             break;
         case 'start':
-            if (url.length > 0 && params.length > 0)
+            if (pollUrl.length > 0 && transactionId.length > 0)
             {
-                setInterval("pollTransactionInBrowser()", 300);
+                pollTransactionInBrowser();
             }
             break;
     }
-})
+});
 
-function pollTransactionInBrowser()
+async function pollTransactionInBrowser()
 {
-    const request = new XMLHttpRequest();
-
-    request.open("GET", url + "?" + params, false);
-
-    request.onload = (e) =>
+    try
     {
-        try
+        const response = await fetch(pollUrl + "?transaction_id=" + encodeURIComponent(transactionId),
+            {headers: {'Accept': 'application/json'}});
+        if (!response.ok)
         {
-            if (request.readyState === 4)
-            {
-                if (request.status === 200)
-                {
-                    const response = JSON.parse(request.response);
-                    if (response['result']['value'] === true)
-                    {
-                        self.postMessage({'message': 'Polling in browser: Push message confirmed!', 'status': 'success'});
-                        self.close();
-                    }
-                }
-                else
-                {
-                    self.postMessage({'message': request.statusText, 'status': 'error'});
-                    self.close();
-                }
-            }
+            throw new Error(response.statusText || ("HTTP status " + response.status));
         }
-        catch (e)
+        const json = await response.json();
+        if (json && json.result && json.result.value === true)
         {
-            self.postMessage({'message': e, 'status': 'error'});
+            self.postMessage({'message': 'Polling in browser: Push message confirmed!', 'status': 'success'});
             self.close();
+            return;
         }
-    };
-
-    request.onerror = (e) =>
+    }
+    catch (error)
     {
-        self.postMessage({'message': request.statusText, 'status': 'error'});
+        self.postMessage({'message': String(error && error.message ? error.message : error), 'status': 'error'});
         self.close();
-    };
-
-    request.send();
+        return;
+    }
+    // Not confirmed yet. Ask again after one interval. The next request starts after this one ended.
+    setTimeout(pollTransactionInBrowser, POLL_INTERVAL_MS);
 }

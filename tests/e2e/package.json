@@ -1,0 +1,12 @@
+{
+  "name": "twofactor-privacyidea-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end tests for the privacyIDEA ownCloud app. Run against the stack in compose-dev.yml.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
