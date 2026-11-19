@@ -1,0 +1,32 @@
+# Copied from privacyidea-nextcloud-app. That file comes from the template repository of Nextcloud:
+# https://github.com/nextcloud/.github
+
+name: Block fixup and squash commits
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fixup-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  commit-message-check:
+    if: github.event.pull_request.draft == false
+
+    # The action only reads the list of commits of the pull request. It needs no write access.
+    permissions:
+      pull-requests: read
+    name: Block fixup and squash commits
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run check
+        uses: skjnldsv/block-fixup-merge-action@42d26e1b536ce61e5cf467d65fb76caf4aa85acf # v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
