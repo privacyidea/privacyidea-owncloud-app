@@ -27,3 +27,25 @@ updates:
       time: "03:00"
       timezone: Europe/Paris
     open-pull-requests-limit: 10
+  # The pinned Semgrep image of semgrep.yml ("container: image:"). The github-actions entry does not read it.
+  - package-ecosystem: docker
+    directory: "/.github/workflows"
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "03:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+  # The images of the test stack in compose-dev.yml. An image with a variable in the tag (ownCloud) is not updated.
+  # A new major version of MariaDB or Redis is not wanted, so these updates are ignored.
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "03:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

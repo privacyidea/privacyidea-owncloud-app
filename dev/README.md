@@ -11,7 +11,7 @@ There are three kinds of checks:
 
 | Check | Command | What it does |
 | --- | --- | --- |
-| Syntax | `./dev/lint-php.sh` | Runs `php -l` on every PHP file with PHP 7.4 and 8.3. |
+| Syntax | `./dev/lint-php.sh` | Runs `php -l` on every PHP file of the app and of the tests with PHP 7.4 and 8.3. |
 | Unit tests | `./dev/test-unit.sh` | PHPUnit tests with PHP 7.4 and 8.3. They run the provider with a fake HTTP client, session and logger. No ownCloud is needed. |
 | End-to-end tests | `./dev/test-e2e.sh` | Playwright tests in a real browser against the stack. |
 
@@ -119,18 +119,22 @@ On Windows with Docker in WSL, use a path that WSL can read, for example `/mnt/c
 ## Continuous integration
 
 The workflows are in `.github/workflows/`. Every GitHub action is pinned by commit SHA.
-Dependabot updates the pins. Before you pin a new action, compare the SHA with the release tag.
+Dependabot updates the pins of the actions, the Composer and npm packages, and the Docker images
+(the Semgrep image in `semgrep.yml` and the images in `compose-dev.yml`).
+Before you pin a new action, compare the SHA with the release tag.
 
 | Workflow | When | What it does |
 | --- | --- | --- |
 | `php-tests.yml` | Pull request, push to `master` | `composer run lint` and `composer run test:unit` on PHP 7.4 and 8.3. |
 | `e2e.yml` | Pull request, push to `master`, every night, by hand | The Playwright tests against ownCloud 10.16.7 and 11.1.0 (pinned). At night: the floating tags `10` and `11`. |
-| `semgrep.yml` | Pull request, push to `master` | Security scan. The findings do not fail the job. They show as code scanning alerts. |
-| `fixup.yml` | Pull request | Blocks `fixup!` and `squash!` commits. |
+| `semgrep.yml` | Pull request, push to `master` | Security scan. The findings do not fail the job. They are in the log and show as code scanning alerts. A pull request from a fork has a read-only token, so the upload of the alerts is skipped for it. |
+| `fixup.yml` | Pull request | Fails the check when the pull request has `fixup!` or `squash!` commits. The check blocks the merge only when a maintainer sets it as required in the branch settings. |
 
 Update the pinned ownCloud versions in `e2e.yml` when ownCloud releases a new version.
 To run the tests against one image tag, start `e2e.yml` by hand and enter the tag, for example `11.1.0`.
 If the nightly run fails, a new ownCloud release probably broke something. Open the logs and traces in the run.
+GitHub turns off a scheduled workflow in a public repository after 60 days without repository activity.
+If the nightly run stops, a maintainer must turn it on again in the Actions tab.
 
 The workflows `php-tests.yml` and `e2e.yml` run the same commands as `dev/lint-php.sh`, `dev/test-unit.sh` and `dev/setup.sh` with `dev/test-e2e.sh`.
 The stack pulls images from Docker Hub. Docker Hub limits the pulls without login. A run can fail for this reason alone.
