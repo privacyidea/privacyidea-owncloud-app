@@ -146,7 +146,8 @@ GitHub turns off a scheduled workflow in a public repository after 60 days witho
 If the nightly run stops, a maintainer must turn it on again in the Actions tab.
 
 The workflows `php-tests.yml` and `e2e.yml` run the same commands as `dev/lint-php.sh`, `dev/test-unit.sh` and `dev/setup.sh` with `dev/test-e2e.sh`.
-The stack pulls images from Docker Hub. Docker Hub limits the pulls without login. A run can fail for this reason alone.
+The stack pulls most images from Docker Hub. Docker Hub limits the pulls without login. A run can fail for this reason alone.
+The privacyIDEA image comes from `harbor.netknights.it`. A run fails when that registry is not reachable.
 
 ## Problems with Docker in WSL
 
