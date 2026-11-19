@@ -11,6 +11,24 @@
 
 name: pi-owncloud-dev
 
+# Shared by the two privacyIDEA services below. The image is the official image of NetKnights
+# (https://harbor.netknights.it). It is pinned by tag and digest. To test another version, change both.
+# The image runs as the user "nonroot". The volume is mounted on /etc/privacyidea, because that
+# directory belongs to this user. The database is a SQLite file, so the web service has one worker.
+x-privacyidea: &privacyidea
+  image: harbor.netknights.it/privacyidea/privacyidea:3.14@sha256:df426709e99100a50ae75ef15cb075ce37c8e8ec72e72820fb5d156dbc748bfe
+  environment: &privacyidea-env
+    SQLALCHEMY_DATABASE_URI: sqlite:////etc/privacyidea/pi.db
+    PI_ENCFILE: /etc/privacyidea/enckey
+    PI_PEPPER: dev-pepper-change-me
+    PI_SECRET_KEY: dev-secret-change-me
+    PI_WORKERS: "1"
+    # Without a key pair for the audit log, the image refuses to start unless this is set.
+    PRIVACYIDEA_PI_AUDIT_NO_SIGN: "true"
+  volumes:
+    - privacyidea_data:/etc/privacyidea
+    - ./dev/privacyidea/users.passwd:/etc/privacyidea/users.passwd:ro
+
 services:
   owncloud:
     image: owncloud/server:${OWNCLOUD_VERSION:-11.1.0}
@@ -49,29 +67,38 @@ services:
       # APP_DIR lets you test another checkout or a patched copy of the app.
       - ${APP_DIR:-./twofactor_privacyidea}:/mnt/data/apps/twofactor_privacyidea
 
+  # The official image of NetKnights. The init service creates the database, the encryption key and the
+  # admin. The web service starts when the init service has finished.
+  privacyidea-init:
+    <<: *privacyidea
+    entrypoint: ["sh", "/init.sh"]
+    environment:
+      <<: *privacyidea-env
+      PI_INIT_ONLY: "true"
+      PI_CREATE_TABLES: "true"
+      PI_RUN_MIGRATIONS: "true"
+      PI_BOOTSTRAP_ADMIN: admin
+      PI_BOOTSTRAP_ADMIN_PASSWORD: admin
+    healthcheck:
+      disable: true
+    restart: "no"
+    volumes:
+      - privacyidea_data:/etc/privacyidea
+      - ./dev/privacyidea/init.sh:/init.sh:ro
+
   privacyidea:
-    # Unofficial community image (not from NetKnights). Runs gunicorn with SQLite.
-    # Pinned by digest, because the owner of a tag can push other content under it.
-    # To test another version, change the tag and the digest here.
-    image: gpappsoft/privacyidea-docker:3.13.3@sha256:ac96b57a2cd23a486c91be8dfd8699df282d78bf84296afcc2f1915136bcef48
+    <<: *privacyidea
+    depends_on:
+      privacyidea-init:
+        condition: service_completed_successfully
     ports:
       - "127.0.0.1:${PRIVACYIDEA_PORT:-8081}:8080"
-    environment:
-      PI_ADDRESS: 0.0.0.0
-      PI_PORT: "8080"
-      PI_ADMIN: admin
-      PI_ADMIN_PASS: admin
-      PI_PEPPER: dev-pepper-change-me
-      PI_SECRET: dev-secret-change-me
-      PI_LOGLEVEL: DEBUG
     healthcheck:
-      test: ["CMD", "python", "/privacyidea/healthcheck.py"]
-      interval: 10s
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz/readyz', timeout=3)"]
+      interval: 5s
       timeout: 5s
-      retries: 20
-    volumes:
-      - pi_data:/privacyidea/etc/persistent
-      - ./dev/privacyidea/users.passwd:/privacyidea/etc/users.passwd:ro
+      retries: 30
+      start_period: 10s
 
   # One-shot job. Creates the realm, tokens and policies in privacyIDEA. Run with
   #   docker compose -f compose-dev.yml run --rm setup-pi
@@ -119,4 +146,4 @@ services:
 volumes:
   oc_data:
   mariadb_data:
-  pi_data:
+  privacyidea_data:

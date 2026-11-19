@@ -98,6 +98,7 @@ On Windows with Docker in WSL, use a path that WSL can read, for example `/mnt/c
 | `dev/lib/fixtures.mjs` | Test users and token seeds. Shared with the tests. |
 | `dev/lib/totp.mjs` | A TOTP generator without packages. |
 | `dev/privacyidea/users.passwd` | The users of the privacyIDEA realm. |
+| `dev/privacyidea/init.sh` | Runs in the container `privacyidea-init`. Creates the encryption key, then starts the entrypoint of the image. |
 | `dev/lint-php.sh`, `dev/test-unit.sh`, `dev/test-e2e.sh` | The three checks. |
 | `composer.json`, `phpunit.xml.dist`, `tests/unit/` | PHPUnit. The app itself needs no Composer packages. |
 | `tests/unit/stubs/ocp.php`, `tests/unit/Provider/Fakes.php` | Stand-ins for the ownCloud classes that the provider uses. They have only the methods that the provider calls. When the provider calls a new method, add it there. |
@@ -105,8 +106,16 @@ On Windows with Docker in WSL, use a path that WSL can read, for example `/mnt/c
 
 ## Facts about the services
 
-- The privacyIDEA image `gpappsoft/privacyidea-docker` is a community image. NetKnights does not publish it.
-  `compose-dev.yml` pins the image by tag and digest. The image runs one gunicorn worker and SQLite.
+- The privacyIDEA image is the official image `harbor.netknights.it/privacyidea/privacyidea`. `compose-dev.yml` pins it by tag
+  and digest (privacyIDEA 3.14). The registry allows a pull without a login. The image is for amd64 only.
+  To test another version, change the tag and the digest.
+- The image runs as the user `nonroot`, with one gunicorn worker and a SQLite file. The volume `privacyidea_data` is
+  mounted on `/etc/privacyidea`, because that directory belongs to this user. It holds the database and the encryption key.
+- The service `privacyidea-init` runs first. It creates the database, the admin and the encryption key
+  (`dev/privacyidea/init.sh`). The service `privacyidea` starts after it. The stack has no key pair for the audit log,
+  so the image runs with `PRIVACYIDEA_PI_AUDIT_NO_SIGN`.
+- A stack from an older version of this repository used the volume `pi_data`. Nothing uses it now.
+  Remove it with `docker volume rm pi-owncloud-dev_pi_data`.
 - The stack listens on `127.0.0.1` only. Both services have the password `admin`.
 - privacyIDEA ignores a key that a client sends to `/token/init` when no admin policy exists.
   The setup script lets the server generate the key and reads the seed from the answer.
