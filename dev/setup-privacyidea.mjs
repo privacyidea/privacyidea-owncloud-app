@@ -40,7 +40,7 @@ console.log(`privacyIDEA ${BASE}: admin login ok`);
 
 await api("POST", `/resolver/${RESOLVER}`, {
   type: "passwdresolver",
-  fileName: "/privacyidea/etc/users.passwd",
+  fileName: "/etc/privacyidea/users.passwd",
 });
 await api("POST", `/realm/${REALM}`, { resolvers: RESOLVER });
 await api("POST", `/defaultrealm/${REALM}`);
