@@ -12,7 +12,7 @@ There are three kinds of checks:
 | Check | Command | What it does |
 | --- | --- | --- |
 | Syntax | `./dev/lint-php.sh` | Runs `php -l` on every PHP file with PHP 7.4 and 8.3. |
-| Unit tests | `./dev/test-unit.sh` | PHPUnit tests of code that needs no ownCloud, with PHP 7.4 and 8.3. |
+| Unit tests | `./dev/test-unit.sh` | PHPUnit tests with PHP 7.4 and 8.3. They run the provider with a fake HTTP client, session and logger. No ownCloud is needed. |
 | End-to-end tests | `./dev/test-e2e.sh` | Playwright tests in a real browser against the stack. |
 
 ## Start the stack
@@ -58,7 +58,7 @@ in the same way as the admin settings page. They never call `docker`.
 Every test starts from the default settings (`DEFAULT_CONFIG` in `tests/e2e/helpers.mjs`).
 Use one worker only. privacyIDEA rejects an OTP that was used before.
 
-The ids in the test names (B1, C4, S1, E, ...) are the finding ids of the Changelog and of `journal.md`.
+The ids in the test names (B1, C4, S1, E, ...) are ids of the review of the app. They only group the tests.
 If a defect is known and not fixed, declare its test with `test.fail()`.
 The test passes while the defect exists. When someone fixes the defect, the test reports "expected to fail".
 Then change `test.fail()` to `test()`. No test uses `test.fail()` at the moment.
@@ -100,12 +100,14 @@ On Windows with Docker in WSL, use a path that WSL can read, for example `/mnt/c
 | `dev/privacyidea/users.passwd` | The users of the privacyIDEA realm. |
 | `dev/lint-php.sh`, `dev/test-unit.sh`, `dev/test-e2e.sh` | The three checks. |
 | `composer.json`, `phpunit.xml.dist`, `tests/unit/` | PHPUnit. The app itself needs no Composer packages. |
+| `tests/unit/stubs/ocp.php`, `tests/unit/Provider/Fakes.php` | Stand-ins for the ownCloud classes that the provider uses. They have only the methods that the provider calls. When the provider calls a new method, add it there. |
 | `tests/e2e/` | Playwright tests. |
 
 ## Facts about the services
 
 - The privacyIDEA image `gpappsoft/privacyidea-docker` is a community image. NetKnights does not publish it.
-  The tag is set in `PRIVACYIDEA_VERSION`. The image runs one gunicorn worker and SQLite.
+  `compose-dev.yml` pins the image by tag and digest. The image runs one gunicorn worker and SQLite.
+- The stack listens on `127.0.0.1` only. Both services have the password `admin`.
 - privacyIDEA ignores a key that a client sends to `/token/init` when no admin policy exists.
   The setup script lets the server generate the key and reads the seed from the answer.
 - The ownCloud 11 image loads external apps from `/var/www/owncloud/custom` with the URL `/custom`.
@@ -145,7 +147,6 @@ The stack pulls images from Docker Hub. Docker Hub limits the pulls without logi
 
 ## Not built yet
 
-- PHPUnit tests for the provider with a mocked HTTP client.
 - A mock privacyIDEA server. It would let tests force HTTP 500, timeouts and slow answers.
 - Tests for real push tokens and WebAuthn.
   Chromium can emulate a WebAuthn device through the DevTools protocol.

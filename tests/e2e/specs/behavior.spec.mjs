@@ -1,7 +1,8 @@
 // Behavior of the app, checked in a real browser.
-// Each test states the CORRECT behavior. The ids (B1, C4, S1, ...) refer to the findings in the changelog
-// and in journal.md. If a defect is known but not fixed yet, declare its test with test.fail():
-// it passes while the defect exists and reports "expected to fail" as soon as someone fixes it.
+// Each test states the CORRECT behavior. The letter and number at the start of a test name (B1, C4, S1, ...)
+// is an id of the review of the app. It only groups the tests. If a defect is known but not fixed yet,
+// declare its test with test.fail(): it passes while the defect exists and reports "expected to fail"
+// as soon as someone fixes it.
 import { test, expect } from "@playwright/test";
 import { PRIVACYIDEA_URL, adminPage, freshOtp, loginPassword, piAudit, resetAppConfig, setAppConfig } from "../helpers.mjs";
 
@@ -25,7 +26,8 @@ test("A: the admin settings page renders and loads the saved values", async () =
   await expect(admin.locator("#piurl")).toHaveValue("http://privacyidea:8080");
 });
 
-test("T: the test buttons of the admin page report success and failure", async () => {
+test("T: the routes behind the test buttons of the admin page report success and failure", async () => {
+  // The test calls the routes with fetch, as the JavaScript of the buttons does. It does not click a button.
   await admin.goto("/index.php/apps/files/");
   const call = (route, user, pass) =>
     admin.evaluate(
@@ -117,6 +119,52 @@ test("E: without PassOnNoUser a user who is not in privacyIDEA gets a clean mess
   // S6: the text of the HTTP client contains the internal URL of privacyIDEA
   expect(text).not.toContain("privacyidea:8080");
   expect(text).not.toContain("Client error");
+});
+
+test("E2: PassOnNoUser does not help a user that privacyIDEA knows (wrong OTP)", async ({ page }) => {
+  await setAppConfig(admin, "passOnNoUser", "1");
+  await loginPassword(page, "alice");
+  await page.fill("#otp", "000000");
+  await page.click("#submitButton");
+  await expect(page.locator("span.warning")).toBeVisible();
+  await expect(page).not.toHaveURL(/\/apps\/files/);
+});
+
+for (const trigger of ["0", "1"]) {
+  test(`E3: PassOnNoUser does not help a user without a token (trigger challenges ${trigger})`, async ({ page }) => {
+    await setAppConfig(admin, "passOnNoUser", "1");
+    await setAppConfig(admin, "triggerchallenges", trigger);
+    await loginPassword(page, "carol");
+    await page.waitForLoadState("networkidle");
+    if (await page.locator("#otp").isVisible()) {
+      await page.fill("#otp", "000000");
+      await page.click("#submitButton");
+      await page.waitForLoadState("networkidle");
+    }
+    await expect(page).not.toHaveURL(/\/apps\/files/);
+  });
+}
+
+test("N: an empty timeout in the settings does not break the challenge page", async ({ page }) => {
+  // On PHP 8 the HTTP client throws a TypeError for "" * 1000. That ended in an internal server error.
+  await setAppConfig(admin, "triggerchallenges", "1");
+  await setAppConfig(admin, "pitimeout", "");
+  const response = page.waitForResponse((r) => r.url().includes("/login/challenge/"));
+  await loginPassword(page, "bob");
+  expect((await response).status()).toBe(200);
+  await expect(page.locator("#otp")).toBeVisible();
+  expect(await bodyText(page)).not.toContain("Internal Server Error");
+});
+
+test("J: the challenge page has no script error when the OTP field is hidden", async ({ page }) => {
+  // PassOnNoUser with trigger challenges hides the OTP field. The script must not stop at the missing field.
+  await setAppConfig(admin, "triggerchallenges", "1");
+  await setAppConfig(admin, "passOnNoUser", "1");
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await loginPassword(page, "dave");
+  await page.waitForURL(/\/apps\/files/, { timeout: 15000 });
+  expect(errors).toEqual([]);
 });
 
 test("F: bob logs in with challenge-response", async ({ page }) => {

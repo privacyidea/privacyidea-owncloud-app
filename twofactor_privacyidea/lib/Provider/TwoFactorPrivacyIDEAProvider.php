@@ -45,7 +45,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         "pi_message", "pi_TriggerChallengeSuccess", "pi_detail", "pi_mode", "pi_autoSubmit", "pi_hideOTPField",
         "pi_u2fSignRequest", "pi_webAuthnSignRequest", "pi_pushAvailable", "pi_otpAvailable", "pi_tiqrAvailable",
         "pi_tiqrImage", "pi_imgU2F", "pi_imgWebauthn", "pi_imgPush", "pi_imgOTP", "pi_transactionId",
-        "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired"];
+        "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired",
+        "pi_uid"];
     /** @var IClientService */
     private $httpClientService;
     /** @var IConfig */
@@ -95,6 +96,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     public function getTemplate(IUser $user): Template
     {
+        $this->bindSessionToUser($user);
+
         // TriggerChallenge
         if ($this->getAppValue("triggerchallenges", "") === "1")
         {
@@ -109,9 +112,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     $this->session->set("pi_message", $message);
                     $this->session->set("pi_TriggerChallengeSuccess", true);
                 }
-                catch (Exception $e)
+                catch (\Throwable $e)
                 {
                     // Show the OTP field again. Without it the user can not enter anything.
+                    // \Throwable and not Exception: on PHP 8 a wrong value in the settings or an unexpected answer
+                    // can raise a TypeError, and that must not end in an internal server error.
                     $this->session->set("pi_hideOTPField", false);
                     $this->log("error", "[getTemplate] " . $e->getMessage());
                     $message = $this->userMessage($e);
@@ -265,6 +270,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      */
     private function verifyChallengeInternal(IUser $user, $challenge): bool
     {
+        $this->bindSessionToUser($user);
+
         if ($this->session->get("pi_noAuthRequired"))
         {
             return true;
@@ -431,6 +438,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         foreach (self::SESSION_KEYS as $key)
         {
             $this->session->remove($key);
+        }
+    }
+
+    /**
+     * Make sure that the state of the login in the session belongs to this user.
+     * If the session holds the state of another user, remove it. The state includes "pi_noAuthRequired",
+     * which skips the second factor. ownCloud blocks a second login while a challenge is open, so this is
+     * an additional safety net.
+     *
+     * @param IUser $user
+     */
+    private function bindSessionToUser(IUser $user)
+    {
+        $uid = $user->getUID();
+        if ($this->session->get("pi_uid") !== $uid)
+        {
+            $this->clearLoginState();
+            $this->session->set("pi_uid", $uid);
         }
     }
 
@@ -641,7 +666,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $this->log("error", "[fetchAuthToken] HTTP return code: " . $result->getStatusCode());
             }
             $this->log("error", "[fetchAuthToken] " . $e->getMessage());
-            $this->log("debug", $e);
+            // Do not log the exception object. Its trace can contain the arguments of getAuthToken(),
+            // which include the password of the service account.
+            $this->log("debug", "[fetchAuthToken] Exception class: " . get_class($e));
             $errorMessage = $this->trans->t("Failed to fetch authentication token.");
         }
         throw new AdminAuthException($errorMessage);
@@ -871,8 +898,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             if ($piExcludeIPs)
             {
                 // We can exclude clients with specified ips from 2FA.
-                // getRemoteAddress() only believes the X-Forwarded-For header when the connection comes from
-                // a proxy that the admin listed in "trusted_proxies" in config.php. A client can not fake the address.
+                // getRemoteAddress() only reads the X-Forwarded-For header when the connection comes from
+                // a proxy that the admin listed in "trusted_proxies" in config.php. It then uses the FIRST address
+                // of the header. The proxy must replace the header with the address of its client. A proxy that
+                // appends to a header of the client lets the client choose the address. See the README.
                 $clientIP = $this->request->getRemoteAddress();
                 if (IpMatcher::matches($clientIP, $piExcludeIPs))
                 {
@@ -935,7 +964,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     {
         $checkSSL = $this->getAppValue('checkssl', '');
         $noProxy = $this->getAppValue('noproxy', '');
-        $timeout = $this->getAppValue('pitimeout', '5');
+        // An empty or wrong value in the settings must not reach the HTTP client. On PHP 8 the client throws
+        // a TypeError for "" * 1000. A value below 1 second uses the default of 5 seconds.
+        $timeout = (int)$this->getAppValue('pitimeout', '5');
+        if ($timeout < 1)
+        {
+            $timeout = 5;
+        }
         $options = ['headers' => ['user-agent' => "ownCloud Plugin"],
             // Do not throw an exception for an HTTP error status. The code reads the status and the body.
             // (The old option name "exceptions" is ignored since Guzzle 6.)
