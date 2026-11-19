@@ -34,10 +34,15 @@ that is listed in ``trusted_proxies`` in ``config/config.php``.
 If ownCloud runs behind a reverse proxy, set ``trusted_proxies`` to the address of the proxy.
 Without it, ownCloud sees the address of the proxy for every client.
 
+ownCloud uses the first address in the header. The proxy must replace the header with the address of its client.
+If the proxy appends the address of its client to a header that the client sent, the client can choose the first
+address and skip 2FA. For nginx, use `proxy_set_header X-Forwarded-For $remote_addr;`.
+
 ## Let users log in who are not in privacyIDEA (PassOnNoUser)
 
 If you turn this on, a user whom privacyIDEA does not know logs in without a second factor.
-This only works together with "Trigger challenges".
+This works with and without "Trigger challenges". Without it, the user sends the OTP form once.
+The login then continues without a second factor.
 privacyIDEA also answers "user not found" for every user when the realm in the settings is wrong.
 Then all users log in without a second factor.
 Make sure that the realm is correct before you turn this on. Use the test button on the settings page.

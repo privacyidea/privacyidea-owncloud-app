@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { expect } from "@playwright/test";
 import { totp } from "../../dev/lib/totp.mjs";
 import { USERS, seedOf } from "../../dev/lib/fixtures.mjs";
@@ -14,14 +17,24 @@ export async function loginPassword(page, user, password = USERS[user]?.ocPasswo
 
 // privacyIDEA rejects an OTP that was already used. Remember the last 30 s step per user
 // and wait for the next step when a test needs a second OTP in the same step.
-const lastStep = new Map();
+// The steps are in a file and not in memory: Playwright starts a new worker process after a failed test,
+// and a second run can start inside the same step.
+const STEPS_FILE = path.join(os.tmpdir(), "pi-e2e-otp-steps.json");
+const readSteps = () => {
+  try {
+    return JSON.parse(fs.readFileSync(STEPS_FILE, "utf8"));
+  } catch {
+    return {};
+  }
+};
 export async function freshOtp(user) {
   const seed = seedOf(user).seedHex;
+  const key = `${process.env.DEV_STATE || "default"}:${user}`;
   const step = () => Math.floor(Date.now() / 30000);
-  while (lastStep.get(user) === step()) {
+  while (readSteps()[key] === step()) {
     await new Promise((r) => setTimeout(r, 1000));
   }
-  lastStep.set(user, step());
+  fs.writeFileSync(STEPS_FILE, JSON.stringify({ ...readSteps(), [key]: step() }));
   return totp(seed);
 }
 
@@ -59,6 +72,7 @@ export const DEFAULT_CONFIG = {
   pollInBrowser: "",
   pollInBrowserUrl: "",
   serviceaccount_password: "admin",
+  pitimeout: "5",
 };
 
 /** Put the settings back, so that a test never depends on what an earlier test changed. */

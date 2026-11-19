@@ -26,7 +26,13 @@ function autoSubmitByLength()
 
 function piEventListeners()
 {
-    document.getElementById("otp").addEventListener("keyup", autoSubmitByLength);
+    // The template does not render the OTP field when the user has no OTP token. Then the buttons below
+    // must still work, so do not let a missing field stop this function.
+    const otpField = document.getElementById("otp");
+    if (otpField)
+    {
+        otpField.addEventListener("keyup", autoSubmitByLength);
+    }
 
     // BUTTON LISTENERS
     document.getElementById("u2fButton").addEventListener("click", function ()
