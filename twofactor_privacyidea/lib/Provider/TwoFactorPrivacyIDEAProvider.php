@@ -1183,9 +1183,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $this->log("error", "[processPIResponse] privacyIDEA answered with HTTP 200 and result.status that is not true.");
                 throw new ProcessPIResponseException($this->trans->t("Unexpected answer from privacyIDEA."));
             }
-            elseif ($status == 400 && $passOnNoToken && ($body->result->error->code ?? null) == 904)
+            elseif ($status >= 400 && $status < 500 && $passOnNoToken && ($body->result->error->code ?? null) == 904)
             {
-                // Error 904: privacyIDEA does not know the user.
+                // Error 904: privacyIDEA does not know the user. privacyIDEA sends it with HTTP 400, or with 401 when
+                // the policy hide_auth_error_status (3.14 and later) is set.
                 $this->session->set("pi_noAuthRequired", true);
                 $this->session->set("pi_autoSubmit", true);
                 $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");

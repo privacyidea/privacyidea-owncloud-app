@@ -38,6 +38,10 @@
   ownCloud and refuses an answer from another origin. Passkey logins work the same way.
 * PassOnNoUser did not work. An HTTP error status from privacyIDEA raised an exception.
   The option that turns this off had an old name that is ignored since Guzzle 6.
+* PassOnNoUser did not work with the policy `hide_auth_error_status` of privacyIDEA 3.14. privacyIDEA then sends
+  error 904 with HTTP 401 instead of 400. The app now accepts it with every 4xx status.
+* The test button of the settings page showed "Failed to authenticate." without a reason for a user that
+  privacyIDEA does not know, when PassOnNoUser was on. It now says that privacyIDEA does not know the user.
 * Push and TiQR: The poll request to privacyIDEA sent the transaction ID in the body of a GET request.
   ownCloud 11 does not send it. The ID is now in the query string.
 * The OTP field was hidden when the app could not trigger the challenge, for example with a wrong

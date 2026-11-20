@@ -149,6 +149,25 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertSame([], $this->session->data);
     }
 
+    public function testPassOnNoUserWorksWithTheStatusOfHideAuthErrorStatus(): void
+    {
+        // The policy hide_auth_error_status (privacyIDEA 3.14) answers every authentication error with HTTP 401.
+        $this->config->values["passOnNoUser"] = "1";
+        $this->client->queue($this->response(401, self::NO_USER));
+
+        $this->assertSame("No token found for your user, Login is still enabled.", $this->failureOf("dave", "000000"));
+        $this->assertTrue($this->session->get("pi_noAuthRequired"));
+    }
+
+    public function testPassOnNoUserIgnores904WithAServerError(): void
+    {
+        $this->config->values["passOnNoUser"] = "1";
+        $this->client->queue($this->response(500, self::NO_USER));
+
+        $this->failureOf("dave", "000000");
+        $this->assertNull($this->session->get("pi_noAuthRequired"));
+    }
+
     public function testPassOnNoUserDoesNotHelpAUserThatPrivacyIdeaKnows(): void
     {
         $this->config->values["passOnNoUser"] = "1";
