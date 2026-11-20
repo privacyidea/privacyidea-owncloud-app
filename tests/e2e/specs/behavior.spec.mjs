@@ -181,6 +181,27 @@ test("F: bob logs in with challenge-response", async ({ page }) => {
   await page.waitForURL(/\/apps\/files/);
 });
 
+test("F2: after a refused answer, the button 'New challenge' triggers new challenges", async ({ page }) => {
+  await setAppConfig(admin, "triggerchallenges", "1");
+  await loginPassword(page, "bob");
+  await expect(page.locator("#otp")).toBeVisible();
+  await expect(page.locator("#newChallengeButton")).toHaveCount(0);
+  const [first] = await piAudit("*validate/triggerchallenge*", 1);
+
+  await page.fill("#otp", "000000");
+  await page.click("#submitButton");
+  await expect(page.locator("#newChallengeButton")).toBeVisible();
+  await page.click("#newChallengeButton");
+
+  // The next page triggered new challenges. A valid OTP answers them.
+  await expect(page.locator("#otp")).toBeVisible();
+  await expect.poll(async () => (await piAudit("*validate/triggerchallenge*", 1))[0].number).toBeGreaterThan(first.number);
+  await expect(page.locator("#newChallengeButton")).toHaveCount(0);
+  await page.fill("#otp", await freshOtp("bob"));
+  await page.click("#submitButton");
+  await page.waitForURL(/\/apps\/files/);
+});
+
 test("I: alice has no challenge-response token and still logs in with her OTP", async ({ page }) => {
   await setAppConfig(admin, "triggerchallenges", "1");
   await loginPassword(page, "alice");

@@ -64,6 +64,15 @@ async function pollTransactionInBrowser()
             self.close();
             return;
         }
+        // privacyIDEA 3.9 and later: the user declined the push on the phone, or the challenge was cancelled.
+        // The page sends the form, and the server stops the wait and shows the reason.
+        const challengeStatus = json && json.detail ? json.detail.challenge_status : "";
+        if (challengeStatus === "declined" || challengeStatus === "cancelled")
+        {
+            self.postMessage({'message': 'Polling in browser: Push message ' + challengeStatus + '.', 'status': 'success'});
+            self.close();
+            return;
+        }
     }
     catch (error)
     {

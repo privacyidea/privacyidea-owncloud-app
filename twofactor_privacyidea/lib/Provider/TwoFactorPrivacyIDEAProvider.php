@@ -47,7 +47,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         "pi_tiqrImage", "pi_imgU2F", "pi_imgWebauthn", "pi_imgPush", "pi_imgOTP", "pi_transactionId",
         "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired",
         "pi_uid", "pi_passkeyChallenge", "pi_passkeyTransactionId", "pi_passkeyFetchedAt", "pi_passkeyTriggeredAt",
-        "pi_passkeyFailedAt"];
+        "pi_passkeyFailedAt", "pi_enrollImage", "pi_enrollLink", "pi_noAutoSubmit", "pi_offerNewChallenge",
+        "pi_challengeTime", "pi_pinChangeSeen"];
+    /** @var string[] Session keys of the challenges of one answer. An answer with new challenges replaces all of them. */
+    private const CHALLENGE_KEYS = [
+        "pi_u2fSignRequest", "pi_imgU2F", "pi_webAuthnSignRequest", "pi_imgWebauthn", "pi_pushAvailable", "pi_imgPush",
+        "pi_tiqrAvailable", "pi_tiqrImage", "pi_otpAvailable", "pi_imgOTP", "pi_enrollImage", "pi_enrollLink",
+        "pi_noAutoSubmit", "pi_offerNewChallenge"];
+    /** @var string[] Token types that ask for an OTP. Auto submit is only for a challenge of these types. */
+    private const OTP_TOKEN_TYPES = ["hotp", "totp", "email", "sms", "motp", "yubikey", "yubico", "daplug", "tan", "vasco"];
+    /** @var int privacyIDEA keeps a challenge for 120 seconds by default. After this time, the page stops waiting
+     *           for a push or TiQR confirmation. The time in the answer (valid_until) has no time zone. */
+    private const CHALLENGE_VALIDITY = 120;
     /** @var int A passkey challenge (from /validate/initialize or triggered) is replaced after this many seconds.
      *           privacyIDEA keeps a challenge for 120 seconds by default. */
     private const PASSKEY_CHALLENGE_MAX_AGE = 60;
@@ -206,8 +217,25 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             $template->assign("imgOTP", $this->session->get("pi_imgOTP"));
         }
+        // The QR code and the link of a token that the user enrolls show in every mode.
+        if ($this->session->get("pi_enrollImage") !== null)
+        {
+            $template->assign("enrollImage", $this->session->get("pi_enrollImage"));
+        }
+        if ($this->session->get("pi_enrollLink") !== null)
+        {
+            $template->assign("enrollLink", $this->session->get("pi_enrollLink"));
+            $template->assign("enrollLinkLabel", $this->trans->t("Open the link in the authenticator app"));
+        }
+        // After a declined, expired or refused challenge, the user can ask for a new one.
+        if ($this->session->get("pi_offerNewChallenge") === true)
+        {
+            $template->assign("newChallenge", $this->trans->t("New challenge"));
+        }
 
-        $template->assign("autoSubmitOtpLength", $this->getAppValue("autoSubmitOtpLength", ""));
+        // Auto submit only for a challenge that asks for an OTP, not for a PIN, an email address or a phone number.
+        $template->assign("autoSubmitOtpLength",
+            $this->session->get("pi_noAutoSubmit") === true ? "" : $this->getAppValue("autoSubmitOtpLength", ""));
         $template->assign("pollInBrowser", $this->getAppValue("pollInBrowser", ""));
         $template->assign("pollInBrowserUrl", $this->getAppValue("pollInBrowserUrl", ""));
 
@@ -296,6 +324,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             return true;
         }
 
+        // The button "New challenge": forget the old challenges. The next page triggers new ones, or waits for the PIN.
+        if ($this->request->getParam("newChallenge") === "1")
+        {
+            $this->startNewChallenge();
+        }
+
         $password = $challenge;
         $username = $user->getUID();
 
@@ -322,10 +356,29 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $this->log("debug", "We are processing a TIQR response.");
             }
 
-            if ($this->pollTransaction($transactionID))
+            try
+            {
+                $state = $this->pollTransaction((string)$transactionID);
+            }
+            catch (\Throwable $e)
+            {
+                // Stop the poll. Otherwise the page polls again and again and shows the error each time.
+                $this->session->set("pi_mode", "otp");
+                $this->session->set("pi_offerNewChallenge", true);
+                throw $e;
+            }
+            if ($state === "accept")
             {
                 // The challenge has been answered. Now we need to verify it.
                 $ret = $this->validateCheck($username, "", $transactionID);
+            }
+            elseif ($state === "declined")
+            {
+                $this->stopWaiting($this->trans->t("The login was declined on the phone."));
+            }
+            elseif ($this->challengeIsOld())
+            {
+                $this->stopWaiting($this->trans->t("The login was not confirmed in time."));
             }
             else
             {
@@ -441,6 +494,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     }
                     $this->log("debug", "privacyIDEA: " . $errorMessage);
                     $this->session->set("pi_message", $errorMessage);
+                    // A refused answer to a challenge: maybe the challenge expired. Offer a new one.
+                    if (!isset($ret->detail->multi_challenge) && !empty($transactionID) && ($mode === "otp" || empty($mode)))
+                    {
+                        $this->session->set("pi_offerNewChallenge", true);
+                    }
                 }
             }
             elseif ($mode === "push" || $mode === "tiqr")
@@ -876,19 +934,76 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * Call /validate/polltransaction using transaction_id
      *
      * @param string $transactionID
-     * @return bool
+     * @return string "accept" when the user confirmed, "declined" when the user declined it on the phone or it was
+     *                cancelled (detail.challenge_status, privacyIDEA 3.9 and later), else "pending". privacyIDEA also
+     *                answers "pending" for an expired challenge, so the caller checks the age of the challenge.
      * @throws ProcessPIResponseException|Exception
      */
-    private function pollTransaction(string $transactionID): bool
+    private function pollTransaction(string $transactionID): string
     {
         $options["form_params"] = ["transaction_id" => $transactionID];
         $res = $this->sendRequest("validate/polltransaction", $options, true);
         $ret = $this->processPIResponse($res);
-        // In push and TiQR mode processPIResponse() returns the decoded body without a check.
-        return is_object($ret)
-            && isset($ret->result->status, $ret->result->value)
-            && $ret->result->status === true
-            && $ret->result->value === true;
+        if (is_object($ret) && ($ret->result->status ?? null) === true && ($ret->result->value ?? null) === true)
+        {
+            return "accept";
+        }
+        $challengeStatus = is_object($ret) ? ($ret->detail->challenge_status ?? "") : "";
+        if ($challengeStatus === "declined" || $challengeStatus === "cancelled")
+        {
+            return "declined";
+        }
+        return "pending";
+    }
+
+    /**
+     * Stop the wait for a push or TiQR confirmation: show the reason and offer a new challenge.
+     *
+     * @param string $message
+     * @throws TwoFactorException
+     */
+    private function stopWaiting(string $message): void
+    {
+        $this->log("debug", "[verifyChallenge] Stop the poll: " . $message);
+        $this->session->set("pi_mode", "otp");
+        $this->session->set("pi_offerNewChallenge", true);
+        $this->session->set("pi_message", $message);
+        throw new TwoFactorException($message);
+    }
+
+    /**
+     * @return bool True if the challenges of the session are older than the default validity time of privacyIDEA
+     */
+    private function challengeIsOld(): bool
+    {
+        $time = $this->session->get("pi_challengeTime");
+        return $time !== null && time() - (int)$time > self::CHALLENGE_VALIDITY;
+    }
+
+    /**
+     * The button "New challenge": forget the old challenges of this login. With "Trigger challenges", the next page
+     * triggers new ones. Without it, the user starts a new challenge with the PIN, or types an OTP.
+     *
+     * @throws TwoFactorException
+     */
+    private function startNewChallenge(): void
+    {
+        foreach (self::CHALLENGE_KEYS as $key)
+        {
+            $this->session->remove($key);
+        }
+        $this->removePasskeyChallenge();
+        foreach (["pi_transactionId", "pi_TriggerChallengeSuccess", "pi_challengeTime", "pi_message", "pi_detail",
+                     "pi_loadCounter", "pi_preferredClientMode", "pi_pinChangeSeen"] as $key)
+        {
+            $this->session->remove($key);
+        }
+        $this->session->set("pi_mode", "otp");
+        $this->session->set("pi_hideOTPField", false);
+        $this->log("debug", "[verifyChallenge] The user asked for a new challenge.");
+        throw new TwoFactorException($this->getAppValue("triggerchallenges", "") === "1"
+            ? $this->trans->t("New challenges are on the way.")
+            : $this->trans->t("Enter your PIN or your OTP to start a new challenge."));
     }
 
     /**
@@ -1043,6 +1158,199 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
+     * Keep the challenges of an answer (detail.multi_challenge) in the session, and choose the mode of the page.
+     * The challenges of an earlier answer are removed first, so that no button of an old challenge stays.
+     *
+     * @param object $detail
+     */
+    private function storeChallenges($detail): void
+    {
+        foreach (self::CHALLENGE_KEYS as $key)
+        {
+            $this->session->remove($key);
+        }
+        $this->removePasskeyChallenge();
+        $this->session->set("pi_challengeTime", time());
+
+        $multiChallenge = is_array($detail->multi_challenge) ? $detail->multi_challenge : [];
+        // An answer that enrolls a new token (enroll_via_multichallenge) asks for an email address, a phone number
+        // or the OTP of the new token. Its QR code shows in every mode.
+        $enroll = !empty($detail->enroll_via_multichallenge);
+        // privacyIDEA marks the challenge before a PIN change with pin_change. The next challenges ask for the new PIN.
+        $pinChange = $this->session->get("pi_pinChangeSeen") === true;
+        if (!empty($detail->pin_change))
+        {
+            $this->session->set("pi_pinChangeSeen", true);
+        }
+        $noAutoSubmit = $enroll || $pinChange;
+
+        $preferred = "otp";
+        if (property_exists($detail, "preferred_client_mode"))
+        {
+            $preferred = (string)$detail->preferred_client_mode;
+            $preferred = $preferred === "poll" ? "push" : ($preferred === "interactive" ? "otp" : $preferred);
+        }
+        if (count($multiChallenge) === 0)
+        {
+            $this->session->set("pi_preferredClientMode", "otp");
+            $this->session->set("pi_hideOTPField", "0");
+            return;
+        }
+
+        $hasWebAuthn = false;
+        $webAuthnSignRequest = null;
+        $entryMode = null;
+        foreach ($multiChallenge as $entry)
+        {
+            if (!is_object($entry) || empty($entry->client_mode))
+            {
+                continue;
+            }
+            $type = (string)($entry->type ?? "");
+            $image = (isset($entry->image) && is_string($entry->image) && $entry->image !== "") ? $entry->image : null;
+            switch ($entry->client_mode)
+            {
+                case "u2f":
+                    if (isset($entry->attributes->u2fSignRequest))
+                    {
+                        $this->session->set("pi_u2fSignRequest", $entry->attributes->u2fSignRequest);
+                    }
+                    if ($image !== null)
+                    {
+                        $this->session->set("pi_imgU2F", $image);
+                    }
+                    break;
+                case "webauthn":
+                    if ($type === "passkey")
+                    {
+                        // A passkey has the client mode "webauthn", but it has no sign request.
+                        // All passkey tokens of the user get the same challenge.
+                        $this->session->set("pi_passkeyChallenge", [
+                            "challenge" => (string)($entry->challenge ?? ""),
+                            "rpId" => (string)($entry->rpId ?? ""),
+                            "userVerification" => (string)($entry->userVerification ?? "")]);
+                        $this->session->set("pi_passkeyTransactionId",
+                            (string)($entry->transaction_id ?? $detail->transaction_id ?? ""));
+                        $this->session->set("pi_passkeyTriggeredAt", time());
+                        break;
+                    }
+                    $hasWebAuthn = true;
+                    $webAuthnSignRequest = $this->mergeWebAuthnSignRequest($webAuthnSignRequest,
+                        $entry->attributes->webAuthnSignRequest ?? null);
+                    if ($image !== null)
+                    {
+                        $this->session->set("pi_imgWebauthn", $image);
+                    }
+                    break;
+                case "poll":
+                    if ($type === "push")
+                    {
+                        $this->session->set("pi_pushAvailable", "1");
+                        if ($image !== null)
+                        {
+                            $this->session->set($enroll ? "pi_enrollImage" : "pi_imgPush", $image);
+                        }
+                        $entryMode = $entryMode ?? "push";
+                    }
+                    elseif ($type === "tiqr")
+                    {
+                        $this->session->set("pi_tiqrAvailable", "1");
+                        if (isset($entry->attributes->img) && is_string($entry->attributes->img))
+                        {
+                            $this->session->set("pi_tiqrImage", $entry->attributes->img);
+                        }
+                        $entryMode = $entryMode ?? "tiqr";
+                    }
+                    // Other poll types, for example the registration of a smartphone container, are not supported.
+                    break;
+                default:
+                    if ($image !== null)
+                    {
+                        $this->session->set($enroll ? "pi_enrollImage" : "pi_imgOTP", $image);
+                    }
+                    $this->session->set("pi_hideOTPField", "0");
+                    $this->session->set("pi_otpAvailable", "1");
+                    if (!in_array($type, self::OTP_TOKEN_TYPES, true))
+                    {
+                        // For example a question, an indexed secret or a PIN change. The answer is not an OTP.
+                        $noAutoSubmit = true;
+                    }
+                    $entryMode = $entryMode ?? "otp";
+            }
+            // The otpauth link of a new token lets a user enroll it on the same phone.
+            $link = $entry->link ?? null;
+            if ($enroll && is_string($link) && strpos($link, "otpauth://") === 0)
+            {
+                $this->session->set("pi_enrollLink", $link);
+            }
+        }
+
+        if ($webAuthnSignRequest !== null)
+        {
+            $this->session->set("pi_webAuthnSignRequest", $webAuthnSignRequest);
+        }
+        if ($noAutoSubmit)
+        {
+            $this->session->set("pi_noAutoSubmit", true);
+        }
+        // An answer that enrolls a token has no preferred_client_mode. The mode of its entry shows the QR code
+        // and, for a push token, starts the poll.
+        if (!property_exists($detail, "preferred_client_mode") && $enroll && $entryMode !== null)
+        {
+            $preferred = $entryMode;
+        }
+        // privacyIDEA names the mode of a TiQR token "poll" too. Without a push token, the poll mode is TiQR.
+        if ($preferred === "push" && $this->session->get("pi_pushAvailable") !== "1")
+        {
+            $preferred = $this->session->get("pi_tiqrAvailable") === "1" ? "tiqr" : "otp";
+        }
+        // privacyIDEA names the client mode of a passkey "webauthn". Without a WebAuthn token, use the passkey flow.
+        if ($preferred === "webauthn" && !$hasWebAuthn && $this->session->get("pi_passkeyChallenge") !== null)
+        {
+            $preferred = "passkey";
+        }
+        $this->session->set("pi_preferredClientMode", $preferred);
+        $this->session->set("pi_mode", $preferred);
+    }
+
+    /**
+     * One WebAuthn sign request for all WebAuthn tokens of the user.
+     * privacyIDEA sends one entry per token. Each sign request lists only the credential of its token, and all of
+     * them have the same challenge. The browser takes one request, so the lists of credentials are joined.
+     *
+     * @param object|null $merged The request so far
+     * @param mixed $request The request of the next token
+     * @return object|null
+     */
+    private function mergeWebAuthnSignRequest($merged, $request)
+    {
+        if (!is_object($request))
+        {
+            return $merged;
+        }
+        if ($merged === null)
+        {
+            return $request;
+        }
+        $credentials = isset($merged->allowCredentials) && is_array($merged->allowCredentials) ? $merged->allowCredentials : [];
+        $known = [];
+        foreach ($credentials as $credential)
+        {
+            $known[] = $credential->id ?? null;
+        }
+        foreach ((isset($request->allowCredentials) && is_array($request->allowCredentials)) ? $request->allowCredentials : [] as $credential)
+        {
+            if (!in_array($credential->id ?? null, $known, true))
+            {
+                $credentials[] = $credential;
+                $known[] = $credential->id ?? null;
+            }
+        }
+        $merged->allowCredentials = $credentials;
+        return $merged;
+    }
+
+    /**
      * Process and sort the privacyIDEA API Response
      * Takes relevant info from privacyIDEAs response
      * and adds them to the session, like:
@@ -1059,162 +1367,55 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private function processPIResponse(IResponse $result, ?string $bodyText = null)
     {
         $passOnNoToken = $this->getAppValue('passOnNoUser', false);
-        $errorMessage = "";
-        $mode = $this->request->getParam("mode", "otp");
         $body = json_decode($bodyText ?? (string)$result->getBody());
         $this->log("debug", "Answer of privacyIDEA: " . json_encode($this->answerForLog($body)));
 
-        if ($mode === "push" || $mode === "tiqr")
+        // The HTTP client does not throw for an error status, so the body can be anything (for example
+        // the error page of a proxy). Every path below either returns or throws. This is the same in every mode:
+        // in push and TiQR mode, an error must not look like a push that is not confirmed yet.
+        $status = $result->getStatusCode();
+        if (!is_object($body) || !isset($body->result))
         {
-            return $body;
+            $this->log("error", "[processPIResponse] Unexpected answer from privacyIDEA. HTTP status: " . $status);
+            throw new ProcessPIResponseException($this->trans->t("Unexpected answer from privacyIDEA."));
+        }
+
+        if ($status == 200)
+        {
+            if (isset($body->result->status) && $body->result->status === true)
+            {
+                // The policy no_detail_on_success removes "detail" from a successful answer.
+                $detail = (isset($body->detail) && is_object($body->detail)) ? $body->detail : new \stdClass();
+                $this->session->set("pi_detail", $body->detail ?? null);
+
+                if (property_exists($detail, "transaction_id"))
+                {
+                    $this->session->set("pi_transactionId", $detail->transaction_id);
+                }
+                if (property_exists($detail, "multi_challenge"))
+                {
+                    $this->storeChallenges($detail);
+                }
+                return $body;
+            }
+            // HTTP 200, but result.status is not true.
+            $this->log("error", "[processPIResponse] privacyIDEA answered with HTTP 200 and result.status that is not true.");
+            throw new ProcessPIResponseException($this->trans->t("Unexpected answer from privacyIDEA."));
+        }
+        elseif ($status >= 400 && $status < 500 && $passOnNoToken && ($body->result->error->code ?? null) == 904)
+        {
+            // Error 904: privacyIDEA does not know the user. privacyIDEA sends it with HTTP 400, or with 401 when
+            // the policy hide_auth_error_status (3.14 and later) is set.
+            $this->session->set("pi_noAuthRequired", true);
+            $this->session->set("pi_autoSubmit", true);
+            $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
+            return $this->trans->t("No token found for your user, Login is still enabled.");
         }
         else
         {
-            // The HTTP client does not throw for an error status, so the body can be anything (for example
-            // the error page of a proxy). Every path below either returns or throws.
-            $status = $result->getStatusCode();
-            if (!is_object($body) || !isset($body->result))
-            {
-                $this->log("error", "[processPIResponse] Unexpected answer from privacyIDEA. HTTP status: " . $status);
-                throw new ProcessPIResponseException($this->trans->t("Unexpected answer from privacyIDEA."));
-            }
-
-            if ($status == 200)
-            {
-                if (isset($body->result->status) && $body->result->status === true)
-                {
-                    // The policy no_detail_on_success removes "detail" from a successful answer.
-                    $detail = (isset($body->detail) && is_object($body->detail)) ? $body->detail : new \stdClass();
-                    $this->session->set("pi_detail", $body->detail ?? null);
-
-                    if (property_exists($detail, "transaction_id"))
-                    {
-                        $this->session->set("pi_transactionId", $detail->transaction_id);
-                    }
-
-                    if (property_exists($detail, "multi_challenge"))
-                    {
-                        // Reset the mode for each new challenge
-                        $this->session->set("pi_preferredClientMode", "otp");
-                        $this->removePasskeyChallenge();
-                        $hasWebAuthn = false;
-                        if (property_exists($detail, "preferred_client_mode"))
-                        {
-                            $pref = $detail->preferred_client_mode;
-                            if ($pref === "poll")
-                            {
-                                $this->session->set("pi_preferredClientMode", "push");
-                            }
-                            elseif ($pref === "interactive")
-                            {
-                                $this->session->set("pi_preferredClientMode", "otp");
-                            }
-                            else
-                            {
-                                $this->session->set("pi_preferredClientMode", $pref);
-                            }
-                        }
-
-                        $multiChallenge = $detail->multi_challenge;
-                        if (count($multiChallenge) === 0)
-                        {
-                            $this->session->set("pi_hideOTPField", "0");
-                        }
-                        else
-                        {
-                            for ($i = 0; $i < count($multiChallenge); $i++)
-                            {
-                                if (!empty($multiChallenge[$i]->client_mode))
-                                {
-                                    switch ($multiChallenge[$i]->client_mode)
-                                    {
-                                        case "u2f":
-                                            $this->session->set("pi_u2fSignRequest", $multiChallenge[$i]->attributes->u2fSignRequest);
-                                            if (!empty($multiChallenge[$i]->image))
-                                            {
-                                                $this->session->set("pi_imgU2F", $multiChallenge[$i]->image);
-                                            }
-                                            break;
-                                        case "webauthn":
-                                            if (($multiChallenge[$i]->type ?? "") === "passkey")
-                                            {
-                                                // A passkey has the client mode "webauthn", but it has no sign request.
-                                                // All passkey tokens of the user get the same challenge.
-                                                $this->session->set("pi_passkeyChallenge", [
-                                                    "challenge" => (string)($multiChallenge[$i]->challenge ?? ""),
-                                                    "rpId" => (string)($multiChallenge[$i]->rpId ?? ""),
-                                                    "userVerification" => (string)($multiChallenge[$i]->userVerification ?? "")]);
-                                                $this->session->set("pi_passkeyTransactionId",
-                                                    (string)($multiChallenge[$i]->transaction_id ?? $detail->transaction_id ?? ""));
-                                                $this->session->set("pi_passkeyTriggeredAt", time());
-                                                break;
-                                            }
-                                            $hasWebAuthn = true;
-                                            $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
-                                            if (!empty($multiChallenge[$i]->image))
-                                            {
-                                                $this->session->set("pi_imgWebauthn", $multiChallenge[$i]->image);
-                                            }
-                                            break;
-                                        case "poll":
-                                            if ($multiChallenge[$i]->type === "push")
-                                            {
-                                                $this->session->set("pi_pushAvailable", "1");
-                                                if (!empty($multiChallenge[$i]->image))
-                                                {
-                                                    $this->session->set("pi_imgPush", $multiChallenge[$i]->image);
-                                                }
-                                            }
-                                            elseif ($multiChallenge[$i]->type === "tiqr")
-                                            {
-                                                $this->session->set("pi_tiqrAvailable", "1");
-                                                $this->session->set("pi_tiqrImage", $multiChallenge[$i]->attributes->img);
-                                            }
-                                            break;
-                                        default:
-                                            if (!empty($multiChallenge[$i]->image))
-                                            {
-                                                $this->session->set("pi_imgOTP", $multiChallenge[$i]->image);
-                                            }
-                                            $this->session->set("pi_hideOTPField", "0");
-                                            $this->session->set("pi_otpAvailable", "1");
-                                    }
-                                }
-                            }
-                            // privacyIDEA names the client mode of a passkey "webauthn". Without a WebAuthn token, use the passkey flow.
-                            if ($this->session->get("pi_passkeyChallenge") !== null && !$hasWebAuthn
-                                && $this->session->get("pi_preferredClientMode") === "webauthn")
-                            {
-                                $this->session->set("pi_preferredClientMode", "passkey");
-                            }
-                            // Set the mode to preferred if possible
-                            if (!empty($this->session->get("pi_preferredClientMode")))
-                            {
-                                $this->session->set("pi_mode", $this->session->get("pi_preferredClientMode"));
-                            }
-                        }
-                    }
-                    return $body;
-                }
-                // HTTP 200, but result.status is not true.
-                $this->log("error", "[processPIResponse] privacyIDEA answered with HTTP 200 and result.status that is not true.");
-                throw new ProcessPIResponseException($this->trans->t("Unexpected answer from privacyIDEA."));
-            }
-            elseif ($status >= 400 && $status < 500 && $passOnNoToken && ($body->result->error->code ?? null) == 904)
-            {
-                // Error 904: privacyIDEA does not know the user. privacyIDEA sends it with HTTP 400, or with 401 when
-                // the policy hide_auth_error_status (3.14 and later) is set.
-                $this->session->set("pi_noAuthRequired", true);
-                $this->session->set("pi_autoSubmit", true);
-                $this->log("debug", "PassOnNoUser enabled, skipping 2FA...");
-                return $this->trans->t("No token found for your user, Login is still enabled.");
-            }
-            else
-            {
-                $errorMessage = $body->result->error->message ?? $this->trans->t("Unexpected answer from privacyIDEA.");
-                $this->log("error", "[processPIResponse] privacyIDEA error message: " . $errorMessage);
-                throw new ProcessPIResponseException($errorMessage);
-            }
+            $errorMessage = $body->result->error->message ?? $this->trans->t("Unexpected answer from privacyIDEA.");
+            $this->log("error", "[processPIResponse] privacyIDEA error message: " . $errorMessage);
+            throw new ProcessPIResponseException($errorMessage);
         }
     }
 

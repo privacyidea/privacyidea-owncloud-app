@@ -62,6 +62,22 @@
   PassOnNoUser now continues the login without a click on a button.
 * The answer of a WebAuthn or passkey login was sent with the user agent of the HTTP client ("GuzzleHttp")
   and not with "ownCloud Plugin". A privacyIDEA policy with a user agent condition did not match this request.
+* Push and TiQR: A declined push (privacyIDEA 3.9 and later) or a push without an answer kept the page waiting
+  without end. The page now stops after a decline or after 120 seconds, shows the reason and offers "New challenge".
+* Push and TiQR: An error of privacyIDEA showed as the text of the push, and the page kept polling. The error is now
+  shown and logged, and the poll stops.
+* After a challenge expired, every answer failed until a new login. After a refused answer to a challenge, the page
+  now offers "New challenge". With "Trigger challenges", it triggers new challenges.
+* A user with only a TiQR token got the push page without the QR code. The page now opens in the TiQR mode.
+* WebAuthn: With several WebAuthn tokens, only the last one worked. The app now joins the sign requests.
+* Enroll via multichallenge: The QR code of a push token showed only after a click on "Push", and an enrollment
+  after a push or TiQR login did not show. The QR code now shows in every mode, with the otpauth link.
+* "Auto Submit OTP Length" also sent a new PIN, an email address or a phone number after this many characters.
+  It now applies only to a challenge that asks for an OTP.
+* A new challenge removes the buttons of the old challenge. Before, for example, the "Push" button of an old
+  challenge stayed after a PIN change.
+* Poll in browser: The page still reloaded every 2 to 4 seconds. While the browser polls, it now reloads every
+  30 seconds, so that ownCloud still notices an expired challenge.
 * The text of a challenge showed the HTML of the policies `challenge_text_header` and `challenge_text_footer`
   as tags, and the answer to a check dropped the header and the footer. The text is now plain text with the
   header and the footer.
@@ -73,6 +89,9 @@
   was set. The answer of privacyIDEA then has no details, and the app expected them.
 
 ### Changes that need action
+* The app needs privacyIDEA 3.7 or later. Before 3.7, privacyIDEA sends no `client_mode` with a challenge, and the app
+  could not show push, TiQR, WebAuthn or a triggered challenge. The README said 3.1.
+* With the policy `push_wait`, set "Timeout" to a higher value than `push_wait`. See the README.
 * The certificate check uses the CA bundle of ownCloud. Certificates that the admin imported with
   `occ security:certificates:import` now work.
   A private CA that exists only in the store of the operating system no longer works.

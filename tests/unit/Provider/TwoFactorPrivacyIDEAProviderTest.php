@@ -996,7 +996,8 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->answerTheButtonWithPasskey("alice", $this->enrollmentChainedToPasskeyOf("bob"));
 
         $this->assertSame("Failed to authenticate.", $this->failureOf("alice", ""));
-        $this->assertNull($this->session->get("pi_imgOTP"), "The page must not show the enrollment of bob.");
+        $this->assertNull($this->session->get("pi_enrollImage"), "The page must not show the enrollment of bob.");
+        $this->assertNull($this->session->get("pi_imgOTP"));
         $this->assertNull($this->session->get("pi_transactionId"));
     }
 
@@ -1005,7 +1006,7 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->answerTheButtonWithPasskey("alice", $this->enrollmentChainedToPasskeyOf("alice"));
 
         $this->assertSame("Please scan the QR code and enter the OTP value!", $this->failureOf("alice", ""));
-        $this->assertSame("data:image/png;base64,QR", $this->session->get("pi_imgOTP"));
+        $this->assertSame("data:image/png;base64,QR", $this->session->get("pi_enrollImage"), "It shows in every mode.");
         $this->assertSame("999", $this->session->get("pi_transactionId"), "The OTP of the new token answers this.");
     }
 
@@ -1102,6 +1103,264 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
     public function valuesThatLeaveThePasskeyButtonOn(): array
     {
         return ["no value" => [null], "an empty value" => [""], "the value 1" => ["1"]];
+    }
+
+    // ---- Push and TiQR: the end of the wait
+
+    private const POLL_PENDING = '{"detail":{"challenge_status":"pending"},"result":{"status":true,"value":false}}';
+    private const POLL_DECLINED = '{"detail":{"challenge_status":"declined"},"result":{"status":true,"value":false}}';
+
+    /** The push page sends its form while it waits for the confirmation. */
+    private function pushPageLoads(): void
+    {
+        $this->session->set("pi_uid", "bob");
+        $this->session->set("pi_transactionId", "1234");
+        $this->session->set("pi_message", "Please confirm the authentication on your mobile device!");
+        $this->session->set("pi_challengeTime", time());
+        $this->request->params["mode"] = "push";
+    }
+
+    public function testADeclinedPushStopsTheWait(): void
+    {
+        $this->pushPageLoads();
+        $this->client->queue($this->response(200, self::POLL_DECLINED));
+
+        $this->assertSame("The login was declined on the phone.", $this->failureOf("bob", ""));
+        $this->assertSame("otp", $this->session->get("pi_mode"), "The page stops the poll.");
+        $template = $this->provider->getTemplate(new FakeUser("bob"));
+        $this->assertSame("New challenge", $template->vars["newChallenge"]);
+    }
+
+    public function testAnUnansweredPushStopsAfterTheValidityTime(): void
+    {
+        // privacyIDEA answers "pending" also for an expired challenge.
+        $this->pushPageLoads();
+        $this->session->set("pi_challengeTime", time() - 121);
+        $this->client->queue($this->response(200, self::POLL_PENDING));
+
+        $this->assertSame("The login was not confirmed in time.", $this->failureOf("bob", ""));
+        $this->assertSame("otp", $this->session->get("pi_mode"));
+        $this->assertTrue($this->session->get("pi_offerNewChallenge"));
+    }
+
+    public function testAYoungPushKeepsWaiting(): void
+    {
+        $this->pushPageLoads();
+        $this->client->queue($this->response(200, self::POLL_PENDING));
+
+        $this->assertSame("Please confirm the authentication on your mobile device!", $this->failureOf("bob", ""));
+        $this->assertSame("push", $this->session->get("pi_mode"));
+        $this->assertNull($this->session->get("pi_offerNewChallenge"));
+    }
+
+    public function testAnErrorWhileThePushPageWaitsIsShownAndStopsThePoll(): void
+    {
+        $this->pushPageLoads();
+        $this->client->queue($this->response(500, '{"result":{"status":false,"error":{"code":-500,"message":"database is gone"}}}'));
+
+        $this->assertSame("database is gone", $this->failureOf("bob", ""), "Not the text of the push.");
+        $this->assertSame("otp", $this->session->get("pi_mode"));
+        $this->assertStringContainsString("error: [processPIResponse]", $this->logger->all());
+    }
+
+    // ---- The button "New challenge"
+
+    public function testANewChallengeForgetsTheOldOneAndTriggersAgain(): void
+    {
+        $this->config->values["triggerchallenges"] = "1";
+        $this->client->queue($this->response(200, self::AUTH_OK))->queue($this->response(200, self::CHALLENGE));
+        $this->provider->getTemplate(new FakeUser("bob"));
+        $this->assertSame("1234", $this->session->get("pi_transactionId"));
+
+        $this->request->params["newChallenge"] = "1";
+        $this->assertSame("New challenges are on the way.", $this->failureOf("bob", "000000"));
+        $this->assertNull($this->session->get("pi_transactionId"));
+        $this->assertCount(2, $this->client->requests, "The click alone sends nothing.");
+
+        $this->request->params = [];
+        $this->client->queue($this->response(200, self::AUTH_OK))->queue($this->response(200, self::CHALLENGE));
+        $this->provider->getTemplate(new FakeUser("bob"));
+        $this->assertSame("http://pi.test/validate/triggerchallenge", $this->client->requests[3]["uri"], "The next page triggers again.");
+    }
+
+    public function testARefusedAnswerToAChallengeOffersANewChallenge(): void
+    {
+        $this->session->set("pi_uid", "bob");
+        $this->session->set("pi_transactionId", "1234");
+        $this->client->queue($this->response(200, '{"detail":{"message":"Response did not match the challenge."},"result":{"status":true,"value":false}}'));
+
+        $this->failureOf("bob", "287082");
+
+        $this->assertTrue($this->session->get("pi_offerNewChallenge"));
+    }
+
+    public function testARefusedAnswerWithoutChallengeOffersNothing(): void
+    {
+        $this->client->queue($this->response(200, self::WRONG_OTP));
+
+        $this->failureOf("alice", "000000");
+
+        $this->assertNull($this->session->get("pi_offerNewChallenge"));
+    }
+
+    // ---- The challenges of an answer
+
+    /** An answer of /validate/check with these multi_challenge entries and these extra fields of detail. */
+    private function challengeAnswer(array $entries, array $detail = []): string
+    {
+        return json_encode(["detail" => array_merge(["message" => "challenge", "transaction_id" => "2222",
+            "multi_challenge" => $entries], $detail), "result" => ["status" => true, "value" => false]]);
+    }
+
+    public function testANewChallengeRemovesTheButtonsOfTheOldOne(): void
+    {
+        $this->config->values["triggerchallenges"] = "1";
+        $this->client->queue($this->response(200, self::AUTH_OK))->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "poll", "type" => "push"], ["client_mode" => "interactive", "type" => "hotp"]])));
+        $this->provider->getTemplate(new FakeUser("bob"));
+        $this->assertSame("1", $this->session->get("pi_pushAvailable"));
+
+        // The HOTP answer starts a PIN change with a new transaction.
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "interactive", "type" => "hotp", "attributes" => null]])));
+        $this->failureOf("bob", "287082");
+
+        $this->assertNull($this->session->get("pi_pushAvailable"), "No push button of the old challenge.");
+    }
+
+    public function testTheSignRequestsOfSeveralWebAuthnTokensAreJoined(): void
+    {
+        $sign = function (string $id)
+        {
+            return ["client_mode" => "webauthn", "type" => "webauthn", "attributes" => ["webAuthnSignRequest" =>
+                ["challenge" => "SAME", "rpId" => "localhost", "allowCredentials" => [["id" => $id, "type" => "public-key"]]]]];
+        };
+        $this->client->queue($this->response(200, $this->challengeAnswer([$sign("KEY1"), $sign("KEY2"), $sign("KEY1")])));
+
+        $this->failureOf("erin", "1234");
+
+        $request = $this->session->get("pi_webAuthnSignRequest");
+        $this->assertSame("SAME", $request->challenge);
+        $this->assertSame(["KEY1", "KEY2"], array_map(function ($c) { return $c->id; }, $request->allowCredentials));
+    }
+
+    public function testAUserWithOnlyTiqrGetsTheTiqrPage(): void
+    {
+        // privacyIDEA names the mode of a TiQR token "poll", like a push token.
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "poll", "type" => "tiqr", "attributes" => ["img" => "TIQRQR"]]], ["preferred_client_mode" => "poll"])));
+
+        $this->failureOf("tina", "1234");
+
+        $this->assertSame("tiqr", $this->session->get("pi_mode"));
+        $this->assertSame("TIQRQR", $this->session->get("pi_tiqrImage"));
+    }
+
+    public function testPollWithAPushTokenStaysPush(): void
+    {
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "poll", "type" => "tiqr", "attributes" => ["img" => "Q"]], ["client_mode" => "poll", "type" => "push"]],
+            ["preferred_client_mode" => "poll"])));
+
+        $this->failureOf("bob", "1234");
+
+        $this->assertSame("push", $this->session->get("pi_mode"));
+    }
+
+    public function testThePushEnrollmentShowsItsQrCodeAndPolls(): void
+    {
+        // An enrollment answer has no preferred_client_mode. The page must poll and show the QR code in push mode.
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "poll", "type" => "push", "image" => "PUSHQR", "link" => "otpauth://pipush/PIPU1?url=x"]],
+            ["enroll_via_multichallenge" => true])));
+
+        $template = null;
+        $this->failureOf("bob", "1234");
+        $template = $this->provider->getTemplate(new FakeUser("bob"));
+
+        $this->assertSame("push", $template->vars["mode"]);
+        $this->assertSame("PUSHQR", $template->vars["enrollImage"]);
+        $this->assertSame("otpauth://pipush/PIPU1?url=x", $template->vars["enrollLink"]);
+        $this->assertArrayNotHasKey("imgPush", $template->vars);
+    }
+
+    public function testOnlyAnOtpauthLinkIsShown(): void
+    {
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "interactive", "type" => "hotp", "image" => "QR", "link" => "javascript:alert(1)"]],
+            ["enroll_via_multichallenge" => true])));
+
+        $this->failureOf("bob", "1234");
+
+        $this->assertNull($this->session->get("pi_enrollLink"));
+        $this->assertSame("QR", $this->session->get("pi_enrollImage"));
+    }
+
+    public function testAnEnrollmentAfterAPushLoginIsShown(): void
+    {
+        // The final answer in push mode can chain the enrollment of a new token. Before, push mode did not parse it.
+        $this->pushPageLoads();
+        $this->client->queue($this->response(200, '{"detail":{"challenge_status":"accept"},"result":{"status":true,"value":true}}'))
+            ->queue($this->response(200, $this->challengeAnswer(
+                [["client_mode" => "interactive", "type" => "totp", "image" => "TOTPQR"]], ["enroll_via_multichallenge" => true])));
+
+        $this->failureOf("bob", "");
+
+        $this->assertSame("2222", $this->session->get("pi_transactionId"), "The OTP of the new token answers the new transaction.");
+        $this->assertSame("TOTPQR", $this->session->get("pi_enrollImage"));
+    }
+
+    public function testASmartphoneEnrollmentIsNotOffered(): void
+    {
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "poll", "type" => "smartphone", "image" => "CONTAINERQR"]], ["enroll_via_multichallenge" => true])));
+
+        $this->failureOf("bob", "1234");
+
+        $this->assertNull($this->session->get("pi_enrollImage"));
+        $this->assertSame("otp", $this->session->get("pi_mode"));
+    }
+
+    // ---- Auto submit
+
+    /**
+     * @dataProvider challengesAndAutoSubmit
+     */
+    public function testAutoSubmitIsOnlyForAnOtp(array $entries, array $detail, string $expected): void
+    {
+        $this->config->values["autoSubmitOtpLength"] = "6";
+        $this->client->queue($this->response(200, $this->challengeAnswer($entries, $detail)));
+        $this->failureOf("bob", "1234");
+
+        $template = $this->provider->getTemplate(new FakeUser("bob"));
+
+        $this->assertSame($expected, $template->vars["autoSubmitOtpLength"]);
+    }
+
+    public function challengesAndAutoSubmit(): array
+    {
+        return [
+            "a HOTP challenge" => [[["client_mode" => "interactive", "type" => "hotp"]], [], "6"],
+            "an email challenge" => [[["client_mode" => "interactive", "type" => "email"]], [], "6"],
+            "a question" => [[["client_mode" => "interactive", "type" => "question"]], [], ""],
+            "the enrollment of an SMS token (phone number)" => [[["client_mode" => "interactive", "type" => "sms"]],
+                ["enroll_via_multichallenge" => true], ""],
+        ];
+    }
+
+    public function testAutoSubmitIsOffForTheNewPin(): void
+    {
+        $this->config->values["autoSubmitOtpLength"] = "6";
+        // The OTP challenge before a PIN change has pin_change. Its own OTP can still be sent by itself.
+        $this->client->queue($this->response(200, $this->challengeAnswer([["client_mode" => "interactive", "type" => "hotp"]],
+            ["pin_change" => true])));
+        $this->failureOf("bob", "1234");
+        $this->assertSame("6", $this->provider->getTemplate(new FakeUser("bob"))->vars["autoSubmitOtpLength"]);
+
+        // The next challenge asks for the new PIN.
+        $this->client->queue($this->response(200, $this->challengeAnswer([["client_mode" => "interactive", "type" => "hotp"]])));
+        $this->failureOf("bob", "287082");
+        $this->assertSame("", $this->provider->getTemplate(new FakeUser("bob"))->vars["autoSubmitOtpLength"]);
     }
 
     // ---- The log

@@ -35,6 +35,16 @@ function piEventListeners()
     }
 
     // BUTTON LISTENERS
+    // "New challenge" shows after a declined, expired or refused challenge. The server forgets the old challenges.
+    const newChallengeButton = document.getElementById("newChallengeButton");
+    if (newChallengeButton)
+    {
+        newChallengeButton.addEventListener("click", function ()
+        {
+            piSetValue("newChallenge", "1");
+            document.forms["piLoginForm"].submit();
+        });
+    }
     document.getElementById("u2fButton").addEventListener("click", function ()
     {
         piChangeMode("u2f");

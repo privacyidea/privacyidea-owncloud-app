@@ -27,6 +27,11 @@ function piPollInBrowserFailed(message)
     piSetValue("errorMessage", "Poll in browser error: " + message);
     piSetValue("pollInBrowserFailed", true);
     piEnableElement("pushButton");
+    // The page reloads only slowly while the browser polls. Without the browser poll, use the normal interval.
+    if (typeof piPollByReload === "function")
+    {
+        piPollByReload();
+    }
 }
 
 function piPollInBrowser()
