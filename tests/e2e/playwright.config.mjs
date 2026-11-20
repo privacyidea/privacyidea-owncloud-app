@@ -14,5 +14,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.OWNCLOUD_URL || `http://localhost:${process.env.OWNCLOUD_PORT || 8080}`,
     trace: "retain-on-failure",
+    // The HTTPS stack (dev/env.tls) uses host names that are not in the hosts file. This rule maps them for Chromium.
+    launchOptions: { args: process.env.E2E_HOST_MAP ? [`--host-resolver-rules=${process.env.E2E_HOST_MAP}`] : [] },
   },
 });

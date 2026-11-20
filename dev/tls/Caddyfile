@@ -1,0 +1,17 @@
+# TLS in front of ownCloud and privacyIDEA for the HTTPS stack (compose-tls.yml).
+# The certificate must be valid for both host names. The values come from dev/env.tls.
+{
+	# No automatic certificates and no redirect from port 80. The certificate is a file.
+	auto_https off
+	admin off
+}
+
+https://{$OWNCLOUD_TLS_HOST}:{$OWNCLOUD_TLS_PORT} {
+	tls /certs/fullchain.pem /certs/key.pem
+	reverse_proxy owncloud:8080
+}
+
+https://{$PRIVACYIDEA_TLS_HOST}:{$PRIVACYIDEA_TLS_PORT} {
+	tls /certs/fullchain.pem /certs/key.pem
+	reverse_proxy privacyidea:8080
+}

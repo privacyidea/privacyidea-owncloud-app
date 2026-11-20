@@ -6,5 +6,6 @@ node_modules/
 test-results/
 playwright-report/
 dev/.state/
+dev/env.tls
 vendor/
 .phpunit.result.cache

@@ -63,10 +63,13 @@ export async function setAppConfig(admin, key, value) {
   expect(status, `setValue ${key}`).toBe(200);
 }
 
-/** The app settings that the tests change, with the values that dev/setup.sh writes. */
+/**
+ * The app settings that the tests change, with the values that dev/setup.sh writes.
+ * "Trigger challenges" follows DEV_TRIGGERCHALLENGES, so a run on the HTTPS stack (dev/env.tls) does not switch it off.
+ */
 export const DEFAULT_CONFIG = {
   url: "http://privacyidea:8080",
-  triggerchallenges: "0",
+  triggerchallenges: process.env.DEV_TRIGGERCHALLENGES === "1" ? "1" : "0",
   passkeybutton: "1", // the default of the app
   passOnNoUser: "0",
   piexcludeips: "",

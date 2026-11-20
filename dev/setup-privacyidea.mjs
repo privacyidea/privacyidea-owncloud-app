@@ -8,6 +8,9 @@ import { REALM, RESOLVER, SEEDS_FILE, USERS } from "./lib/fixtures.mjs";
 const BASE = (process.env.PI_URL || "http://privacyidea:8080").replace(/\/$/, "");
 const ADMIN = process.env.PI_ADMIN || "admin";
 const ADMIN_PASS = process.env.PI_ADMIN_PASS || "admin";
+// The relying party id of the passkeys: the host name that the browser uses, or a parent domain of it.
+const RP_ID = process.env.PI_RP_ID || "localhost";
+const LDAP_RESOLVER = "devldap";
 let token = "";
 
 async function api(method, path, body, { allowStatus = [] } = {}) {
@@ -42,9 +45,34 @@ await api("POST", `/resolver/${RESOLVER}`, {
   type: "passwdresolver",
   fileName: "/etc/privacyidea/users.passwd",
 });
-await api("POST", `/realm/${REALM}`, { resolvers: RESOLVER });
+// Optional: the users of an OpenLDAP as a second resolver of the realm (see dev/env.tls.example).
+// The ownCloud users need the same names, for example local users with `DEV_EXTRA_USERS`.
+let resolvers = RESOLVER;
+if (process.env.PI_LDAP_URI) {
+  await api("POST", `/resolver/${LDAP_RESOLVER}`, {
+    type: "ldapresolver",
+    LDAPURI: process.env.PI_LDAP_URI,
+    LDAPBASE: process.env.PI_LDAP_BASE || "ou=people,dc=example,dc=org",
+    BINDDN: process.env.PI_LDAP_BIND_DN || "cn=admin,dc=example,dc=org",
+    BINDPW: process.env.PI_LDAP_BIND_PW || "admin",
+    LOGINNAMEATTRIBUTE: "uid",
+    LDAPSEARCHFILTER: "(uid=*)(objectClass=inetOrgPerson)",
+    USERINFO: JSON.stringify({
+      username: "uid",
+      phone: "telephoneNumber",
+      mobile: "mobile",
+      email: "mail",
+      surname: "sn",
+      givenname: "givenName",
+    }),
+    UIDTYPE: "DN",
+  });
+  resolvers = `${RESOLVER},${LDAP_RESOLVER}`;
+  console.log(`resolver "${LDAP_RESOLVER}" (${process.env.PI_LDAP_URI}) ok`);
+}
+await api("POST", `/realm/${REALM}`, { resolvers });
 await api("POST", `/defaultrealm/${REALM}`);
-console.log(`resolver "${RESOLVER}" and default realm "${REALM}" ok`);
+console.log(`realm "${REALM}" with the resolver(s) "${resolvers}" ok`);
 
 const seeds = {};
 for (const [name, u] of Object.entries(USERS)) {
@@ -79,11 +107,11 @@ await api("POST", "/policy/dev_challenge_response_bob", {
 });
 console.log("policy dev_challenge_response_bob ok");
 
-// Passkeys. The relying party id is the host name of the browser (localhost). A passkey token needs it to enroll.
+// Passkeys. The relying party id is the host name of the browser (default localhost). A passkey token needs it to enroll.
 // "passkey_trigger_by_pin" lets /validate/triggerchallenge and /validate/check send a passkey challenge for a user.
 await api("POST", "/policy/dev_passkey_rp", {
   scope: "enrollment",
-  action: "webauthn_relying_party_id=localhost,webauthn_relying_party_name=ownCloud dev",
+  action: `webauthn_relying_party_id=${RP_ID},webauthn_relying_party_name=ownCloud dev`,
   active: true,
 });
 await api("POST", "/policy/dev_passkey_trigger", {
@@ -91,4 +119,4 @@ await api("POST", "/policy/dev_passkey_trigger", {
   action: "passkey_trigger_by_pin",
   active: true,
 });
-console.log("policies dev_passkey_rp and dev_passkey_trigger ok");
+console.log(`policies dev_passkey_rp (relying party id "${RP_ID}") and dev_passkey_trigger ok`);

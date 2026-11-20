@@ -1,0 +1,37 @@
+# Overlay for the HTTPS stack. A reverse proxy (Caddy) terminates TLS for ownCloud and for privacyIDEA,
+# so that a real authenticator (Windows Hello, a security key, a phone) can register and use a passkey
+# on a real host name. See "Test passkeys with a real authenticator" in dev/README.md.
+#
+#   cp dev/env.tls.example dev/env.tls      # then set TLS_CERT_FILE and TLS_KEY_FILE
+#   DEV_ENV_FILE=dev/env.tls ./dev/setup.sh
+#
+# The setup script adds this file with -f. The values come from dev/env.tls.
+
+services:
+  owncloud:
+    environment:
+      # The setup script writes the rest of the proxy settings (trusted proxy, overwrite protocol and host).
+      OWNCLOUD_DOMAIN: ${OWNCLOUD_TLS_HOST:?Set OWNCLOUD_TLS_HOST in dev/env.tls}:${OWNCLOUD_TLS_PORT:?Set OWNCLOUD_TLS_PORT}
+
+  proxy:
+    image: caddy:2-alpine
+    depends_on:
+      owncloud:
+        condition: service_healthy
+      privacyidea:
+        condition: service_healthy
+    ports:
+      # The proxy listens on the same port inside and outside, so that the host name and port in the
+      # browser (the origin of the passkey) are the ones that ownCloud and privacyIDEA see.
+      - "127.0.0.1:${OWNCLOUD_TLS_PORT}:${OWNCLOUD_TLS_PORT}"
+      - "127.0.0.1:${PRIVACYIDEA_TLS_PORT:?Set PRIVACYIDEA_TLS_PORT in dev/env.tls}:${PRIVACYIDEA_TLS_PORT}"
+    environment:
+      OWNCLOUD_TLS_HOST: ${OWNCLOUD_TLS_HOST}
+      OWNCLOUD_TLS_PORT: ${OWNCLOUD_TLS_PORT}
+      PRIVACYIDEA_TLS_HOST: ${PRIVACYIDEA_TLS_HOST:?Set PRIVACYIDEA_TLS_HOST in dev/env.tls}
+      PRIVACYIDEA_TLS_PORT: ${PRIVACYIDEA_TLS_PORT}
+    volumes:
+      - ./dev/tls/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The certificate and the key stay where they are. Do not copy them into this repository.
+      - ${TLS_CERT_FILE:?Set TLS_CERT_FILE in dev/env.tls}:/certs/fullchain.pem:ro
+      - ${TLS_KEY_FILE:?Set TLS_KEY_FILE in dev/env.tls}:/certs/key.pem:ro

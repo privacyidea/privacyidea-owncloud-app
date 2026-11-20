@@ -13,8 +13,9 @@ test.beforeAll(async ({ browser }) => {
   admin = await adminPage(browser);
 });
 
-// The users that get passkeys in these tests. The tests remove the tokens before and after each test.
-const PASSKEY_USERS = ["erin", "frank"];
+// The users with passkeys. user001 comes from the OpenLDAP and exists only on the HTTPS stack (dev/env.tls).
+// privacyIDEA answers a token list of an unknown user with an error, so the list must not name it on other stacks.
+const PASSKEY_USERS = ["erin", "frank", ...(process.env.PI_LDAP_URI ? ["user001"] : [])];
 const removeAllPasskeys = async () => {
   for (const user of PASSKEY_USERS) await removePasskeys(user);
 };
@@ -114,6 +115,15 @@ test("P4: with the passkey button off, a user without a passkey sees the OTP fie
   // The app did not ask privacyIDEA for a challenge.
   const [after] = await piAudit("*validate/initialize*", 1);
   expect(after?.number).toBe(before?.number);
+});
+
+// Only on the HTTPS stack with the LDAP users (dev/env.tls): privacyIDEA knows user001 from the OpenLDAP,
+// and ownCloud has a local user with the same name.
+test("P5: a user from the LDAP resolver of privacyIDEA logs in with a passkey", async ({ browser }) => {
+  test.skip(!process.env.PI_LDAP_URI, "Needs the LDAP users of dev/env.tls");
+  const { page } = await pageWithPasskeys(browser, ["user001"]);
+  await loginPassword(page, "user001", "Test1234!");
+  await page.waitForURL(/\/apps\/files/);
 });
 
 // ---- The passkey button without a triggered challenge. The app asks privacyIDEA for a challenge with /validate/initialize.

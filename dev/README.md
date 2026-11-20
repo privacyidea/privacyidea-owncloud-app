@@ -85,6 +85,39 @@ Copy the file and change `OWNCLOUD_VERSION` to test another version.
 Delete the second stack with
 `docker compose -f compose-dev.yml --env-file dev/env.oc10 -p pi-owncloud-dev10 down -v`.
 
+## Test passkeys with a real authenticator
+
+The passkey tests use a virtual authenticator. To try a real one (Windows Hello, a security key or a phone), use the HTTPS stack.
+A browser allows passkeys on HTTPS and on `localhost`, so a key on this PC also works with `http://localhost:8080`.
+The HTTPS stack adds a real host name. A reverse proxy (Caddy, `compose-tls.yml`) terminates TLS for ownCloud and for privacyIDEA.
+The stack has its own ports and volumes, like the stack for ownCloud 10. The relying party id of the passkeys is `lab.local`.
+
+1. Make a certificate and a key (PEM) for the names `owncloud-dev.lab.local` and `pi-dev.lab.local`. The browser must trust the CA.
+   For example, run `mkcert owncloud-dev.lab.local pi-dev.lab.local`.
+2. Copy `dev/env.tls.example` to `dev/env.tls`. The file is not in git. Set `TLS_CERT_FILE` and `TLS_KEY_FILE`.
+   Use paths that WSL can read. Do not copy the key into this repository.
+3. Add this line to the hosts file. You need administrator rights for this:
+   `127.0.0.1 owncloud-dev.lab.local pi-dev.lab.local`
+4. Run `DEV_ENV_FILE=dev/env.tls ./dev/setup.sh`.
+5. Open `https://pi-dev.lab.local:8444` and log in as `admin` with the password `admin`.
+   Enroll a passkey token for the user `user001` in the realm `dev`.
+6. Open `https://owncloud-dev.lab.local:8443` and log in as `user001` with the password `Test1234!`. The browser asks for the passkey.
+
+The users `user001` to `user100` come from the OpenLDAP of the privacyidea repository (container `pi-openldap-test`).
+privacyIDEA reads them with a second resolver in the realm `dev`. ownCloud has local users with the same names
+(`DEV_EXTRA_USERS` in `dev/env.tls`: `user001` to `user003`). Start the OpenLDAP first. The setup script connects its container to the network of this stack.
+Remove the `PI_LDAP_*` and `DEV_EXTRA_USERS` lines from `dev/env.tls` to use only the local test users. Then enroll the passkey for `erin`.
+
+The setup script turns on "Trigger challenges" for this stack. Then the browser asks for the passkey by itself.
+Without it, the login page shows only the "Passkey" button.
+The proxy settings of ownCloud (trusted proxy, https links) are in the setup script too.
+Firefox has its own certificate store. It trusts the CA only after you import it or set `security.enterprise_roots.enabled`.
+A phone must resolve the two names too. This is not set up here.
+
+To run the passkey tests on this stack, use `./dev/test-e2e.sh dev/env.tls specs/passkey.spec.mjs`.
+Run only this file. The other tests expect a direct connection to ownCloud. The variable `E2E_HOST_MAP` in `dev/env.tls`
+lets Chromium find the host names without the hosts file entry.
+
 ## Test another copy of the app
 
 Set `APP_DIR` in a file named `.env` in the repository root. The file is not in git.
@@ -100,6 +133,7 @@ On Windows with Docker in WSL, use a path that WSL can read, for example `/mnt/c
 | Path | Content |
 | --- | --- |
 | `compose-dev.yml` | The services. |
+| `compose-tls.yml`, `dev/tls/Caddyfile`, `dev/env.tls.example` | The HTTPS stack for passkeys with a real authenticator. |
 | `dev/setup.sh` | Starts the stack, prepares privacyIDEA, creates users, writes the app configuration. |
 | `dev/setup-privacyidea.mjs` | Creates the resolver, realm, tokens and policies through the privacyIDEA REST API. |
 | `dev/lib/fixtures.mjs` | Test users and token seeds. Shared with the tests. |
