@@ -1,0 +1,54 @@
+name: Release
+
+# Set a tag "v<version>" and push it. The workflow makes a GitHub release for the tag.
+# The text of the release is the section of Changelog.md for the version.
+# The workflow does not attach an archive and does not sign the app. See dev/README.md.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Make sure that the tag has the version of the app
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          app_version=$(sed -n 's:.*<version>\(.*\)</version>.*:\1:p' twofactor_privacyidea/appinfo/info.xml)
+          if [ "$version" != "$app_version" ]; then
+            echo "::error::The tag $TAG does not match <version>$app_version</version> in twofactor_privacyidea/appinfo/info.xml."
+            exit 1
+          fi
+
+      - name: Get the section of the changelog
+        env:
+          TAG: ${{ github.ref_name }}
+        run: sh .github/scripts/changelog-section.sh "${TAG#v}" > "$RUNNER_TEMP/notes.md"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
