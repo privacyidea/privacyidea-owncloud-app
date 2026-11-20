@@ -211,6 +211,22 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertSame("jwt-token", $this->client->requests[1]["options"]["headers"]["PI-Authorization"]);
     }
 
+    public function testTheTriggerSendsTheRealmOnlyWhenItIsSet(): void
+    {
+        // An empty realm makes privacyIDEA ignore the realm in a user name like bob@sales.
+        $this->config->values["triggerchallenges"] = "1";
+        $this->client->queue($this->response(200, self::AUTH_OK))->queue($this->response(200, self::CHALLENGE));
+        $this->provider->getTemplate(new FakeUser("bob@sales"));
+        $this->assertSame(["user" => "bob@sales"], $this->client->requests[1]["options"]["form_params"]);
+
+        $this->setUp();
+        $this->config->values["triggerchallenges"] = "1";
+        $this->config->values["realm"] = "dev";
+        $this->client->queue($this->response(200, self::AUTH_OK))->queue($this->response(200, self::CHALLENGE));
+        $this->provider->getTemplate(new FakeUser("bob"));
+        $this->assertSame(["user" => "bob", "realm" => "dev"], $this->client->requests[1]["options"]["form_params"]);
+    }
+
     public function testGetTemplateShowsAMessageWhenTheTriggerFails(): void
     {
         $this->config->values["triggerchallenges"] = "1";

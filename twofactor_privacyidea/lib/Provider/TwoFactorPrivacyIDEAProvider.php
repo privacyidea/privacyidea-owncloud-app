@@ -553,7 +553,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $realm = $this->getAppValue('realm', '');
         $token = $this->getAuthToken($adminUser, $adminPassword);
 
-        $options["form_params"] = ["user" => $username, "realm" => $realm];
+        // Send the realm only if it is set, as sendRequest() does for /validate/check. An empty realm makes privacyIDEA
+        // ignore the realm in a user name like bob@sales, and then the trigger finds another user than the check.
+        $options["form_params"] = ["user" => $username];
+        if ($realm !== "")
+        {
+            $options["form_params"]["realm"] = $realm;
+        }
         $options["headers"]["PI-Authorization"] = $token;
 
         $client = $this->httpClientService->newClient();

@@ -23,6 +23,9 @@
 * Security: The state of a login in the session (for example the PassOnNoUser state) belongs to one user.
   The app removes it when another user uses the session.
 * Security: The log no longer contains the OTP or the PIN at debug level.
+* Security: With an empty "User Realm", the request that triggers the challenges sent an empty realm. privacyIDEA then
+  ignored the realm in a user name like `bob@sales` and looked in the default realm. With PassOnNoUser, such a user
+  could log in without a second factor. The app now sends the realm only when it is set.
 * Security: The debug log no longer contains the answers of privacyIDEA in full. An answer can hold the QR code and
   the seed of a token that the user enrolls via multichallenge. The log now has a short form of each answer.
 * Security: The debug log no longer prints the exception of a failed request for the token of the service account.
