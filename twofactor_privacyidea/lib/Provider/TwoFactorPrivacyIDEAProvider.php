@@ -434,15 +434,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 }
                 else
                 {
-                    if (isset($ret->detail->messages))
+                    $errorMessage = $this->challengeText($ret->detail ?? null);
+                    if ($errorMessage === "")
                     {
-                        $errorMessage = implode(", ", array_unique($ret->detail->messages));
+                        $errorMessage = $this->trans->t("Failed to authenticate.");
                     }
-                    else
-                    {
-                        $errorMessage = $ret->detail->message ?? $this->trans->t("Failed to authenticate.");
-                        $this->log("debug", "privacyIDEA:" . $errorMessage);
-                    }
+                    $this->log("debug", "privacyIDEA: " . $errorMessage);
                     $this->session->set("pi_message", $errorMessage);
                 }
             }
@@ -572,7 +569,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         }
         else
         {
-            return (string)($ret->detail->message ?? "");
+            return $this->challengeText($ret->detail ?? null);
         }
     }
 
@@ -969,6 +966,32 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $errorMessage = $this->trans->t("Failed to fetch authentication token.");
         }
         throw new AdminAuthException($errorMessage);
+    }
+
+    /**
+     * The text of a challenge or a refusal for the user, as plain text.
+     * detail.message has the text with the header and the footer of the policies challenge_text_header and
+     * challenge_text_footer. These can hold HTML, which the page would show as tags, so the tags become spaces.
+     * detail.messages has the single texts without header and footer. It is the fallback.
+     *
+     * @param mixed $detail
+     * @return string
+     */
+    private function challengeText($detail): string
+    {
+        if (!is_object($detail))
+        {
+            return "";
+        }
+        $text = $detail->message ?? null;
+        if (!is_string($text) || $text === "")
+        {
+            $messages = isset($detail->messages) && is_array($detail->messages) ? $detail->messages : [];
+            $text = implode(", ", array_unique(array_filter($messages, "is_string")));
+        }
+        $text = html_entity_decode(strip_tags(str_replace("<", " <", $text)), ENT_QUOTES | ENT_HTML5, "UTF-8");
+        // preg_replace() returns null for text that is not valid UTF-8.
+        return trim(preg_replace('/\s+/u', " ", $text) ?? $text);
     }
 
     /**

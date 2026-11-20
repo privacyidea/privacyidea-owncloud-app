@@ -100,6 +100,28 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertTrue($this->verify("alice", "123456"));
     }
 
+    /** A challenge with the header and the footer of the policies challenge_text_header and challenge_text_footer. */
+    private const CHALLENGE_WITH_HEADER = '{"detail":{"message":"These are your options:<ul><li>please enter otp: </li>\n</ul>.<b>Authenticate &amp; go!</b>",'
+        . '"messages":["please enter otp: "],"transaction_id":"1234","multi_challenge":[{"client_mode":"interactive","type":"hotp"}]},'
+        . '"result":{"status":true,"value":false}}';
+
+    public function testTheChallengeTextOfACheckIsPlainTextWithHeaderAndFooter(): void
+    {
+        $this->client->queue($this->response(200, self::CHALLENGE_WITH_HEADER));
+
+        $this->assertSame("These are your options: please enter otp: . Authenticate & go!", $this->failureOf("alice", "1234"));
+    }
+
+    public function testTheChallengeTextOfATriggerIsPlainText(): void
+    {
+        $this->config->values["triggerchallenges"] = "1";
+        $this->client->queue($this->response(200, self::AUTH_OK))->queue($this->response(200, self::CHALLENGE_WITH_HEADER));
+
+        $template = $this->provider->getTemplate(new FakeUser("alice"));
+
+        $this->assertSame("These are your options: please enter otp: . Authenticate & go!", $template->vars["message"]);
+    }
+
     public function testUnknownUserWithoutPassOnNoUserShowsTheError(): void
     {
         $this->client->queue($this->response(400, self::NO_USER));
