@@ -44,7 +44,7 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
 
     <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']) : ?>
         <label>
-            <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off" required
+            <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="one-time-code" required
                    autofocus>
         </label>
         <br>
