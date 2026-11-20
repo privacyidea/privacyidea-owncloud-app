@@ -23,6 +23,8 @@
 * Security: The state of a login in the session (for example the PassOnNoUser state) belongs to one user.
   The app removes it when another user uses the session.
 * Security: The log no longer contains the OTP or the PIN at debug level.
+* Security: The debug log no longer contains the answers of privacyIDEA in full. An answer can hold the QR code and
+  the seed of a token that the user enrolls via multichallenge. The log now has a short form of each answer.
 * Security: The debug log no longer prints the exception of a failed request for the token of the service account.
   The trace of that exception can contain the password of the service account.
 * Security: The app no longer stores the token of the service account in the session of the user.

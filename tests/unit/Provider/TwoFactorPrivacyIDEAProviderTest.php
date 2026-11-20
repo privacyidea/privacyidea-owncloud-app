@@ -1043,6 +1043,26 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertStringContainsString("pass=%2A%2A%2A", $this->logger->all());
     }
 
+    public function testTheLogHasNoSeedOfAnEnrolledToken(): void
+    {
+        // enroll_via_multichallenge: the answer has the otpauth link with the seed and the QR code of the new token.
+        $enroll = '{"detail":{"client_mode":"interactive","enroll_via_multichallenge":true,'
+            . '"image":"data:image/png;base64,QRDATA","link":"otpauth://hotp/OATH1?secret=SEEDSEEDSEED&counter=1",'
+            . '"message":"Please scan the QR code and enter the OTP value!","multi_challenge":[{"client_mode":"interactive",'
+            . '"image":"data:image/png;base64,QRDATA","link":"otpauth://hotp/OATH1?secret=SEEDSEEDSEED&counter=1",'
+            . '"message":"Please scan the QR code and enter the OTP value!","serial":"OATH1","transaction_id":"999","type":"hotp"}],'
+            . '"serial":"OATH1","transaction_id":"999","type":"hotp"},'
+            . '"result":{"authentication":"CHALLENGE","status":true,"value":false}}';
+        $this->client->queue($this->response(200, $enroll));
+
+        $this->failureOf("alice", "123456");
+
+        $log = $this->logger->all();
+        $this->assertStringNotContainsString("SEEDSEEDSEED", $log);
+        $this->assertStringNotContainsString("QRDATA", $log);
+        $this->assertStringContainsString('"transaction_id":"999"', $log, "The log still tells what happened.");
+    }
+
     public function testTheLogHasNoPasswordOfTheServiceAccount(): void
     {
         // The trace of an exception shows the arguments of every function when PHP keeps them.

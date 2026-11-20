@@ -210,7 +210,8 @@ Make sure that the realm is correct before you turn this on. Use the test button
 ## Troubleshooting
 
 The app writes to the ownCloud log under the app name `privacyIDEA`.
-To see every request, run `occ log:manage --level debug`. The log does not contain the OTP or the PIN.
+To see every request, run `occ log:manage --level debug`. The log does not contain the OTP, the PIN or the
+QR code and the seed of a token that a user enrolls.
 
 | Problem | Cause | What to do |
 | --- | --- | --- |

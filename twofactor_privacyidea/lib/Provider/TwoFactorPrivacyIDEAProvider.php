@@ -972,6 +972,54 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
+     * A short form of an answer of privacyIDEA for the debug log.
+     * An answer can hold secrets, for example the otpauth link (with the seed) and the QR code of a token that the
+     * user enrolls via multichallenge. The log gets only the fields that tell what happened.
+     *
+     * @param mixed $body The decoded answer
+     * @return array
+     */
+    private function answerForLog($body): array
+    {
+        if (!is_object($body))
+        {
+            return ["answer" => "not JSON"];
+        }
+        $short = [
+            "status" => $body->result->status ?? null,
+            "value" => $body->result->value ?? null,
+            "authentication" => $body->result->authentication ?? null];
+        if (isset($body->result->error))
+        {
+            $short["error"] = ["code" => $body->result->error->code ?? null, "message" => $body->result->error->message ?? null];
+        }
+        $detail = $body->detail ?? null;
+        if (is_object($detail))
+        {
+            foreach (["message", "transaction_id", "preferred_client_mode", "challenge_status", "username", "serial",
+                         "enroll_via_multichallenge"] as $key)
+            {
+                if (isset($detail->$key) && is_scalar($detail->$key))
+                {
+                    $short[$key] = $detail->$key;
+                }
+            }
+            if (isset($detail->multi_challenge) && is_array($detail->multi_challenge))
+            {
+                $short["multi_challenge"] = [];
+                foreach ($detail->multi_challenge as $entry)
+                {
+                    $short["multi_challenge"][] = [
+                        "type" => $entry->type ?? null,
+                        "client_mode" => $entry->client_mode ?? null,
+                        "serial" => $entry->serial ?? null];
+                }
+            }
+        }
+        return $short;
+    }
+
+    /**
      * Process and sort the privacyIDEA API Response
      * Takes relevant info from privacyIDEAs response
      * and adds them to the session, like:
@@ -991,7 +1039,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $errorMessage = "";
         $mode = $this->request->getParam("mode", "otp");
         $body = json_decode($bodyText ?? (string)$result->getBody());
-        $this->log("debug", print_r(json_encode($body), true));
+        $this->log("debug", "Answer of privacyIDEA: " . json_encode($this->answerForLog($body)));
 
         if ($mode === "push" || $mode === "tiqr")
         {
