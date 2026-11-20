@@ -41,6 +41,8 @@ The password of every test user in ownCloud is `Test1234!`.
 | `bob` | One TOTP token and a challenge-response policy | Login after a triggered challenge. |
 | `carol` | No token | A user without a token. |
 | `dave` | Does not exist | PassOnNoUser. |
+| `erin` | No token. The passkey tests enroll a passkey. | Login with a passkey. |
+| `frank` | No token. The passkey tests enroll a passkey. | The passkey of another user must fail. |
 
 The ownCloud group `admin` is excluded from 2FA. This keeps the admin login simple.
 
@@ -57,6 +59,11 @@ The tests use a real browser. They log in as the test users and change app setti
 in the same way as the admin settings page. They never call `docker`.
 Every test starts from the default settings (`DEFAULT_CONFIG` in `tests/e2e/helpers.mjs`).
 Use one worker only. privacyIDEA rejects an OTP that was used before.
+
+The passkey tests (`tests/e2e/specs/passkey.spec.mjs`) use a virtual authenticator of Chromium (DevTools protocol).
+Each test enrolls its own passkeys for `erin` and `frank` in privacyIDEA, because the virtual authenticator
+forgets its credentials when the page closes. The setup script writes the two policies that the tests need:
+`dev_passkey_rp` (relying party id `localhost`) and `dev_passkey_trigger` (`passkey_trigger_by_pin`).
 
 The ids in the test names (B1, C4, S1, E, ...) are ids of the review of the app. They only group the tests.
 If a defect is known and not fixed, declare its test with `test.fail()`.
@@ -173,6 +180,9 @@ The workflow does not attach an archive and does not sign the app. The release f
 - Docker runs in a WSL distro on some Windows hosts. WSL stops the distro when no session is open.
   The containers then exit with code 255. Run `docker compose -f compose-dev.yml up -d --wait` to start them again.
   To prevent this, set `vmIdleTimeout=-1` in `%UserProfile%\.wslconfig` or keep a WSL terminal open.
+- Git on Windows can check out shell scripts with CRLF line endings. A script with CRLF fails in the container with
+  `set: illegal option -`. The file `.gitattributes` keeps LF for `*.sh` and `*.passwd`.
+  If a file in an older clone still has CRLF, remove the carriage returns with `sed -i 's/\r$//' <file>`.
 - Environment variables that you set in a Windows shell do not reach `docker compose`.
   Put values in `.env` or pass `--env-file`.
 - Quoting breaks when a command with `sh -c '...'` goes through `wsl.exe`. Put the commands in a script file

@@ -78,3 +78,17 @@ await api("POST", "/policy/dev_challenge_response_bob", {
   active: true,
 });
 console.log("policy dev_challenge_response_bob ok");
+
+// Passkeys. The relying party id is the host name of the browser (localhost). A passkey token needs it to enroll.
+// "passkey_trigger_by_pin" lets /validate/triggerchallenge and /validate/check send a passkey challenge for a user.
+await api("POST", "/policy/dev_passkey_rp", {
+  scope: "enrollment",
+  action: "webauthn_relying_party_id=localhost,webauthn_relying_party_name=ownCloud dev",
+  active: true,
+});
+await api("POST", "/policy/dev_passkey_trigger", {
+  scope: "authentication",
+  action: "passkey_trigger_by_pin",
+  active: true,
+});
+console.log("policies dev_passkey_rp and dev_passkey_trigger ok");
