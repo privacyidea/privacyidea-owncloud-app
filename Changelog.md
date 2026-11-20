@@ -4,6 +4,8 @@
 * Passkeys: A user can log in with a passkey as the second factor. The login page has a "Passkey" button.
   The app gets the challenge from privacyIDEA with `/validate/initialize`, so the button needs no service account
   and no policy `passkey_trigger_by_pin`. The setting "Show the passkey button" in the admin settings hides it.
+  This challenge belongs to no user, so the app compares the owner of the passkey that privacyIDEA names
+  with the ownCloud user, and refuses another user.
   If privacyIDEA triggers a passkey challenge (policy `passkey_trigger_by_pin` and the setting "Trigger challenges"),
   the browser asks for the passkey by itself. The user needs a passkey token in privacyIDEA 3.11.1 or later.
   See the README.
@@ -25,6 +27,10 @@
   The trace of that exception can contain the password of the service account.
 * Security: The app no longer stores the token of the service account in the session of the user.
 * Security: Error messages of the HTTP client no longer show the internal URL of the privacyIDEA server to the user.
+* Security: For a WebAuthn login, the app sent privacyIDEA the origin that the browser posted. privacyIDEA compares
+  this origin with the origin that the browser signed, so the check compared two values from the browser.
+  A page on another host under the same relying party id could relay a login. The app now sends the origin of
+  ownCloud and refuses an answer from another origin. Passkey logins work the same way.
 * PassOnNoUser did not work. An HTTP error status from privacyIDEA raised an exception.
   The option that turns this off had an old name that is ignored since Guzzle 6.
 * Push and TiQR: The poll request to privacyIDEA sent the transaction ID in the body of a GET request.
@@ -49,6 +55,8 @@
   and not with "ownCloud Plugin". A privacyIDEA policy with a user agent condition did not match this request.
 * The OTP field has `autocomplete="one-time-code"`. Chrome no longer fills the saved password of the user into it.
   Firefox 159 still does, because it ignores this value.
+* A successful login ended in "Failed to communicate with privacyIDEA." when the policy `no_detail_on_success`
+  was set. The answer of privacyIDEA then has no details, and the app expected them.
 
 ### Changes that need action
 * The certificate check uses the CA bundle of ownCloud. Certificates that the admin imported with
@@ -57,6 +65,9 @@
   If your privacyIDEA server uses such a CA, import its certificate with `occ security:certificates:import`.
 * If ownCloud runs behind a reverse proxy and you use excluded IP addresses, set `trusted_proxies` in `config.php`.
   Without it, ownCloud sees the address of the proxy. See the README.
+* If ownCloud runs behind a reverse proxy and users log in with WebAuthn or passkeys, set `overwriteprotocol` and
+  `overwritehost` in `config.php`. Without them, ownCloud does not know its own address, and these logins fail.
+  See the README.
 
 ### Note for the release
 * `appinfo/signature.json` is out of date. Sign the app again before the release.

@@ -114,6 +114,10 @@ namespace OCP {
             public function getParam($key, $default = null);
 
             public function getRemoteAddress();
+
+            public function getServerProtocol();
+
+            public function getServerHost();
         }
     }
 

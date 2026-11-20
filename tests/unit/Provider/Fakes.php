@@ -104,6 +104,21 @@ class FakeRequest implements IRequest
     {
         return $this->remoteAddress;
     }
+
+    /** @var string What ownCloud knows about its own address (overwriteprotocol, overwritehost or the request). */
+    public $serverProtocol = "http";
+    /** @var string */
+    public $serverHost = "localhost:8080";
+
+    public function getServerProtocol()
+    {
+        return $this->serverProtocol;
+    }
+
+    public function getServerHost()
+    {
+        return $this->serverHost;
+    }
 }
 
 class FakeGroupManager implements IGroupManager
@@ -146,8 +161,20 @@ class FakeResponse implements IResponse
         $this->body = $body;
     }
 
+    /** @var bool */
+    private $bodyRead = false;
+
+    /**
+     * Like the response of ownCloud (getContents() of the stream): the body comes only once.
+     * A second call returns an empty string, so a test finds code that reads the body twice.
+     */
     public function getBody()
     {
+        if ($this->bodyRead)
+        {
+            return "";
+        }
+        $this->bodyRead = true;
         return $this->body;
     }
 
