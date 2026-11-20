@@ -92,6 +92,14 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertSame("wrong otp pin", $this->failureOf("alice", "000000"));
     }
 
+    public function testASuccessWithoutDetailsLogsIn(): void
+    {
+        // The policy no_detail_on_success removes "detail" from a successful answer.
+        $this->client->queue($this->response(200, '{"result":{"status":true,"value":true}}'));
+
+        $this->assertTrue($this->verify("alice", "123456"));
+    }
+
     public function testUnknownUserWithoutPassOnNoUserShowsTheError(): void
     {
         $this->client->queue($this->response(400, self::NO_USER));
@@ -454,8 +462,10 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertSame("http://localhost:8080", $request["options"]["headers"]["Origin"]);
     }
 
-    public function testAPasskeyOfAnotherUserIsRefused(): void
+    public function testARefusalOfPrivacyIdeaShowsItsMessage(): void
     {
+        // The fake server refuses the answer here. The check of the user of an accepted answer is in the tests of
+        // the passkey button.
         $this->answerWithPasskey("erin");
         $this->client->queue($this->response(200, self::PASSKEY_REJECT));
 
@@ -646,7 +656,8 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertCount(2, $this->client->requests, "Only the token of the service account and the trigger.");
         $this->assertSame("CH", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
         $this->assertSame("555", $this->session->get("pi_passkeyTransactionId"));
-        $this->assertNull($this->session->get("pi_passkeyFetchedAt"), "A triggered challenge never gets old.");
+        $this->assertNull($this->session->get("pi_passkeyFetchedAt"), "The challenge is not from /validate/initialize.");
+        $this->assertNotNull($this->session->get("pi_passkeyTriggeredAt"), "The app knows the age of the challenge.");
     }
 
     public function testTheButtonNextToATriggeredOtpChallengeKeepsTheTransactionOfTheOtp(): void
@@ -762,6 +773,7 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertArrayNotHasKey("message", $template->vars, "The user does not see an error for an extra.");
         $this->assertNull($this->session->get("pi_passkeyChallenge"));
         $this->assertNull($this->session->get("pi_passkeyFetchedAt"));
+        $this->assertNotNull($this->session->get("pi_passkeyFailedAt"), "The app waits before it asks again.");
     }
 
     public function unusableInitializeAnswers(): array
@@ -788,6 +800,172 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
 
         $this->assertStringContainsString("pi.internal.example", $this->logger->all());
         $this->assertArrayNotHasKey("message", $template->vars);
+    }
+
+    // ---- The user of an accepted passkey for the challenge of the button
+
+    private const ACCEPT_FOR_BOB = '{"detail":{"message":"Found matching challenge","serial":"PIPK9","username":"bob"},"result":{"authentication":"ACCEPT","status":true,"value":true}}';
+    private const ACCEPT_WITHOUT_DETAIL = '{"result":{"authentication":"ACCEPT","status":true,"value":true}}';
+
+    /** Show the page with the challenge of the button, and let the browser answer it with a passkey. */
+    private function answerTheButtonWithPasskey(string $uid, string $answerOfPrivacyIdea): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, self::INITIALIZE))->queue($this->response(200, $answerOfPrivacyIdea));
+        $this->provider->getTemplate(new FakeUser($uid));
+        $this->request->params["mode"] = "passkey";
+        $this->request->params["passkeySignResponse"] = self::PASSKEY_SIGNED;
+        $this->request->params["origin"] = "http://localhost:8080";
+    }
+
+    public function testThePasskeyOfAnotherUserDoesNotPassTheButton(): void
+    {
+        // The challenge of the button belongs to no user. privacyIDEA before 3.14 accepts the passkey of any user
+        // for it and names the owner of the passkey. The app must compare the owner with the user who logs in.
+        $this->answerTheButtonWithPasskey("alice", self::ACCEPT_FOR_BOB);
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("alice", ""));
+        $this->assertStringContainsString('belongs to the user "bob"', $this->logger->all());
+        $this->assertSame("alice", $this->session->get("pi_uid"), "The login is not done.");
+        $this->assertSame("otp", $this->session->get("pi_mode"));
+        $this->assertNull($this->session->get("pi_passkeyChallenge"), "The next try gets a new challenge.");
+    }
+
+    public function testTheButtonRefusesASuccessWithoutUserName(): void
+    {
+        // The policy no_detail_on_success removes the user name. Then the app cannot check the user.
+        $this->answerTheButtonWithPasskey("alice", self::ACCEPT_WITHOUT_DETAIL);
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("alice", ""));
+        $this->assertStringContainsString("has no user name", $this->logger->all());
+    }
+
+    public function testTheUserNameOfTheButtonMustBeEqualAlsoInCase(): void
+    {
+        $this->answerTheButtonWithPasskey("erin", str_replace('"username":"erin"', '"username":"Erin"', self::PASSKEY_ACCEPT));
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("erin", ""));
+    }
+
+    public function testTheOwnerOfThePasskeyLogsInWithTheButton(): void
+    {
+        $this->answerTheButtonWithPasskey("erin", self::PASSKEY_ACCEPT);
+
+        $this->assertTrue($this->verify("erin", ""));
+        $this->assertSame([], $this->session->data);
+    }
+
+    public function testATriggeredChallengeNeedsNoUserNameInTheAnswer(): void
+    {
+        // privacyIDEA binds a triggered challenge to the passkeys of the user. The answer can be without details.
+        $this->templateAfterTrigger("erin", self::PASSKEY_CHALLENGE);
+        $this->request->params["mode"] = "passkey";
+        $this->request->params["passkeySignResponse"] = self::PASSKEY_SIGNED;
+        $this->request->params["origin"] = "http://localhost:8080";
+        $this->client->queue($this->response(200, self::ACCEPT_WITHOUT_DETAIL));
+
+        $this->assertTrue($this->verify("erin", ""));
+    }
+
+    /** The answer when privacyIDEA chains the enrollment of a HOTP token to the passkey (enroll_via_multichallenge). */
+    private function enrollmentChainedToPasskeyOf(string $owner): string
+    {
+        return '{"detail":{"client_mode":"interactive","enroll_via_multichallenge":true,"image":"data:image/png;base64,QR",'
+            . '"message":"Please scan the QR code and enter the OTP value!","messages":["Please scan the QR code and enter the OTP value!"],'
+            . '"multi_challenge":[{"client_mode":"interactive","image":"data:image/png;base64,QR",'
+            . '"message":"Please scan the QR code and enter the OTP value!","serial":"OATH1","transaction_id":"999","type":"hotp"}],'
+            . '"serial":"OATH1","transaction_id":"999","type":"hotp","username":"' . $owner . '"},'
+            . '"result":{"authentication":"CHALLENGE","status":true,"value":false}}';
+    }
+
+    public function testAnEnrollmentChainedToThePasskeyOfAnotherUserIsRefused(): void
+    {
+        $this->answerTheButtonWithPasskey("alice", $this->enrollmentChainedToPasskeyOf("bob"));
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("alice", ""));
+        $this->assertNull($this->session->get("pi_imgOTP"), "The page must not show the enrollment of bob.");
+        $this->assertNull($this->session->get("pi_transactionId"));
+    }
+
+    public function testAnEnrollmentChainedToTheOwnPasskeyContinues(): void
+    {
+        $this->answerTheButtonWithPasskey("alice", $this->enrollmentChainedToPasskeyOf("alice"));
+
+        $this->assertSame("Please scan the QR code and enter the OTP value!", $this->failureOf("alice", ""));
+        $this->assertSame("data:image/png;base64,QR", $this->session->get("pi_imgOTP"));
+        $this->assertSame("999", $this->session->get("pi_transactionId"), "The OTP of the new token answers this.");
+    }
+
+    public function testTheRealmOfThePasskeyMustBeTheRealmOfTheSettings(): void
+    {
+        // The policy add_resolver_in_response adds the realm of the owner to the answer.
+        $this->config->values["realm"] = "dev";
+        $answer = str_replace('"username":"erin"', '"username":"erin","user-realm":"other"', self::PASSKEY_ACCEPT);
+        $this->answerTheButtonWithPasskey("erin", $answer);
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("erin", ""));
+        $this->assertStringContainsString('belongs to the realm "other"', $this->logger->all());
+    }
+
+    public function testTheRealmIsComparedWithoutCase(): void
+    {
+        $this->config->values["realm"] = "dev";
+        $answer = str_replace('"username":"erin"', '"username":"erin","user-realm":"DEV"', self::PASSKEY_ACCEPT);
+        $this->answerTheButtonWithPasskey("erin", $answer);
+
+        $this->assertTrue($this->verify("erin", ""));
+    }
+
+    // ---- An old challenge and a failed request
+
+    public function testAFailedRequestForTheChallengeWaitsAMinute(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(403, '{"result":{"status":false,"error":{"code":303,"message":"No relying party"}}}'));
+
+        for ($i = 0; $i < 3; $i++)
+        {
+            $this->provider->getTemplate(new FakeUser("erin")); // the push page loads again and again
+        }
+        $this->assertCount(1, $this->client->requests);
+
+        $this->session->set("pi_passkeyFailedAt", time() - 61);
+        $this->client->queue($this->response(200, self::INITIALIZE));
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertCount(2, $this->client->requests);
+        $this->assertSame("INIT", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
+        $this->assertNull($this->session->get("pi_passkeyFailedAt"));
+    }
+
+    public function testAnOldTriggeredChallengeIsReplacedByTheChallengeOfTheButton(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->templateAfterTrigger("erin", self::PASSKEY_CHALLENGE);
+        $this->assertSame("passkey", $this->session->get("pi_mode"));
+
+        // privacyIDEA drops the triggered challenge after 120 seconds by default.
+        $this->session->set("pi_passkeyTriggeredAt", time() - 61);
+        $this->client->queue($this->response(200, self::INITIALIZE));
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertSame("http://pi.test/validate/initialize", $this->client->requests[2]["uri"]);
+        $this->assertSame("INIT", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
+        $this->assertSame("777", $this->session->get("pi_passkeyTransactionId"));
+        $this->assertSame("555", $this->session->get("pi_transactionId"), "The transaction of the other challenges stays.");
+        $this->assertSame("otp", $template->vars["mode"], "The new challenge waits for the button.");
+        $this->assertNull($this->session->get("pi_passkeyTriggeredAt"));
+    }
+
+    public function testWithTheButtonOffAnOldTriggeredChallengeStays(): void
+    {
+        $this->templateAfterTrigger("erin", self::PASSKEY_CHALLENGE); // setUp() turned the button off
+        $this->session->set("pi_passkeyTriggeredAt", time() - 61);
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertCount(2, $this->client->requests, "No request for a new challenge.");
+        $this->assertSame("CH", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
     }
 
     /**

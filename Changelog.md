@@ -4,6 +4,8 @@
 * Passkeys: A user can log in with a passkey as the second factor. The login page has a "Passkey" button.
   The app gets the challenge from privacyIDEA with `/validate/initialize`, so the button needs no service account
   and no policy `passkey_trigger_by_pin`. The setting "Show the passkey button" in the admin settings hides it.
+  This challenge belongs to no user, so the app compares the owner of the passkey that privacyIDEA names
+  with the ownCloud user, and refuses another user.
   If privacyIDEA triggers a passkey challenge (policy `passkey_trigger_by_pin` and the setting "Trigger challenges"),
   the browser asks for the passkey by itself. The user needs a passkey token in privacyIDEA 3.11.1 or later.
   See the README.
@@ -49,6 +51,8 @@
   and not with "ownCloud Plugin". A privacyIDEA policy with a user agent condition did not match this request.
 * The OTP field has `autocomplete="one-time-code"`. Chrome no longer fills the saved password of the user into it.
   Firefox 159 still does, because it ignores this value.
+* A successful login ended in "Failed to communicate with privacyIDEA." when the policy `no_detail_on_success`
+  was set. The answer of privacyIDEA then has no details, and the app expected them.
 
 ### Changes that need action
 * The certificate check uses the CA bundle of ownCloud. Certificates that the admin imported with

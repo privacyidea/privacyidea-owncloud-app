@@ -146,8 +146,20 @@ class FakeResponse implements IResponse
         $this->body = $body;
     }
 
+    /** @var bool */
+    private $bodyRead = false;
+
+    /**
+     * Like the response of ownCloud (getContents() of the stream): the body comes only once.
+     * A second call returns an empty string, so a test finds code that reads the body twice.
+     */
     public function getBody()
     {
+        if ($this->bodyRead)
+        {
+            return "";
+        }
+        $this->bodyRead = true;
         return $this->body;
     }
 

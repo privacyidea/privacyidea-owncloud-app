@@ -46,10 +46,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         "pi_u2fSignRequest", "pi_webAuthnSignRequest", "pi_pushAvailable", "pi_otpAvailable", "pi_tiqrAvailable",
         "pi_tiqrImage", "pi_imgU2F", "pi_imgWebauthn", "pi_imgPush", "pi_imgOTP", "pi_transactionId",
         "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired",
-        "pi_uid", "pi_passkeyChallenge", "pi_passkeyTransactionId", "pi_passkeyFetchedAt"];
-    /** @var int A passkey challenge from /validate/initialize is replaced after this many seconds.
+        "pi_uid", "pi_passkeyChallenge", "pi_passkeyTransactionId", "pi_passkeyFetchedAt", "pi_passkeyTriggeredAt",
+        "pi_passkeyFailedAt"];
+    /** @var int A passkey challenge (from /validate/initialize or triggered) is replaced after this many seconds.
      *           privacyIDEA keeps a challenge for 120 seconds by default. */
     private const PASSKEY_CHALLENGE_MAX_AGE = 60;
+    /** @var int After a failed request to /validate/initialize, the app waits this many seconds before it asks again. */
+    private const PASSKEY_RETRY_AFTER_FAILURE = 60;
     /** @var IClientService */
     private $httpClientService;
     /** @var IConfig */
@@ -363,8 +366,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             {
                 $transactionID = $passkeyTransactionID;
             }
-            // A challenge from /validate/initialize is good for one answer. The next page asks for a new one.
-            if ($this->session->get("pi_passkeyFetchedAt") !== null)
+            // A challenge from /validate/initialize belongs to no user. The app must check the user of the answer.
+            // Such a challenge is good for one answer. The next page asks for a new one.
+            $unbound = $this->session->get("pi_passkeyFetchedAt") !== null;
+            if ($unbound)
             {
                 $this->removePasskeyChallenge();
             }
@@ -375,7 +380,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             }
             else
             {
-                $ret = $this->validateCheckPasskey($username, $transactionID, $passkeySignResponse, $origin);
+                $ret = $this->validateCheckPasskey($username, $transactionID, $passkeySignResponse, $origin, $unbound);
             }
         }
         elseif ($mode === "webauthn")
@@ -566,6 +571,59 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
+     * Check the answer of privacyIDEA to a challenge from /validate/initialize.
+     * Such a challenge belongs to no user. privacyIDEA accepts the passkey of any user for it and names the owner
+     * of the passkey in detail.username. This owner must be the ownCloud user.
+     * privacyIDEA 3.11 to 3.13 do not compare the owner with the user name that the app sends,
+     * so this check is on the client. The names must be equal, also in upper and lower case.
+     *
+     * The check covers every answer that accepted the passkey: a success (value true), and a challenge that privacyIDEA
+     * chains to the passkey (for example the enrollment of a new token, enroll_via_multichallenge).
+     * If the answer has the realm of the owner (policy add_resolver_in_response), the realm must be the realm in the
+     * settings, if one is set. A refusal or an error needs no check. The normal error handling takes it.
+     *
+     * @param mixed $body The decoded answer of privacyIDEA
+     * @param string $username The ownCloud user
+     * @return bool False if the answer accepted the passkey of another user, or accepted it without a user name
+     */
+    private function passkeyAnswerIsForUser($body, string $username): bool
+    {
+        if (!is_object($body) || ($body->result->status ?? null) !== true)
+        {
+            return true;
+        }
+        $accepted = ($body->result->value ?? null) === true || isset($body->detail->multi_challenge);
+        if (!$accepted)
+        {
+            return true;
+        }
+        $owner = $body->detail->username ?? null;
+        if (!is_string($owner) || $owner === "")
+        {
+            // For example, the policy no_detail_on_success removes the details of a success.
+            $this->log("error", "[verifyChallenge] privacyIDEA accepted the passkey, but the answer has no user name. "
+                . "The app cannot check the user and refuses the login.");
+            return false;
+        }
+        if ($owner !== $username)
+        {
+            $this->log("error", "[verifyChallenge] The passkey belongs to the user \"" . $owner . "\", but the user \""
+                . $username . "\" logs in. The app refuses the login.");
+            return false;
+        }
+        // privacyIDEA keeps realm names in lower case and finds them in any case.
+        $ownerRealm = $body->detail->{"user-realm"} ?? null;
+        $realm = $this->getAppValue("realm", "");
+        if ($realm !== "" && is_string($ownerRealm) && $ownerRealm !== "" && strcasecmp($ownerRealm, $realm) !== 0)
+        {
+            $this->log("error", "[verifyChallenge] The passkey belongs to the realm \"" . $ownerRealm . "\", but the realm \""
+                . $realm . "\" is set. The app refuses the login.");
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Remove the passkey challenge and its transaction from the session.
      */
     private function removePasskeyChallenge(): void
@@ -573,16 +631,19 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->session->remove("pi_passkeyChallenge");
         $this->session->remove("pi_passkeyTransactionId");
         $this->session->remove("pi_passkeyFetchedAt");
+        $this->session->remove("pi_passkeyTriggeredAt");
     }
 
     /**
      * Make sure that the page has a passkey challenge for the passkey button.
      * privacyIDEA sends a passkey challenge only to a client that triggers it (the service account, or the policy
-     * passkey_trigger_by_pin). /validate/initialize needs neither. It gives a challenge that belongs to no token.
-     * The answer goes to /validate/check with the user name, and privacyIDEA refuses the passkey of another user.
+     * passkey_trigger_by_pin). /validate/initialize needs neither. It gives a challenge that belongs to no user.
+     * privacyIDEA names the owner of the passkey in the answer, and passkeyAnswerIsForUser() compares it.
      *
-     * The setting "passkeybutton" turns this off. It is on by default. A challenge that privacyIDEA triggered stays.
-     * If the request fails, the page has no passkey button. The button is an extra, so the error does not stop the login.
+     * The setting "passkeybutton" turns this off. It is on by default. A challenge stays until it is old. An old
+     * triggered challenge is replaced too, because privacyIDEA drops it after its validity time.
+     * If the request fails, the page has no passkey button, and the app waits before it asks again.
+     * The button is an extra, so the error does not stop the login.
      */
     private function offerPasskey(): void
     {
@@ -592,15 +653,29 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             return;
         }
 
-        // Keep a triggered challenge. Keep a challenge from /validate/initialize until it is old,
-        // because the push and TiQR pages load again and again.
-        $fetchedAt = $this->session->get("pi_passkeyFetchedAt");
-        if ($this->session->get("pi_passkeyChallenge") !== null
-            && ($fetchedAt === null || time() - (int)$fetchedAt < self::PASSKEY_CHALLENGE_MAX_AGE))
+        // Keep a challenge until it is old, because the push and TiQR pages load again and again.
+        if ($this->session->get("pi_passkeyChallenge") !== null)
+        {
+            $since = $this->session->get("pi_passkeyFetchedAt") ?? $this->session->get("pi_passkeyTriggeredAt");
+            if ($since === null || time() - (int)$since < self::PASSKEY_CHALLENGE_MAX_AGE)
+            {
+                return;
+            }
+            // An old triggered challenge started the prompt by itself. Its replacement waits for the button,
+            // because some browsers start the prompt only for a click.
+            if ($this->session->get("pi_mode") === "passkey")
+            {
+                $this->session->set("pi_mode", "otp");
+            }
+            $this->removePasskeyChallenge();
+        }
+
+        // After a failed request, wait. Otherwise every page load asks again, also each reload of the push page.
+        $failedAt = $this->session->get("pi_passkeyFailedAt");
+        if ($failedAt !== null && time() - (int)$failedAt < self::PASSKEY_RETRY_AFTER_FAILURE)
         {
             return;
         }
-        $this->removePasskeyChallenge();
 
         try
         {
@@ -616,6 +691,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             {
                 // For example a privacyIDEA before 3.11, or one without the policies of the relying party.
                 $this->log("debug", "[offerPasskey] privacyIDEA gave no passkey challenge. HTTP status: " . $result->getStatusCode());
+                $this->session->set("pi_passkeyFailedAt", time());
                 return;
             }
 
@@ -628,10 +704,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 "userVerification" => is_string($userVerification) ? $userVerification : ""]);
             $this->session->set("pi_passkeyTransactionId", $transactionID);
             $this->session->set("pi_passkeyFetchedAt", time());
+            $this->session->remove("pi_passkeyFailedAt");
         }
         catch (\Throwable $e)
         {
             $this->log("error", "[offerPasskey] " . $e->getMessage());
+            $this->session->set("pi_passkeyFailedAt", time());
         }
     }
 
@@ -695,18 +773,21 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
     /**
      * Sends a request to /validate/check with the data required to authenticate a passkey.
-     * The request has the user name. Without it, privacyIDEA accepts the passkey of any user for a challenge that
-     * no token owns (for example from /validate/initialize). With it, privacyIDEA refuses a passkey of another user.
+     * The request has the user name. privacyIDEA 3.14 and later then refuse a passkey of another user.
+     * Older versions ignore it for a challenge that belongs to no user (from /validate/initialize), so for such a
+     * challenge the app checks the user in the answer itself, before it keeps anything of the answer.
      *
      * @param string $username
      * @param string $transactionID
      * @param array $passkeySignResponse The answer of the browser: credential_id, authenticatorData, clientDataJSON,
      *                                   signature and optionally userHandle
      * @param string $origin
-     * @return mixed|string
+     * @param bool $unbound True for a challenge from /validate/initialize
+     * @return mixed|string 0 for incomplete data or for an answer of another user
      * @throws ProcessPIResponseException|Exception
      */
-    private function validateCheckPasskey(string $username, string $transactionID, array $passkeySignResponse, string $origin)
+    private function validateCheckPasskey(string $username, string $transactionID, array $passkeySignResponse,
+                                          string $origin, bool $unbound = false)
     {
         $required = ["credential_id", "authenticatorData", "clientDataJSON", "signature"];
         foreach ($required as $key)
@@ -736,7 +817,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $options["headers"]["Origin"] = $origin;
 
         $res = $this->sendRequest("validate/check", $options);
-        return $this->processPIResponse($res);
+        // The response of ownCloud gives the body only once, so read it here and hand it on.
+        $bodyText = (string)$res->getBody();
+        // Check before processPIResponse(). It keeps the challenges of an answer in the session, for example the
+        // enrollment of a new token that privacyIDEA chains to the passkey of another user.
+        if ($unbound && !$this->passkeyAnswerIsForUser(json_decode($bodyText), $username))
+        {
+            // The message for the user is the general one. It does not name the owner of the passkey.
+            return 0;
+        }
+        return $this->processPIResponse($res, $bodyText);
     }
 
     /**
@@ -844,15 +934,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
      * And also document when an exception is thrown, when an empty string is returned
      *
      * @param IResponse $result
+     * @param string|null $bodyText The body, if the caller read it already. The response of ownCloud gives the body
+     *                              only once: a second getBody() returns an empty string.
      * @return mixed|string
      * @throws ProcessPIResponseException
      */
-    private function processPIResponse(IResponse $result)
+    private function processPIResponse(IResponse $result, ?string $bodyText = null)
     {
         $passOnNoToken = $this->getAppValue('passOnNoUser', false);
         $errorMessage = "";
         $mode = $this->request->getParam("mode", "otp");
-        $body = json_decode($result->getBody());
+        $body = json_decode($bodyText ?? (string)$result->getBody());
         $this->log("debug", print_r(json_encode($body), true));
 
         if ($mode === "push" || $mode === "tiqr")
@@ -874,8 +966,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             {
                 if (isset($body->result->status) && $body->result->status === true)
                 {
-                    $detail = $body->detail;
-                    $this->session->set("pi_detail", $detail);
+                    // The policy no_detail_on_success removes "detail" from a successful answer.
+                    $detail = (isset($body->detail) && is_object($body->detail)) ? $body->detail : new \stdClass();
+                    $this->session->set("pi_detail", $body->detail ?? null);
 
                     if (property_exists($detail, "transaction_id"))
                     {
@@ -936,6 +1029,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                                     "userVerification" => (string)($multiChallenge[$i]->userVerification ?? "")]);
                                                 $this->session->set("pi_passkeyTransactionId",
                                                     (string)($multiChallenge[$i]->transaction_id ?? $detail->transaction_id ?? ""));
+                                                $this->session->set("pi_passkeyTriggeredAt", time());
                                                 break;
                                             }
                                             $hasWebAuthn = true;

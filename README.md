@@ -125,14 +125,38 @@ Then the page shows the button only if privacyIDEA triggered a passkey challenge
 The button is there for every user, also for a user without a passkey. If the browser finds no passkey,
 the page goes back to the OTP field.
 
-The app asks privacyIDEA for a new challenge after 60 seconds and after each answer.
-privacyIDEA keeps a challenge for 120 seconds by default.
 The browser allows passkeys only on HTTPS or on `http://localhost`.
 The relying party id must be the host name that the user opens in the browser, or its parent domain.
-The app sends the user name together with the passkey answer. privacyIDEA then refuses a passkey of another user.
-The same holds for the challenge of the button, which belongs to no user.
 
-Limits:
+### Which user logs in
+
+The challenge of the button belongs to no user. privacyIDEA accepts the passkey of any user for it,
+and its answer names the owner of the passkey. The app compares this name with the name of the ownCloud user.
+It does this for every answer that accepts the passkey, also when privacyIDEA chains the enrollment of a new token
+to it (`enroll_via_multichallenge`):
+
+* If the names are equal, the login continues.
+* If the names are different, the app refuses the login and writes both names to the log.
+* If the answer has no user name, the app refuses the login. The policy `no_detail_on_success` removes the
+  user name, so do not use this policy together with the button.
+
+The names must be equal, also in upper and lower case.
+With the policy `add_resolver_in_response`, the answer also has the realm of the owner.
+If you set a realm in the settings of the app, the app then compares the realm too.
+Without this policy, and before privacyIDEA 3.14, the passkey of a user with the same name in another realm passes
+this check. privacyIDEA 3.14 and later also check the owner of the passkey, because the app sends the user name
+(and the realm, if you set one).
+
+A triggered challenge belongs to the passkeys of the user. privacyIDEA checks this, so the app does not compare names.
+
+### Old challenges
+
+The app asks privacyIDEA for a new challenge after 60 seconds and after each answer.
+If the button is on, this also replaces a triggered challenge that is older than 60 seconds.
+privacyIDEA keeps a challenge for 120 seconds by default.
+If privacyIDEA gives no challenge for the button, the app asks again after 60 seconds.
+
+### Limits
 
 * The login page cannot enroll a passkey (enroll via multichallenge).
 * Do not give one user a passkey and a WebAuthn token while `passkey_trigger_by_pin` is set.
@@ -185,6 +209,7 @@ To see every request, run `occ log:manage --level debug`. The log does not conta
 | Every user skips 2FA | "Let the user log in if the user is not found in privacyIDEA" is on, and the realm is wrong. | Correct "User Realm". Test again. |
 | The page has no "Passkey" button | privacyIDEA is older than 3.11.1, the policies for the relying party are missing, or "Show the passkey button" is off. | Check the policies and the setting. The debug log shows why privacyIDEA sent no challenge. |
 | The browser refuses a passkey or a security key | The page is not on HTTPS. | Use HTTPS. `http://localhost` also works for tests. |
+| The "Passkey" button gives "Failed to authenticate." for the right passkey | The user name in privacyIDEA is not equal to the ownCloud user name (also in upper and lower case), or the policy `no_detail_on_success` is set. | Read the log. It shows both names, or that the answer had no user name. |
 | Firefox fills the saved password of the user into the OTP field | The field has `autocomplete="one-time-code"`. Chrome follows it. Firefox 159 does not. | Remove the saved login of the site in Firefox, or use another browser. |
 
 ## Development
