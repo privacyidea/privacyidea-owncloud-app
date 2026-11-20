@@ -17,7 +17,7 @@
 
 ### Fixes
 * Security: The excluded IP addresses use the address that ownCloud sees. The app no longer trusts the header
-  `X-Forwarded-For` from a client that is not a trusted proxy. A user could skip 2FA with this header.
+  `X-Forwarded-For` from a client that is not a trusted proxy. A user was able to skip 2FA with this header.
   If ownCloud runs behind a reverse proxy, set `trusted_proxies` in `config.php`. The proxy must replace the header
   with the address of its client. See the README.
 * Security: The state of a login in the session (for example the PassOnNoUser state) belongs to one user.
@@ -25,7 +25,7 @@
 * Security: The log no longer contains the OTP or the PIN at debug level.
 * Security: With an empty "User Realm", the request that triggers the challenges sent an empty realm. privacyIDEA then
   ignored the realm in a user name like `bob@sales` and looked in the default realm. With PassOnNoUser, such a user
-  could log in without a second factor. The app now sends the realm only when it is set.
+  logged in without a second factor. The app now sends the realm only when it is set.
 * Security: The debug log no longer contains the answers of privacyIDEA in full. An answer can hold the QR code and
   the seed of a token that the user enrolls via multichallenge. The log now has a short form of each answer.
 * Security: The debug log no longer prints the exception of a failed request for the token of the service account.
@@ -34,7 +34,7 @@
 * Security: Error messages of the HTTP client no longer show the internal URL of the privacyIDEA server to the user.
 * Security: For a WebAuthn login, the app sent privacyIDEA the origin that the browser posted. privacyIDEA compares
   this origin with the origin that the browser signed, so the check compared two values from the browser.
-  A page on another host under the same relying party id could relay a login. The app now sends the origin of
+  A page on another host under the same relying party id was able to relay a login. The app now sends the origin of
   ownCloud and refuses an answer from another origin. Passkey logins work the same way.
 * PassOnNoUser did not work. An HTTP error status from privacyIDEA raised an exception.
   The option that turns this off had an old name that is ignored since Guzzle 6.
@@ -44,8 +44,8 @@
   privacyIDEA does not know, when PassOnNoUser was on. It now says that privacyIDEA does not know the user.
 * Push and TiQR: The poll request to privacyIDEA sent the transaction ID in the body of a GET request.
   ownCloud 11 does not send it. The ID is now in the query string.
-* The OTP field was hidden when the app could not trigger the challenge, for example with a wrong
-  service account. The user could not log in. The field is now visible and the error message is shown.
+* The OTP field was hidden when the app failed to trigger the challenge, for example with a wrong
+  service account. The user was not able to log in. The field is now visible and the error message is shown.
 * An error from privacyIDEA during the login (server not reachable, wrong answer) is now shown on the login page
   and written to the log. It no longer ends in an internal server error.
 * An empty timeout in the settings ended in an internal server error on the login page on PHP 8.
@@ -90,7 +90,7 @@
 
 ### Changes that need action
 * The app needs privacyIDEA 3.7 or later. Before 3.7, privacyIDEA sends no `client_mode` with a challenge, and the app
-  could not show push, TiQR, WebAuthn or a triggered challenge. The README said 3.1.
+  did not show push, TiQR, WebAuthn or a triggered challenge. The README said 3.1.
 * With the policy `push_wait`, set "Timeout" to a higher value than `push_wait`. See the README.
 * The certificate check uses the CA bundle of ownCloud. Certificates that the admin imported with
   `occ security:certificates:import` now work.
