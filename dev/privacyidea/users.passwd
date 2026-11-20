@@ -1,3 +1,5 @@
 alice:x:2001:2001:Alice Totp,,,,alice@example.test:/home/alice:/bin/sh
 bob:x:2002:2002:Bob Challenge,,,,bob@example.test:/home/bob:/bin/sh
 carol:x:2003:2003:Carol NoToken,,,,carol@example.test:/home/carol:/bin/sh
+erin:x:2004:2004:Erin Passkey,,,,erin@example.test:/home/erin:/bin/sh
+frank:x:2005:2005:Frank Passkey,,,,frank@example.test:/home/frank:/bin/sh

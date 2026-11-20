@@ -4,6 +4,7 @@ script('twofactor_privacyidea', [
     'pi-form-template',
     'pi-event-listeners',
     'pi-webauthn',
+    'pi-passkey',
     'pi-u2f',
     'pi-poll-by-reload',
     'pi-poll-in-browser'
@@ -43,7 +44,7 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
 
     <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']) : ?>
         <label>
-            <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="off" required
+            <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="one-time-code" required
                    autofocus>
         </label>
         <br>
@@ -70,6 +71,9 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
     <input id="webAuthnSignRequest" type="hidden" name="webAuthnSignRequest"
            value='<?php if (isset($_['webAuthnSignRequest'])) : p($_['webAuthnSignRequest']); endif; ?>'/>
     <input id="webAuthnSignResponse" type="hidden" name="webAuthnSignResponse" value=""/>
+    <input id="passkeyChallenge" type="hidden" name="passkeyChallenge"
+           value="<?php if (isset($_['passkeyChallenge'])) : p($_['passkeyChallenge']); endif; ?>"/>
+    <input id="passkeySignResponse" type="hidden" name="passkeySignResponse" value=""/>
     <input id="origin" type="hidden" name="origin" value=""/>
     <input id="pushAvailable" type="hidden" name="pushAvailable"
            value="<?php if (isset($_['pushAvailable'])) : p($_['pushAvailable']); endif; ?>"/>
@@ -101,6 +105,8 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
         <br>
         <input class="alternateTokenButtons" id="webAuthnButton" name="webAuthnButton"
                type="button" value="WebAuthn"/>
+        <input class="alternateTokenButtons" id="passkeyButton" name="passkeyButton"
+               type="button" value="Passkey"/>
         <input class="alternateTokenButtons" id="pushButton" name="pushButton" type="button" value="Push"/>
         <input class="alternateTokenButtons" id="tiqrButton" name="tiqrButton" type="button" value="TiQR"/>
         <input class="alternateTokenButtons" id="u2fButton" name="u2fButton" type="button" value="U2F"/>

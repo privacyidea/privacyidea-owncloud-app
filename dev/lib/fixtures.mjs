@@ -20,6 +20,9 @@ export const USERS = {
   carol: { serial: null, ocPassword: OC_PASSWORD },
   // Does not exist in privacyIDEA at all. Only exists in ownCloud.
   dave: { serial: null, ocPassword: OC_PASSWORD },
+  // Exist in privacyIDEA without a token. The passkey tests enroll a passkey for them in a virtual authenticator.
+  erin: { serial: null, ocPassword: OC_PASSWORD },
+  frank: { serial: null, ocPassword: OC_PASSWORD },
 };
 
 /**

@@ -258,6 +258,14 @@ style('twofactor_privacyidea', 'settings-admin');
             <span id="piserviceaccount_msg" class="msg"></span>
         </div>
         <hr>
+        <h3><?php p($l->t('Passkey')); ?></h3>
+        <p>
+            <input id="passkeybutton" type="checkbox" class="checkbox">
+            <label for="passkeybutton">
+                <?php p($l->t('Show the passkey button on the login page. The app asks privacyIDEA for a passkey
+                challenge. Without this setting, the button is there only if privacyIDEA triggered a passkey challenge.')); ?>
+            </label>
+        </p>
         <hr>
     </div>
 </div>

@@ -28,7 +28,7 @@ if ! "${OCC[@]}" app:enable twofactor_privacyidea; then
   exit 1
 fi
 
-for user in alice bob carol dave; do
+for user in alice bob carol dave erin frank; do
   if "${OCC[@]}" user:list | grep -q "^  - $user:"; then
     echo "ownCloud user $user exists"
   else
@@ -55,4 +55,5 @@ echo
 echo "ownCloud:    http://localhost:${OWNCLOUD_PORT:-8080}   (admin / admin)"
 echo "privacyIDEA: http://localhost:${PRIVACYIDEA_PORT:-8081}   (admin / admin)"
 echo "Test users:  alice (TOTP), bob (TOTP + challenge-response), carol (no token), dave (not in privacyIDEA)"
+echo "             erin and frank (passkeys that the e2e tests enroll)"
 echo "Password for all test users in ownCloud: Test1234!"

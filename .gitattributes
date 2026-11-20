@@ -1,0 +1,5 @@
+# Shell scripts run in Linux containers and on CI. A CRLF line ending breaks them
+# ("set: illegal option -"). Keep LF on every platform, also with core.autocrlf=true on Windows.
+*.sh text eol=lf
+# Mounted into the privacyIDEA container as the user file of the resolver.
+*.passwd text eol=lf
