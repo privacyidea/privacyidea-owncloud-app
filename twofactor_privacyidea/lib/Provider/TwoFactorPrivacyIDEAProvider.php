@@ -358,7 +358,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             // the prompt of the browser again and again. The user can use the passkey button to try again.
             $this->session->set("pi_mode", "otp");
             $passkeySignResponse = json_decode((string)$this->request->getParam("passkeySignResponse"), true);
-            $origin = (string)$this->request->getParam("origin");
+            $origin = $this->checkedOrigin();
 
             // The passkey challenge has its own transaction, not the transaction of the other tokens of the user.
             $passkeyTransactionID = $this->session->get("pi_passkeyTransactionId");
@@ -374,11 +374,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 $this->removePasskeyChallenge();
             }
 
-            if (!is_array($passkeySignResponse) || empty($transactionID) || $origin === "")
+            if (!is_array($passkeySignResponse) || empty($transactionID))
             {
-                $this->log("error", "Incomplete data for passkey authentication: passkeySignResponse, origin or transaction ID is missing!");
+                $this->log("error", "Incomplete data for passkey authentication: passkeySignResponse or transaction ID is missing!");
             }
-            else
+            elseif ($origin !== "")
             {
                 $ret = $this->validateCheckPasskey($username, $transactionID, $passkeySignResponse, $origin, $unbound);
             }
@@ -386,13 +386,13 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         elseif ($mode === "webauthn")
         {
             $webAuthnSignResponse = json_decode($this->request->getParam("webAuthnSignResponse"), true);
-            $origin = $this->request->getParam("origin");
+            $origin = $this->checkedOrigin();
 
             if (empty($webAuthnSignResponse))
             {
                 $this->log("error", "Incomplete data for WebAuthn authentication: webAuthnSignResponse is missing!");
             }
-            else
+            elseif ($origin !== "")
             {
                 $ret = $this->validateCheckWebAuthn($username, $transactionID, $webAuthnSignResponse, $origin);
             }
@@ -568,6 +568,52 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         {
             return (string)($ret->detail->message ?? "");
         }
+    }
+
+    /**
+     * The origin for the answer of a WebAuthn token or a passkey.
+     * privacyIDEA compares the Origin header of the answer with the origin that the browser signed (clientDataJSON).
+     * The header must therefore be the origin of ownCloud, not a value from the browser. Otherwise a page on another
+     * host under the same relying party id (for example evil.example.com for example.com) can relay a login.
+     * The browser posts the origin of its page. If it is not the origin of ownCloud, the app refuses the answer.
+     * Behind a reverse proxy, ownCloud knows its own origin only from overwriteprotocol and overwritehost.
+     *
+     * @return string The origin of ownCloud, or "" if the browser sent another origin
+     */
+    private function checkedOrigin(): string
+    {
+        $server = $this->normalizeOrigin($this->request->getServerProtocol() . "://" . $this->request->getServerHost());
+        $posted = $this->normalizeOrigin((string)$this->request->getParam("origin"));
+        if ($server === "" || $posted !== $server)
+        {
+            $this->log("error", "[verifyChallenge] The browser sent the origin \"" . $posted . "\", but the origin of ownCloud is \""
+                . $server . "\". The app refuses the answer. Behind a reverse proxy, set overwriteprotocol and overwritehost "
+                . "in config.php.");
+            return "";
+        }
+        return $server;
+    }
+
+    /**
+     * An origin in one form: lower case, without the default port, without a path.
+     *
+     * @param string $origin For example "https://Cloud.Example.com:443"
+     * @return string For example "https://cloud.example.com", or "" if the value is not an origin
+     */
+    private function normalizeOrigin(string $origin): string
+    {
+        $parts = parse_url(trim($origin));
+        if (!is_array($parts) || empty($parts["scheme"]) || empty($parts["host"]))
+        {
+            return "";
+        }
+        $scheme = strtolower($parts["scheme"]);
+        $port = $parts["port"] ?? null;
+        if (($scheme === "https" && $port === 443) || ($scheme === "http" && $port === 80))
+        {
+            $port = null;
+        }
+        return $scheme . "://" . strtolower($parts["host"]) . ($port !== null ? ":" . $port : "");
     }
 
     /**

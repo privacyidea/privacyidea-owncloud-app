@@ -27,6 +27,10 @@
   The trace of that exception can contain the password of the service account.
 * Security: The app no longer stores the token of the service account in the session of the user.
 * Security: Error messages of the HTTP client no longer show the internal URL of the privacyIDEA server to the user.
+* Security: For a WebAuthn login, the app sent privacyIDEA the origin that the browser posted. privacyIDEA compares
+  this origin with the origin that the browser signed, so the check compared two values from the browser.
+  A page on another host under the same relying party id could relay a login. The app now sends the origin of
+  ownCloud and refuses an answer from another origin. Passkey logins work the same way.
 * PassOnNoUser did not work. An HTTP error status from privacyIDEA raised an exception.
   The option that turns this off had an old name that is ignored since Guzzle 6.
 * Push and TiQR: The poll request to privacyIDEA sent the transaction ID in the body of a GET request.
@@ -61,6 +65,9 @@
   If your privacyIDEA server uses such a CA, import its certificate with `occ security:certificates:import`.
 * If ownCloud runs behind a reverse proxy and you use excluded IP addresses, set `trusted_proxies` in `config.php`.
   Without it, ownCloud sees the address of the proxy. See the README.
+* If ownCloud runs behind a reverse proxy and users log in with WebAuthn or passkeys, set `overwriteprotocol` and
+  `overwritehost` in `config.php`. Without them, ownCloud does not know its own address, and these logins fail.
+  See the README.
 
 ### Note for the release
 * `appinfo/signature.json` is out of date. Sign the app again before the release.

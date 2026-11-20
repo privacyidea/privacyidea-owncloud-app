@@ -104,6 +104,21 @@ class FakeRequest implements IRequest
     {
         return $this->remoteAddress;
     }
+
+    /** @var string What ownCloud knows about its own address (overwriteprotocol, overwritehost or the request). */
+    public $serverProtocol = "http";
+    /** @var string */
+    public $serverHost = "localhost:8080";
+
+    public function getServerProtocol()
+    {
+        return $this->serverProtocol;
+    }
+
+    public function getServerHost()
+    {
+        return $this->serverHost;
+    }
 }
 
 class FakeGroupManager implements IGroupManager

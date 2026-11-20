@@ -515,6 +515,45 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         }
     }
 
+    // ---- The Origin header of a WebAuthn or passkey answer
+
+    public function testAPasskeyAnswerFromAnotherOriginIsRefused(): void
+    {
+        // privacyIDEA compares the Origin header with the origin that the browser signed. If the app forwards the
+        // origin of the browser, a page on another host under the same relying party id can relay a login.
+        $this->answerWithPasskey("erin");
+        $this->request->params["origin"] = "https://evil.example.com";
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("erin", ""));
+        $this->assertSame([], $this->client->requests);
+        $this->assertStringContainsString("overwriteprotocol", $this->logger->all(), "The log tells the admin what to set.");
+    }
+
+    public function testAWebAuthnAnswerFromAnotherOriginIsRefused(): void
+    {
+        $this->session->set("pi_uid", "erin");
+        $this->session->set("pi_transactionId", "555");
+        $this->request->params["mode"] = "webauthn";
+        $this->request->params["webAuthnSignResponse"] = '{"signaturedata":"s","clientdata":"c","credentialid":"i","authenticatordata":"a"}';
+        $this->request->params["origin"] = "https://evil.example.com";
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("erin", ""));
+        $this->assertSame([], $this->client->requests);
+    }
+
+    public function testTheOriginHeaderIsTheOriginOfOwnCloud(): void
+    {
+        // Behind a proxy, ownCloud knows its address from overwriteprotocol and overwritehost.
+        $this->request->serverProtocol = "https";
+        $this->request->serverHost = "Cloud.Example.com:443";
+        $this->answerWithPasskey("erin");
+        $this->request->params["origin"] = "https://cloud.example.com";
+        $this->client->queue($this->response(200, self::PASSKEY_ACCEPT));
+
+        $this->assertTrue($this->verify("erin", ""));
+        $this->assertSame("https://cloud.example.com", $this->client->requests[0]["options"]["headers"]["Origin"]);
+    }
+
     public function testEveryRequestHasTheUserAgentAlsoWithOwnHeaders(): void
     {
         $all = [];
