@@ -46,7 +46,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         "pi_u2fSignRequest", "pi_webAuthnSignRequest", "pi_pushAvailable", "pi_otpAvailable", "pi_tiqrAvailable",
         "pi_tiqrImage", "pi_imgU2F", "pi_imgWebauthn", "pi_imgPush", "pi_imgOTP", "pi_transactionId",
         "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired",
-        "pi_uid", "pi_passkeyChallenge"];
+        "pi_uid", "pi_passkeyChallenge", "pi_passkeyTransactionId", "pi_passkeyFetchedAt"];
+    /** @var int A passkey challenge from /validate/initialize is replaced after this many seconds.
+     *           privacyIDEA keeps a challenge for 120 seconds by default. */
+    private const PASSKEY_CHALLENGE_MAX_AGE = 60;
     /** @var IClientService */
     private $httpClientService;
     /** @var IConfig */
@@ -99,6 +102,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->bindSessionToUser($user);
 
         // TriggerChallenge
+        $triggerFailed = false;
         if ($this->getAppValue("triggerchallenges", "") === "1")
         {
             if ($this->session->get("pi_TriggerChallengeSuccess") !== true)
@@ -120,8 +124,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     $this->session->set("pi_hideOTPField", false);
                     $this->log("error", "[getTemplate] " . $e->getMessage());
                     $message = $this->userMessage($e);
+                    $triggerFailed = true;
                 }
             }
+        }
+
+        // The passkey button. Without a triggered passkey challenge, ask privacyIDEA for one that belongs to no user.
+        // If the trigger failed, privacyIDEA does not work for this user, so do not ask again.
+        if (!$triggerFailed)
+        {
+            $this->offerPasskey();
         }
 
         // Set options, tokens and load counter to the template
@@ -345,6 +357,18 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $passkeySignResponse = json_decode((string)$this->request->getParam("passkeySignResponse"), true);
             $origin = (string)$this->request->getParam("origin");
 
+            // The passkey challenge has its own transaction, not the transaction of the other tokens of the user.
+            $passkeyTransactionID = $this->session->get("pi_passkeyTransactionId");
+            if (!empty($passkeyTransactionID))
+            {
+                $transactionID = $passkeyTransactionID;
+            }
+            // A challenge from /validate/initialize is good for one answer. The next page asks for a new one.
+            if ($this->session->get("pi_passkeyFetchedAt") !== null)
+            {
+                $this->removePasskeyChallenge();
+            }
+
             if (!is_array($passkeySignResponse) || empty($transactionID) || $origin === "")
             {
                 $this->log("error", "Incomplete data for passkey authentication: passkeySignResponse, origin or transaction ID is missing!");
@@ -538,6 +562,76 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         else
         {
             return (string)($ret->detail->message ?? "");
+        }
+    }
+
+    /**
+     * Remove the passkey challenge and its transaction from the session.
+     */
+    private function removePasskeyChallenge(): void
+    {
+        $this->session->remove("pi_passkeyChallenge");
+        $this->session->remove("pi_passkeyTransactionId");
+        $this->session->remove("pi_passkeyFetchedAt");
+    }
+
+    /**
+     * Make sure that the page has a passkey challenge for the passkey button.
+     * privacyIDEA sends a passkey challenge only to a client that triggers it (the service account, or the policy
+     * passkey_trigger_by_pin). /validate/initialize needs neither. It gives a challenge that belongs to no token.
+     * The answer goes to /validate/check with the user name, and privacyIDEA refuses the passkey of another user.
+     *
+     * The setting "passkeybutton" turns this off. It is on by default. A challenge that privacyIDEA triggered stays.
+     * If the request fails, the page has no passkey button. The button is an extra, so the error does not stop the login.
+     */
+    private function offerPasskey(): void
+    {
+        // Only "0" turns the button off. The settings page does the same, so an empty value shows a checked box.
+        if ($this->getAppValue("passkeybutton", "1") === "0" || $this->session->get("pi_noAuthRequired"))
+        {
+            return;
+        }
+
+        // Keep a triggered challenge. Keep a challenge from /validate/initialize until it is old,
+        // because the push and TiQR pages load again and again.
+        $fetchedAt = $this->session->get("pi_passkeyFetchedAt");
+        if ($this->session->get("pi_passkeyChallenge") !== null
+            && ($fetchedAt === null || time() - (int)$fetchedAt < self::PASSKEY_CHALLENGE_MAX_AGE))
+        {
+            return;
+        }
+        $this->removePasskeyChallenge();
+
+        try
+        {
+            // processPIResponse() is not for this answer. It would replace the transaction of the other challenges.
+            $result = $this->sendRequest("validate/initialize", ["form_params" => ["type" => "passkey"]]);
+            $body = json_decode($result->getBody());
+            $passkey = $body->detail->passkey ?? null;
+            $challenge = is_object($passkey) ? ($passkey->challenge ?? "") : "";
+            $transactionID = $body->detail->transaction_id ?? "";
+
+            if ($result->getStatusCode() !== 200 || ($body->result->status ?? false) !== true
+                || !is_string($challenge) || $challenge === "" || !is_string($transactionID) || $transactionID === "")
+            {
+                // For example a privacyIDEA before 3.11, or one without the policies of the relying party.
+                $this->log("debug", "[offerPasskey] privacyIDEA gave no passkey challenge. HTTP status: " . $result->getStatusCode());
+                return;
+            }
+
+            // The answer has the name user_verification, the triggered challenge has userVerification.
+            $rpId = $passkey->rpId ?? "";
+            $userVerification = $passkey->user_verification ?? "";
+            $this->session->set("pi_passkeyChallenge", [
+                "challenge" => $challenge,
+                "rpId" => is_string($rpId) ? $rpId : "",
+                "userVerification" => is_string($userVerification) ? $userVerification : ""]);
+            $this->session->set("pi_passkeyTransactionId", $transactionID);
+            $this->session->set("pi_passkeyFetchedAt", time());
+        }
+        catch (\Throwable $e)
+        {
+            $this->log("error", "[offerPasskey] " . $e->getMessage());
         }
     }
 
@@ -792,7 +886,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     {
                         // Reset the mode for each new challenge
                         $this->session->set("pi_preferredClientMode", "otp");
-                        $this->session->remove("pi_passkeyChallenge");
+                        $this->removePasskeyChallenge();
                         $hasWebAuthn = false;
                         if (property_exists($detail, "preferred_client_mode"))
                         {
@@ -840,6 +934,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                                     "challenge" => (string)($multiChallenge[$i]->challenge ?? ""),
                                                     "rpId" => (string)($multiChallenge[$i]->rpId ?? ""),
                                                     "userVerification" => (string)($multiChallenge[$i]->userVerification ?? "")]);
+                                                $this->session->set("pi_passkeyTransactionId",
+                                                    (string)($multiChallenge[$i]->transaction_id ?? $detail->transaction_id ?? ""));
                                                 break;
                                             }
                                             $hasWebAuthn = true;

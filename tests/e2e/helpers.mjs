@@ -67,6 +67,7 @@ export async function setAppConfig(admin, key, value) {
 export const DEFAULT_CONFIG = {
   url: "http://privacyidea:8080",
   triggerchallenges: "0",
+  passkeybutton: "1", // the default of the app
   passOnNoUser: "0",
   piexcludeips: "",
   pollInBrowser: "",

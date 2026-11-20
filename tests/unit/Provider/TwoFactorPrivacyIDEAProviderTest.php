@@ -40,7 +40,9 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->client = new FakeClient();
         $this->session = new FakeSession();
         $this->logger = new FakeLogger();
-        $this->config = new FakeConfig(["url" => "http://pi.test", "piactive" => "1"]);
+        // The passkey button asks privacyIDEA for a challenge. Most tests do not queue that answer, so it is off here.
+        // The tests in the section "The passkey button" turn it on.
+        $this->config = new FakeConfig(["url" => "http://pi.test", "piactive" => "1", "passkeybutton" => "0"]);
         $this->request = new FakeRequest();
         $this->groups = new FakeGroupManager();
         $this->provider = new TwoFactorPrivacyIDEAProvider($this->client, $this->config, $this->logger,
@@ -567,6 +569,248 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
 
         $this->assertArrayNotHasKey("passkeyChallenge", $template->vars);
         $this->assertNull($this->session->get("pi_passkeyChallenge"));
+    }
+
+    // ---- The passkey button: a challenge from /validate/initialize
+
+    private const INITIALIZE = '{"detail":{"passkey":{"challenge":"INIT","message":"Please authenticate with your passkey!","rpId":"localhost","transaction_id":"777","user_verification":"preferred"},"threadid":1,"transaction_id":"777"},"result":{"authentication":"CHALLENGE","status":true,"value":false}}';
+    private const INITIALIZE_2 = '{"detail":{"passkey":{"challenge":"INIT2","rpId":"localhost","transaction_id":"888","user_verification":"required"},"transaction_id":"888"},"result":{"authentication":"CHALLENGE","status":true,"value":false}}';
+
+    /** The setting is on by default, so remove the value that setUp() wrote. */
+    private function turnOnThePasskeyButton(): void
+    {
+        unset($this->config->values["passkeybutton"]);
+    }
+
+    public function testThePasskeyButtonAsksForAChallengeWithoutAServiceAccount(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->config->values["realm"] = "dev";
+        $this->client->queue($this->response(200, self::INITIALIZE));
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertCount(1, $this->client->requests, "There is no request for the token of a service account.");
+        $request = $this->client->requests[0];
+        $this->assertSame("POST", $request["method"]);
+        $this->assertSame("http://pi.test/validate/initialize", $request["uri"]);
+        $this->assertSame(["type" => "passkey", "realm" => "dev"], $request["options"]["form_params"]);
+        $this->assertSame("ownCloud Plugin", $request["options"]["headers"]["user-agent"]);
+        $this->assertSame(
+            ["challenge" => "INIT", "rpId" => "localhost", "userVerification" => "preferred"],
+            json_decode($template->vars["passkeyChallenge"], true),
+            "The answer has user_verification. The page needs userVerification.");
+    }
+
+    public function testThePasskeyButtonDoesNotStartThePasskeyPrompt(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, self::INITIALIZE));
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertNotSame("passkey", $template->vars["mode"] ?? "otp", "The user starts the prompt with the button.");
+        $this->assertNull($this->session->get("pi_mode"));
+        $this->assertNull($this->session->get("pi_transactionId"), "The transaction of the other challenges stays free.");
+        $this->assertSame("777", $this->session->get("pi_passkeyTransactionId"));
+    }
+
+    public function testTheSettingTurnsThePasskeyButtonOff(): void
+    {
+        $this->config->values["passkeybutton"] = "0";
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertSame([], $this->client->requests);
+        $this->assertArrayNotHasKey("passkeyChallenge", $template->vars);
+    }
+
+    public function testNoPasskeyChallengeForAUserWhoNeedsNoSecondFactor(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->session->set("pi_uid", "dave");
+        $this->session->set("pi_noAuthRequired", true);
+
+        $template = $this->provider->getTemplate(new FakeUser("dave"));
+
+        $this->assertSame([], $this->client->requests);
+        $this->assertArrayNotHasKey("passkeyChallenge", $template->vars);
+    }
+
+    public function testATriggeredPasskeyChallengeStaysAndNothingIsInitialized(): void
+    {
+        $this->turnOnThePasskeyButton();
+
+        $template = $this->templateAfterTrigger("erin", self::PASSKEY_CHALLENGE);
+
+        $this->assertCount(2, $this->client->requests, "Only the token of the service account and the trigger.");
+        $this->assertSame("CH", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
+        $this->assertSame("555", $this->session->get("pi_passkeyTransactionId"));
+        $this->assertNull($this->session->get("pi_passkeyFetchedAt"), "A triggered challenge never gets old.");
+    }
+
+    public function testTheButtonNextToATriggeredOtpChallengeKeepsTheTransactionOfTheOtp(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->config->values["triggerchallenges"] = "1";
+        $this->client->queue($this->response(200, self::AUTH_OK))
+            ->queue($this->response(200, self::CHALLENGE))
+            ->queue($this->response(200, self::INITIALIZE));
+
+        $template = $this->provider->getTemplate(new FakeUser("bob"));
+
+        $this->assertSame("INIT", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
+        $this->assertSame("1234", $this->session->get("pi_transactionId"));
+
+        // The user types the OTP. The request must carry the transaction of the OTP challenge.
+        $this->client->queue($this->response(200, self::MATCH));
+        $this->request->params["mode"] = "otp";
+        $this->assertTrue($this->verify("bob", "123456"));
+        $this->assertSame("1234", $this->client->requests[3]["options"]["form_params"]["transaction_id"]);
+    }
+
+    public function testWhenTheTriggerFailsPrivacyIdeaIsNotAskedAgain(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->config->values["triggerchallenges"] = "1";
+        $this->client->queue(new \RuntimeException("cURL error 7: Failed to connect"));
+
+        $template = $this->provider->getTemplate(new FakeUser("bob"));
+
+        $this->assertCount(1, $this->client->requests);
+        $this->assertArrayNotHasKey("passkeyChallenge", $template->vars);
+    }
+
+    public function testTheChallengeStaysUntilItIsOld(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, self::INITIALIZE))->queue($this->response(200, self::INITIALIZE_2));
+
+        $this->provider->getTemplate(new FakeUser("erin"));
+        $template = $this->provider->getTemplate(new FakeUser("erin")); // the push page loads again and again
+        $this->assertCount(1, $this->client->requests);
+        $this->assertSame("INIT", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
+
+        $this->session->set("pi_passkeyFetchedAt", time() - 61);
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+        $this->assertCount(2, $this->client->requests, "privacyIDEA drops the challenge after 120 seconds.");
+        $this->assertSame("INIT2", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
+        $this->assertSame("888", $this->session->get("pi_passkeyTransactionId"));
+    }
+
+    public function testTheAnswerGoesToTheTransactionOfTheInitializedChallenge(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, self::INITIALIZE))->queue($this->response(200, self::PASSKEY_ACCEPT));
+        $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->request->params["mode"] = "passkey";
+        $this->request->params["passkeySignResponse"] = self::PASSKEY_SIGNED;
+        $this->request->params["origin"] = "http://localhost:8080";
+
+        $this->assertTrue($this->verify("erin", ""));
+        $form = $this->client->requests[1]["options"]["form_params"];
+        $this->assertSame("777", $form["transaction_id"]);
+        $this->assertSame("erin", $form["user"], "The user makes privacyIDEA refuse the passkey of another user.");
+        $this->assertSame([], $this->session->data);
+    }
+
+    public function testAnInitializedChallengeIsGoodForOneAnswer(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, self::INITIALIZE))
+            ->queue($this->response(200, self::PASSKEY_REJECT))
+            ->queue($this->response(200, self::INITIALIZE_2));
+        $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->request->params["mode"] = "passkey";
+        $this->request->params["passkeySignResponse"] = self::PASSKEY_SIGNED;
+        $this->request->params["origin"] = "http://localhost:8080";
+        $this->assertSame("Authentication failed.", $this->failureOf("erin", ""));
+        $this->assertNull($this->session->get("pi_passkeyChallenge"));
+        $this->assertNull($this->session->get("pi_passkeyTransactionId"));
+
+        // ownCloud shows the page again. The user gets a new challenge for the next try.
+        $this->request->params = [];
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+        $this->assertSame("INIT2", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
+    }
+
+    public function testAnotherUserGetsHisOwnChallenge(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, self::INITIALIZE))->queue($this->response(200, self::INITIALIZE_2));
+
+        $this->provider->getTemplate(new FakeUser("erin"));
+        $template = $this->provider->getTemplate(new FakeUser("alice")); // same session, other user
+
+        $this->assertCount(2, $this->client->requests);
+        $this->assertSame("INIT2", json_decode($template->vars["passkeyChallenge"], true)["challenge"]);
+    }
+
+    /**
+     * @dataProvider unusableInitializeAnswers
+     */
+    public function testWithoutAUsableAnswerThePageHasNoButtonAndNoError($answer): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($answer);
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertArrayNotHasKey("passkeyChallenge", $template->vars);
+        $this->assertArrayNotHasKey("message", $template->vars, "The user does not see an error for an extra.");
+        $this->assertNull($this->session->get("pi_passkeyChallenge"));
+        $this->assertNull($this->session->get("pi_passkeyFetchedAt"));
+    }
+
+    public function unusableInitializeAnswers(): array
+    {
+        return [
+            "privacyIDEA before 3.11" => [new FakeResponse(400, '{"result":{"status":false,"error":{"code":905,"message":"ERR905: unknown type"}}}')],
+            "no policy for the relying party" => [new FakeResponse(403, '{"result":{"status":false,"error":{"code":303,"message":"No relying party"}}}')],
+            "an error page of a proxy" => [new FakeResponse(502, "<html>Bad gateway</html>")],
+            "an empty challenge" => [new FakeResponse(200, '{"detail":{"passkey":{"challenge":"","transaction_id":"1"},"transaction_id":"1"},"result":{"status":true,"value":false}}')],
+            "no transaction" => [new FakeResponse(200, '{"detail":{"passkey":{"challenge":"X"}},"result":{"status":true,"value":false}}')],
+            "a challenge that is not text" => [new FakeResponse(200, '{"detail":{"passkey":{"challenge":["X"],"transaction_id":"1"},"transaction_id":"1"},"result":{"status":true,"value":false}}')],
+            "no passkey in the answer" => [new FakeResponse(200, '{"detail":{"transaction_id":"1"},"result":{"status":true,"value":false}}')],
+            "a client error" => [new \RuntimeException("cURL error 6: Could not resolve host: pi.internal.example")],
+            "a type error" => [new \TypeError("Unsupported operand types: string * int")],
+        ];
+    }
+
+    public function testAnErrorOfTheInitializeRequestStaysInTheLog(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue(new \RuntimeException("cURL error 6: Could not resolve host: pi.internal.example"));
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertStringContainsString("pi.internal.example", $this->logger->all());
+        $this->assertArrayNotHasKey("message", $template->vars);
+    }
+
+    /**
+     * @dataProvider valuesThatLeaveThePasskeyButtonOn
+     */
+    public function testThePasskeyButtonFollowsTheDefaultOfTheSetting($value): void
+    {
+        // The settings page shows a checked box for every value except "0". The provider must do the same.
+        $this->turnOnThePasskeyButton();
+        if ($value !== null)
+        {
+            $this->config->values["passkeybutton"] = $value;
+        }
+        $this->client->queue($this->response(200, self::INITIALIZE));
+
+        $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertCount(1, $this->client->requests);
+    }
+
+    public function valuesThatLeaveThePasskeyButtonOn(): array
+    {
+        return ["no value" => [null], "an empty value" => [""], "the value 1" => ["1"]];
     }
 
     // ---- The log

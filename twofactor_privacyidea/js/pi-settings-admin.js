@@ -170,6 +170,17 @@ $(document).ready(function ()
         //displayServerCredentials(checked);
     });
 
+    /* Passkey button. It is on by default, like in the Provider: only "0" turns it off. */
+    getValue("passkeybutton", function (passkeybutton)
+    {
+        $("#piSettings #passkeybutton").prop('checked', passkeybutton !== "0");
+    });
+
+    $("#piSettings #passkeybutton").change(function ()
+    {
+        setValue("passkeybutton", $(this).is(":checked") ? "1" : "0");
+    });
+
     /* Form-auto-submit after X digits entered */
     getValue("autoSubmitOtpLength", function (otpLength)
     {
