@@ -1,11 +1,17 @@
 ## Unreleased
 
 ### Features
-* Passkeys: A user can log in with a passkey as the second factor. The page asks for the passkey after the password
-  and has a "Passkey" button to try again. The user needs a passkey token in privacyIDEA 3.11.1 or later,
-  the policy `passkey_trigger_by_pin` and the setting "Trigger challenges". See the README.
+* Passkeys: A user can log in with a passkey as the second factor. The login page has a "Passkey" button.
+  The app gets the challenge from privacyIDEA with `/validate/initialize`, so the button needs no service account
+  and no policy `passkey_trigger_by_pin`. The setting "Show the passkey button" in the admin settings hides it.
+  If privacyIDEA triggers a passkey challenge (policy `passkey_trigger_by_pin` and the setting "Trigger challenges"),
+  the browser asks for the passkey by itself. The user needs a passkey token in privacyIDEA 3.11.1 or later.
+  See the README.
 * Support ownCloud 11. The app now needs ownCloud 10.11 or later.
 * Nextcloud 12 and 13 are no longer listed. They are out of support.
+
+### Documentation
+* The README is new. It has a quick start, the login flow, a list of all settings and a troubleshooting table.
 
 ### Fixes
 * Security: The excluded IP addresses use the address that ownCloud sees. The app no longer trusts the header
@@ -41,6 +47,8 @@
   PassOnNoUser now continues the login without a click on a button.
 * The answer of a WebAuthn or passkey login was sent with the user agent of the HTTP client ("GuzzleHttp")
   and not with "ownCloud Plugin". A privacyIDEA policy with a user agent condition did not match this request.
+* The OTP field has `autocomplete="one-time-code"`. Chrome no longer fills the saved password of the user into it.
+  Firefox 159 still does, because it ignores this value.
 
 ### Changes that need action
 * The certificate check uses the CA bundle of ownCloud. Certificates that the admin imported with
