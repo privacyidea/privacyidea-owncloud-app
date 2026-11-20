@@ -140,6 +140,7 @@ To update the Semgrep image, get the new digest with `docker buildx imagetools i
 | `e2e.yml` | Pull request, push to `master`, every night, by hand | The Playwright tests against ownCloud 10.16.7 and 11.1.0 (pinned). At night: the floating tags `10` and `11`. |
 | `semgrep.yml` | Pull request, push to `master` | Security scan. The findings do not fail the job. They are in the log and show as code scanning alerts. A pull request from a fork has a read-only token, so the upload of the alerts is skipped for it. |
 | `fixup.yml` | Pull request | Fails the check when the pull request has `fixup!` or `squash!` commits. The check blocks the merge only when a maintainer sets it as required in the branch settings. |
+| `release.yml` | Push of a tag `v<version>` | Makes a GitHub release. The text of the release is the section of `Changelog.md` for the version. |
 
 Update the pinned ownCloud versions in `e2e.yml` when ownCloud releases a new version.
 To run the tests against one image tag, start `e2e.yml` by hand and enter the tag, for example `11.1.0`.
@@ -150,6 +151,22 @@ If the nightly run stops, a maintainer must turn it on again in the Actions tab.
 The workflows `php-tests.yml` and `e2e.yml` run the same commands as `dev/lint-php.sh`, `dev/test-unit.sh` and `dev/setup.sh` with `dev/test-e2e.sh`.
 The stack pulls most images from Docker Hub. Docker Hub limits the pulls without login. A run can fail for this reason alone.
 The privacyIDEA image comes from `harbor.netknights.it`. A run fails when that registry is not reachable.
+
+## Make a release
+
+1. In `Changelog.md`, rename the heading `## Unreleased` to `## <version> <month>/<year>`, for example `## 3.3.0 11/2026`.
+2. Make sure that `<version>` in `twofactor_privacyidea/appinfo/info.xml` has the same value.
+3. Merge the change into `master`.
+4. Run `sh .github/scripts/changelog-section.sh 3.3.0` to see the text of the release.
+5. Set the tag on the merge commit and push it: `git tag -a v3.3.0 -m "privacyidea 3.3.0"` and `git push origin v3.3.0`.
+
+The workflow `release.yml` starts on the push. It stops with an error when the tag does not match `info.xml`
+or when `Changelog.md` has no section for the version. In this case, fix the file and merge it.
+Then delete the tag with `git tag -d v3.3.0` and `git push --delete origin v3.3.0`, and set it again.
+The release is public at once. The subsection `### Note for the release` of the changelog is not part of the text.
+
+The workflow does not attach an archive and does not sign the app. The release for the ownCloud marketplace needs a signed archive.
+`appinfo/signature.json` is out of date at the moment. Sign the app before you upload an archive.
 
 ## Problems with Docker in WSL
 
