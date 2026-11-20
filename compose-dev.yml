@@ -115,6 +115,13 @@ services:
     environment:
       PI_URL: http://privacyidea:8080
       DEV_STATE: ${DEV_STATE:-default}
+      # The relying party id of the passkeys. It is the host name that the browser uses.
+      PI_RP_ID: ${PI_RP_ID:-localhost}
+      # Optional second resolver with the users of an OpenLDAP. It is off when PI_LDAP_URI is empty.
+      PI_LDAP_URI: ${PI_LDAP_URI:-}
+      PI_LDAP_BASE: ${PI_LDAP_BASE:-ou=people,dc=example,dc=org}
+      PI_LDAP_BIND_DN: ${PI_LDAP_BIND_DN:-cn=admin,dc=example,dc=org}
+      PI_LDAP_BIND_PW: ${PI_LDAP_BIND_PW:-admin}
     command: ["node", "setup-privacyidea.mjs"]
 
   mariadb:
