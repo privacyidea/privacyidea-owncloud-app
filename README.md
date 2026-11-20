@@ -5,6 +5,7 @@
 * ownCloud 10.11 or later, including ownCloud 11 (PHP 7.4 to 8.3)
 * privacyIDEA server 3.1+
 * privacyIDEA server 3.2+ for Push Token support
+* privacyIDEA server 3.11.1+ for passkeys
 
 Nextcloud is not supported.
 
@@ -46,6 +47,30 @@ The login then continues without a second factor.
 privacyIDEA also answers "user not found" for every user when the realm in the settings is wrong.
 Then all users log in without a second factor.
 Make sure that the realm is correct before you turn this on. Use the test button on the settings page.
+
+## Passkeys
+
+A user can answer the second factor with a passkey. The user logs in with the password first.
+Then the browser asks for the passkey. If the user cancels, the login page shows a "Passkey" button to try again.
+
+To set this up:
+
+1. In privacyIDEA, set the policies `webauthn_relying_party_id` and `webauthn_relying_party_name` (scope "enrollment").
+   The relying party id is the host name of ownCloud, for example `cloud.example.com`.
+2. In privacyIDEA, set the policy `passkey_trigger_by_pin` (scope "authentication").
+   Without it, privacyIDEA sends no passkey challenge to the app.
+3. In the settings of the app, turn on "Trigger challenges".
+4. Enroll a passkey for the user in privacyIDEA.
+
+The browser allows passkeys only on HTTPS or on `http://localhost`.
+The relying party id must be the host name that the user opens in the browser, or its parent domain.
+The app sends the user name together with the passkey answer. privacyIDEA then refuses a passkey of another user.
+
+Limits:
+
+* The login page cannot enroll a passkey (enroll via multichallenge).
+* Do not give one user a passkey and a WebAuthn token while `passkey_trigger_by_pin` is set.
+  privacyIDEA sends a separate challenge for each type, and a client can answer only one of them.
 
 ## Poll in browser
 

@@ -31,6 +31,10 @@ function piFormTemplate()
     {
         piDisableElement("webAuthnButton");
     }
+    if (piGetValue("passkeyChallenge") === "")
+    {
+        piDisableElement("passkeyButton");
+    }
     if (piGetValue("u2fSignRequest") === "")
     {
         piDisableElement("u2fButton");
@@ -72,6 +76,13 @@ function piFormTemplate()
         piDisableElement("submitButton");
         doWebAuthn();
     }
+    if (piGetValue("mode") === "passkey")
+    {
+        piDisableElement("otp");
+        piDisableElement("submitButton");
+        piDisableElement("passkeyButton");
+        window.piDoPasskey();
+    }
     if (piGetValue("mode") === "u2f")
     {
         piDisableElement("otp");
@@ -80,6 +91,7 @@ function piFormTemplate()
     }
     if (piGetValue("pushAvailable") !== "1"
         && piGetValue("tiqrAvailable") !== "1"
+        && piGetValue("passkeyChallenge").length < 1
         && piGetValue("webAuthnSignRequest").length < 1
         && piGetValue("u2fSignRequest").length < 1)
     {

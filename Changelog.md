@@ -1,6 +1,9 @@
 ## Unreleased
 
 ### Features
+* Passkeys: A user can log in with a passkey as the second factor. The page asks for the passkey after the password
+  and has a "Passkey" button to try again. The user needs a passkey token in privacyIDEA 3.11.1 or later,
+  the policy `passkey_trigger_by_pin` and the setting "Trigger challenges". See the README.
 * Support ownCloud 11. The app now needs ownCloud 10.11 or later.
 * Nextcloud 12 and 13 are no longer listed. They are out of support.
 

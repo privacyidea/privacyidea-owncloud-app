@@ -43,6 +43,19 @@ function piEventListeners()
     {
         piChangeMode("webauthn");
     });
+    document.getElementById("passkeyButton").addEventListener("click", function ()
+    {
+        // Some browsers start the passkey prompt only for a click on the page. Do not reload the page first.
+        // The push and TiQR pages reload by themselves, so they need the reload to stop it.
+        if (piGetValue("mode") === "push" || piGetValue("mode") === "tiqr")
+        {
+            piChangeMode("passkey");
+        }
+        else
+        {
+            window.piDoPasskey();
+        }
+    });
     document.getElementById("pushButton").addEventListener("click", function ()
     {
         piChangeMode("push");

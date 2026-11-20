@@ -46,7 +46,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         "pi_u2fSignRequest", "pi_webAuthnSignRequest", "pi_pushAvailable", "pi_otpAvailable", "pi_tiqrAvailable",
         "pi_tiqrImage", "pi_imgU2F", "pi_imgWebauthn", "pi_imgPush", "pi_imgOTP", "pi_transactionId",
         "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired",
-        "pi_uid"];
+        "pi_uid", "pi_passkeyChallenge"];
     /** @var IClientService */
     private $httpClientService;
     /** @var IConfig */
@@ -154,6 +154,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         if ($this->session->get("pi_webAuthnSignRequest") !== null)
         {
             $template->assign("webAuthnSignRequest", json_encode($this->session->get("pi_webAuthnSignRequest")));
+        }
+        if ($this->session->get("pi_passkeyChallenge") !== null)
+        {
+            $template->assign("passkeyChallenge", json_encode($this->session->get("pi_passkeyChallenge")));
         }
         if ($this->session->get("pi_pushAvailable"))
         {
@@ -331,6 +335,23 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             else
             {
                 $ret = $this->validateCheckU2F($username, $transactionID, $u2fSignResponse);
+            }
+        }
+        elseif ($mode === "passkey")
+        {
+            // Whatever the result is, the next page starts in the OTP mode. A rejected passkey must not start
+            // the prompt of the browser again and again. The user can use the passkey button to try again.
+            $this->session->set("pi_mode", "otp");
+            $passkeySignResponse = json_decode((string)$this->request->getParam("passkeySignResponse"), true);
+            $origin = (string)$this->request->getParam("origin");
+
+            if (!is_array($passkeySignResponse) || empty($transactionID) || $origin === "")
+            {
+                $this->log("error", "Incomplete data for passkey authentication: passkeySignResponse, origin or transaction ID is missing!");
+            }
+            else
+            {
+                $ret = $this->validateCheckPasskey($username, $transactionID, $passkeySignResponse, $origin);
             }
         }
         elseif ($mode === "webauthn")
@@ -579,6 +600,52 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
+     * Sends a request to /validate/check with the data required to authenticate a passkey.
+     * The request has the user name. Without it, privacyIDEA accepts the passkey of any user for a challenge that
+     * no token owns (for example from /validate/initialize). With it, privacyIDEA refuses a passkey of another user.
+     *
+     * @param string $username
+     * @param string $transactionID
+     * @param array $passkeySignResponse The answer of the browser: credential_id, authenticatorData, clientDataJSON,
+     *                                   signature and optionally userHandle
+     * @param string $origin
+     * @return mixed|string
+     * @throws ProcessPIResponseException|Exception
+     */
+    private function validateCheckPasskey(string $username, string $transactionID, array $passkeySignResponse, string $origin)
+    {
+        $required = ["credential_id", "authenticatorData", "clientDataJSON", "signature"];
+        foreach ($required as $key)
+        {
+            if (empty($passkeySignResponse[$key]) || !is_string($passkeySignResponse[$key]))
+            {
+                $this->log("error", "Incomplete data for passkey authentication: " . $key . " is missing!");
+                return 0;
+            }
+        }
+        $options["form_params"] = [
+            "user" => $username,
+            "transaction_id" => $transactionID,
+            "credential_id" => $passkeySignResponse["credential_id"],
+            "authenticatorData" => $passkeySignResponse["authenticatorData"],
+            "clientDataJSON" => $passkeySignResponse["clientDataJSON"],
+            "signature" => $passkeySignResponse["signature"]];
+        $realm = $this->getAppValue("realm", "");
+        if ($realm !== "")
+        {
+            $options["form_params"]["realm"] = $realm;
+        }
+        if (!empty($passkeySignResponse["userHandle"]) && is_string($passkeySignResponse["userHandle"]))
+        {
+            $options["form_params"]["userHandle"] = $passkeySignResponse["userHandle"];
+        }
+        $options["headers"]["Origin"] = $origin;
+
+        $res = $this->sendRequest("validate/check", $options);
+        return $this->processPIResponse($res);
+    }
+
+    /**
      * Call /validate/polltransaction using transaction_id
      *
      * @param string $transactionID
@@ -725,6 +792,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     {
                         // Reset the mode for each new challenge
                         $this->session->set("pi_preferredClientMode", "otp");
+                        $this->session->remove("pi_passkeyChallenge");
+                        $hasWebAuthn = false;
                         if (property_exists($detail, "preferred_client_mode"))
                         {
                             $pref = $detail->preferred_client_mode;
@@ -763,6 +832,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                             }
                                             break;
                                         case "webauthn":
+                                            if (($multiChallenge[$i]->type ?? "") === "passkey")
+                                            {
+                                                // A passkey has the client mode "webauthn", but it has no sign request.
+                                                // All passkey tokens of the user get the same challenge.
+                                                $this->session->set("pi_passkeyChallenge", [
+                                                    "challenge" => (string)($multiChallenge[$i]->challenge ?? ""),
+                                                    "rpId" => (string)($multiChallenge[$i]->rpId ?? ""),
+                                                    "userVerification" => (string)($multiChallenge[$i]->userVerification ?? "")]);
+                                                break;
+                                            }
+                                            $hasWebAuthn = true;
                                             $this->session->set("pi_webAuthnSignRequest", $multiChallenge[$i]->attributes->webAuthnSignRequest);
                                             if (!empty($multiChallenge[$i]->image))
                                             {
@@ -793,6 +873,12 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                                             $this->session->set("pi_otpAvailable", "1");
                                     }
                                 }
+                            }
+                            // privacyIDEA names the client mode of a passkey "webauthn". Without a WebAuthn token, use the passkey flow.
+                            if ($this->session->get("pi_passkeyChallenge") !== null && !$hasWebAuthn
+                                && $this->session->get("pi_preferredClientMode") === "webauthn")
+                            {
+                                $this->session->set("pi_preferredClientMode", "passkey");
                             }
                             // Set the mode to preferred if possible
                             if (!empty($this->session->get("pi_preferredClientMode")))
