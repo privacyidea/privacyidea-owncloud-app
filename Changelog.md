@@ -62,6 +62,8 @@
   PassOnNoUser now continues the login without a click on a button.
 * The answer of a WebAuthn or passkey login was sent with the user agent of the HTTP client ("GuzzleHttp")
   and not with "ownCloud Plugin". A privacyIDEA policy with a user agent condition did not match this request.
+* WebAuthn: The answer no longer has the fields `userhandle` and `assertionclientextensions`. The app never filled
+  them in practice, and privacyIDEA 3.11.2 and later expect another encoding of the user handle.
 * The OTP field has `autocomplete="one-time-code"`. Chrome no longer fills the saved password of the user into it.
   Firefox 159 still does, because it ignores this value.
 * A successful login ended in "Failed to communicate with privacyIDEA." when the policy `no_detail_on_success`

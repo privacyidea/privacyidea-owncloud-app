@@ -809,14 +809,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             "clientdata" => $webAuthnSignResponse['clientdata'],
             "credentialid" => $webAuthnSignResponse['credentialid'],
             "authenticatordata" => $webAuthnSignResponse['authenticatordata']];
-        if (!empty($webAuthnSignResponse['userhandle']))
-        {
-            $options["form_params"]['userhandle'] = $webAuthnSignResponse['userhandle'];
-        }
-        if (!empty($webAuthnSignResponse['assertionclientextensions']))
-        {
-            $options["form_params"]['assertionclientextensions'] = $webAuthnSignResponse['assertionclientextensions'];
-        }
+        // No user handle and no client extensions. Both are optional. privacyIDEA 3.11.2 and later expect the user
+        // handle in base64url, older versions as text, and they read the extensions only as assertionClientExtensions.
         $options['headers']['Origin'] = $origin;
 
         $res = $this->sendRequest("validate/check", $options);

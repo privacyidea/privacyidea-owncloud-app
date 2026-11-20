@@ -589,6 +589,23 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertSame("https://cloud.example.com", $this->client->requests[0]["options"]["headers"]["Origin"]);
     }
 
+    public function testAWebAuthnAnswerHasNoUserHandleAndNoExtensions(): void
+    {
+        // The encoding of the user handle depends on the version of privacyIDEA. Both fields are optional.
+        $this->session->set("pi_uid", "erin");
+        $this->session->set("pi_transactionId", "555");
+        $this->request->params["mode"] = "webauthn";
+        $this->request->params["webAuthnSignResponse"] = '{"signaturedata":"s","clientdata":"c","credentialid":"i",'
+            . '"authenticatordata":"a","userhandle":"WAN0001","assertionclientextensions":"e30"}';
+        $this->request->params["origin"] = "http://localhost:8080";
+        $this->client->queue($this->response(200, self::MATCH));
+
+        $this->assertTrue($this->verify("erin", ""));
+        $form = $this->client->requests[0]["options"]["form_params"];
+        $this->assertArrayNotHasKey("userhandle", $form);
+        $this->assertArrayNotHasKey("assertionclientextensions", $form);
+    }
+
     public function testEveryRequestHasTheUserAgentAlsoWithOwnHeaders(): void
     {
         $all = [];
