@@ -922,7 +922,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private function sendRequest(string $endpoint, array $options, bool $isGET = false): IResponse
     {
         $clientOptions = $this->getClientOptions();
+        // array_merge replaces the whole "headers" array. A request with its own header (the Origin of a WebAuthn
+        // or passkey answer) would lose the user agent, and the HTTP client would send its own.
+        $headers = array_merge($clientOptions["headers"] ?? [], $options["headers"] ?? []);
         $options = array_merge($clientOptions, $options);
+        $options["headers"] = $headers;
         $realm = $this->getAppValue('realm', '');
         if (!empty($realm))
         {

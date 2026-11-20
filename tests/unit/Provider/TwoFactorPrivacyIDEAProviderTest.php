@@ -503,6 +503,47 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         }
     }
 
+    public function testEveryRequestHasTheUserAgentAlsoWithOwnHeaders(): void
+    {
+        $all = [];
+
+        // The passkey answer has the header Origin. It must not replace the user agent.
+        $this->answerWithPasskey("erin");
+        $this->client->queue($this->response(200, self::PASSKEY_ACCEPT));
+        $this->verify("erin", "");
+        $all = array_merge($all, $this->client->requests);
+
+        // The WebAuthn answer has the header Origin too.
+        $this->setUp();
+        $this->request->params["mode"] = "webauthn";
+        $this->request->params["webAuthnSignResponse"] = '{"signaturedata":"s","clientdata":"c","credentialid":"i","authenticatordata":"a"}';
+        $this->request->params["origin"] = "http://localhost:8080";
+        $this->session->set("pi_uid", "erin");
+        $this->session->set("pi_transactionId", "555");
+        $this->client->queue($this->response(200, self::PASSKEY_ACCEPT));
+        $this->verify("erin", "");
+        $all = array_merge($all, $this->client->requests);
+
+        // A request without own headers.
+        $this->setUp();
+        $this->client->queue($this->response(200, self::MATCH));
+        $this->verify("alice", "123456");
+        $all = array_merge($all, $this->client->requests);
+
+        // The request for the token of the service account and the request of triggerchallenge.
+        $this->setUp();
+        $this->templateAfterTrigger("erin", self::PASSKEY_CHALLENGE);
+        $all = array_merge($all, $this->client->requests);
+
+        $this->assertCount(5, $all);
+        foreach ($all as $request)
+        {
+            $this->assertSame("ownCloud Plugin", $request["options"]["headers"]["user-agent"], $request["uri"]);
+        }
+        $this->assertSame("http://localhost:8080", $all[0]["options"]["headers"]["Origin"], "The own header stays.");
+        $this->assertSame("http://localhost:8080", $all[1]["options"]["headers"]["Origin"], "The own header stays.");
+    }
+
     public function testACanceledPasskeyGoesBackToTheOtpMode(): void
     {
         // The page sends the mode "otp" with modeChanged when the user cancels the prompt of the browser.

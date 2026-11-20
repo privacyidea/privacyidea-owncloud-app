@@ -2,7 +2,7 @@
 // The setup script writes the policies that the tests need (relying party id "localhost" and passkey_trigger_by_pin).
 // Every test enrolls its own passkeys, because a virtual authenticator forgets its credentials when the page closes.
 import { test, expect } from "@playwright/test";
-import { adminPage, loginPassword, resetAppConfig, setAppConfig } from "../helpers.mjs";
+import { adminPage, loginPassword, piAudit, resetAppConfig, setAppConfig } from "../helpers.mjs";
 import { addAuthenticator, enrollPasskey, removePasskeys } from "../passkey-helpers.mjs";
 
 // The challenge page of the app. Its query string can name /apps/files, so the tests check the path.
@@ -57,6 +57,10 @@ test("P1: erin logs in with a passkey after the password", async ({ browser }) =
   // The page asks for the passkey by itself. The virtual authenticator answers.
   await page.waitForURL(/\/apps\/files/);
   expect(errors).toEqual([]);
+  // The answer has its own header (Origin). It must still carry the user agent of the app.
+  const [answer] = await piAudit("*validate/check*");
+  expect(answer.user).toBe("erin");
+  expect(answer.user_agent).toBe("ownCloud");
 });
 
 test("P2: without a usable passkey the page falls back and the passkey button tries again", async ({ browser }) => {
