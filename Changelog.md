@@ -39,7 +39,6 @@
 * IPv6 addresses work in the list of excluded IP addresses. Invalid entries are ignored.
 * Removed unused files `pi-auto-submit.js` and `pi-response-status.js`.
   PassOnNoUser now continues the login without a click on a button.
-
 * The answer of a WebAuthn or passkey login was sent with the user agent of the HTTP client ("GuzzleHttp")
   and not with "ownCloud Plugin". A privacyIDEA policy with a user agent condition did not match this request.
 
