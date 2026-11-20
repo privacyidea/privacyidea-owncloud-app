@@ -458,8 +458,10 @@ var pi_webauthn = navigator.credentials ? window.pi_webauthn || {} : null;
      * @property {string} clientdata - The clientDataJSON, encoded in base64.
      * @property {string} signaturedata - The signature, encoded in base64.
      * @property {string} authenticatordata - The authenticatorData, encoded in base64.
-     * @property {string} [userhandle] - The userHandle as reported by the authenticator.
-     * @property {string} [assertionclientextensions] - The assertionClientExtensions, encoded in JSON.
+     *
+     * The answer has no user handle and no client extensions. Both are optional for privacyIDEA. The old code sent
+     * neither in practice: it decoded the user handle wrongly to an empty string, and it read a field that the
+     * browser does not have. privacyIDEA 3.11.2 and later expect the user handle in base64url, older versions as text.
      */
     this.sign = function (webAuthnSignRequest) {
         var publicKeyCredentialRequestOptions = {
@@ -488,15 +490,6 @@ var pi_webauthn = navigator.credentials ? window.pi_webauthn || {} : null;
                     signaturedata: webAuthnBase64EncArr(assertion.response.signature),
                     authenticatordata: webAuthnBase64EncArr(assertion.response.authenticatorData)
                 };
-
-                if (assertion.response.userHandle) {
-                    webAuthnSignResponse.userhandle = utf8ArrToStr(
-                        assertion.response.userHandle);
-                }
-                if (assertion.response.assertionClientExtensions) {
-                    webAuthnSignResponse.assertionclientextensions = webAuthnBase64EncArr(
-                        strToUtf8Arr(JSON.stringify(assertion.response.assertionClientExtensions)))
-                }
 
                 return Promise.resolve(webAuthnSignResponse);
             });

@@ -128,6 +128,8 @@ test("P6: without a triggered challenge, the passkey button logs in", async ({ b
   await expect(page).toHaveURL(CHALLENGE_PAGE);
   await expect(page.locator("#otp")).toBeVisible();
   await expect(page.locator("#passkeyButton")).toBeVisible();
+  // The text of the challenge comes from privacyIDEA. The local text of the app is different.
+  await expect(page.locator("#passkeyMessage")).toHaveText("Please authenticate with your passkey!");
   await page.waitForTimeout(1000);
   expect(await promptCount(page)).toBe(0);
 

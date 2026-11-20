@@ -34,6 +34,13 @@ if (!empty($_['imgOTP']) && $_['mode'] === "otp") : ?>
 <?php endif;
 if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
     <img class="tokenImages" id="tiqrImage" width="250" src="<?php p($_['tiqrImage']); ?>" alt="TiQR Image"><br>
+<?php endif;
+if (!empty($_['enrollImage'])) : ?>
+    <img class="tokenImages" id="enrollImage" src="<?php p($_['enrollImage']); ?>" alt="QR code of the new token"><br>
+    <?php if (!empty($_['enrollLink'])) : ?>
+        <a id="enrollLink" href="<?php p($_['enrollLink']); ?>"><?php p($_['enrollLinkLabel']); ?></a><br>
+    <?php endif; ?>
+    <br>
 <?php endif; ?>
 
 <!-- FORM -->
@@ -51,6 +58,10 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
         <input id="submitButton" type="submit" class="button"
                value="<?php if (isset($_['verify'])) : p($_['verify']); endif; ?>">
     <?php endif; ?>
+    <?php if (!empty($_['newChallenge'])) : ?>
+        <input id="newChallengeButton" type="button" class="button" value="<?php p($_['newChallenge']); ?>"/>
+    <?php endif; ?>
+    <input id="newChallenge" type="hidden" name="newChallenge" value="0"/>
 
     <!-- Hidden input that saves the changes -->
     <input id="mode" type="hidden" name="mode"
@@ -111,6 +122,9 @@ if (!empty($_['tiqrImage']) && $_['mode'] === "tiqr") : ?>
         <input class="alternateTokenButtons" id="tiqrButton" name="tiqrButton" type="button" value="TiQR"/>
         <input class="alternateTokenButtons" id="u2fButton" name="u2fButton" type="button" value="U2F"/>
         <input id="otpButton" name="otpButton" type="button" value="OTP"/>
+        <?php if (!empty($_['passkeyMessage'])) : ?>
+            <p id="passkeyMessage"><?php p($_['passkeyMessage']); ?></p>
+        <?php endif; ?>
     </div>
 
     <?php if (isset($_['autoSubmit']) && $_['autoSubmit']): ?>

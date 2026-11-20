@@ -16,6 +16,18 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>
  */
 
+/**
+ * True if the browser asks privacyIDEA itself (pi-poll-in-browser.js). The conditions are the same as there.
+ */
+function piPollInBrowserActive()
+{
+    return piGetValue("pollInBrowser") === "1"
+        && piGetValue("pollInBrowserUrl").length > 0
+        && piGetValue("transactionId").length > 0
+        && String(piGetValue("pollInBrowserFailed")) !== "true"
+        && typeof (Worker) !== "undefined";
+}
+
 function piPollByReload()
 {
     let mode = document.getElementById("mode").value;
@@ -32,6 +44,12 @@ function piPollByReload()
         else
         {
             refreshTime = pollingIntervals[Number(loadCounter - 1)];
+        }
+        // While the browser asks privacyIDEA every second, the page reloads only every 30 seconds.
+        // The server then still notices an expired challenge. If the browser poll fails, it calls this function again.
+        if (piPollInBrowserActive())
+        {
+            refreshTime = 30;
         }
 
         refreshTime *= 1000;

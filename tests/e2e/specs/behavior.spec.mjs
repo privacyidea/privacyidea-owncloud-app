@@ -47,6 +47,11 @@ test("T: the routes behind the test buttons of the admin page report success and
   expect(JSON.stringify(badService)).not.toContain("privacyidea:8080");
   expect((await call("testAuthentication", "alice", await freshOtp("alice"))).status).toBe("success");
   expect((await call("testAuthentication", "alice", "000000")).status).toBe("error");
+  // With PassOnNoUser, the provider returns a text for a user that privacyIDEA does not know (error 904).
+  await setAppConfig(admin, "passOnNoUser", "1");
+  const unknown = await call("testAuthentication", "dave", "000000");
+  expect(unknown.status).toBe("error");
+  expect(unknown.data.message).toContain("does not know the user");
 });
 
 test("B1: the poll-in-browser checkbox shows the saved state", async () => {
@@ -171,6 +176,27 @@ test("F: bob logs in with challenge-response", async ({ page }) => {
   await setAppConfig(admin, "triggerchallenges", "1");
   await loginPassword(page, "bob");
   await expect(page.locator("#otp")).toBeVisible();
+  await page.fill("#otp", await freshOtp("bob"));
+  await page.click("#submitButton");
+  await page.waitForURL(/\/apps\/files/);
+});
+
+test("F2: after a refused answer, the button 'New challenge' triggers new challenges", async ({ page }) => {
+  await setAppConfig(admin, "triggerchallenges", "1");
+  await loginPassword(page, "bob");
+  await expect(page.locator("#otp")).toBeVisible();
+  await expect(page.locator("#newChallengeButton")).toHaveCount(0);
+  const [first] = await piAudit("*validate/triggerchallenge*", 1);
+
+  await page.fill("#otp", "000000");
+  await page.click("#submitButton");
+  await expect(page.locator("#newChallengeButton")).toBeVisible();
+  await page.click("#newChallengeButton");
+
+  // The next page triggered new challenges. A valid OTP answers them.
+  await expect(page.locator("#otp")).toBeVisible();
+  await expect.poll(async () => (await piAudit("*validate/triggerchallenge*", 1))[0].number).toBeGreaterThan(first.number);
+  await expect(page.locator("#newChallengeButton")).toHaveCount(0);
   await page.fill("#otp", await freshOtp("bob"));
   await page.click("#submitButton");
   await page.waitForURL(/\/apps\/files/);

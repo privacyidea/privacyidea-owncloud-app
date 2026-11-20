@@ -85,7 +85,16 @@ class SettingsController extends Controller
         try
         {
             $result = $provider->validateCheck($user, $pass);
-            if ($result->result->status)
+            if (is_string($result))
+            {
+                // PassOnNoUser is on, and privacyIDEA does not know the user (error 904). The provider returns a text.
+                $message = $this->trans->t("Communication to the privacyIDEA server succeeded, but privacyIDEA does not know the user. This user logs in without a second factor, because \"Let the user log in if the user is not found in privacyIDEA\" is on. Check the realm.");
+            }
+            elseif (!is_object($result) || !isset($result->result))
+            {
+                $message = $this->trans->t("Failed to authenticate.");
+            }
+            elseif ($result->result->status)
             {
                 if ($result->result->value == "true")
                 {

@@ -5,7 +5,8 @@
   The app gets the challenge from privacyIDEA with `/validate/initialize`, so the button needs no service account
   and no policy `passkey_trigger_by_pin`. The setting "Show the passkey button" in the admin settings hides it.
   This challenge belongs to no user, so the app compares the owner of the passkey that privacyIDEA names
-  with the ownCloud user, and refuses another user.
+  with the ownCloud user, and refuses another user. Below the button, the page shows the text of the challenge
+  from privacyIDEA (policy `passkey_challenge_text`), or a local text if privacyIDEA sends none.
   If privacyIDEA triggers a passkey challenge (policy `passkey_trigger_by_pin` and the setting "Trigger challenges"),
   the browser asks for the passkey by itself. The user needs a passkey token in privacyIDEA 3.11.1 or later.
   See the README.
@@ -17,26 +18,35 @@
 
 ### Fixes
 * Security: The excluded IP addresses use the address that ownCloud sees. The app no longer trusts the header
-  `X-Forwarded-For` from a client that is not a trusted proxy. A user could skip 2FA with this header.
+  `X-Forwarded-For` from a client that is not a trusted proxy. A user was able to skip 2FA with this header.
   If ownCloud runs behind a reverse proxy, set `trusted_proxies` in `config.php`. The proxy must replace the header
   with the address of its client. See the README.
 * Security: The state of a login in the session (for example the PassOnNoUser state) belongs to one user.
   The app removes it when another user uses the session.
 * Security: The log no longer contains the OTP or the PIN at debug level.
+* Security: With an empty "User Realm", the request that triggers the challenges sent an empty realm. privacyIDEA then
+  ignored the realm in a user name like `bob@sales` and looked in the default realm. With PassOnNoUser, such a user
+  logged in without a second factor. The app now sends the realm only when it is set.
+* Security: The debug log no longer contains the answers of privacyIDEA in full. An answer can hold the QR code and
+  the seed of a token that the user enrolls via multichallenge. The log now has a short form of each answer.
 * Security: The debug log no longer prints the exception of a failed request for the token of the service account.
   The trace of that exception can contain the password of the service account.
 * Security: The app no longer stores the token of the service account in the session of the user.
 * Security: Error messages of the HTTP client no longer show the internal URL of the privacyIDEA server to the user.
 * Security: For a WebAuthn login, the app sent privacyIDEA the origin that the browser posted. privacyIDEA compares
   this origin with the origin that the browser signed, so the check compared two values from the browser.
-  A page on another host under the same relying party id could relay a login. The app now sends the origin of
+  A page on another host under the same relying party id was able to relay a login. The app now sends the origin of
   ownCloud and refuses an answer from another origin. Passkey logins work the same way.
 * PassOnNoUser did not work. An HTTP error status from privacyIDEA raised an exception.
   The option that turns this off had an old name that is ignored since Guzzle 6.
+* PassOnNoUser did not work with the policy `hide_auth_error_status` of privacyIDEA 3.14. privacyIDEA then sends
+  error 904 with HTTP 401 instead of 400. The app now accepts it with every 4xx status.
+* The test button of the settings page showed "Failed to authenticate." without a reason for a user that
+  privacyIDEA does not know, when PassOnNoUser was on. It now says that privacyIDEA does not know the user.
 * Push and TiQR: The poll request to privacyIDEA sent the transaction ID in the body of a GET request.
   ownCloud 11 does not send it. The ID is now in the query string.
-* The OTP field was hidden when the app could not trigger the challenge, for example with a wrong
-  service account. The user could not log in. The field is now visible and the error message is shown.
+* The OTP field was hidden when the app failed to trigger the challenge, for example with a wrong
+  service account. The user was not able to log in. The field is now visible and the error message is shown.
 * An error from privacyIDEA during the login (server not reachable, wrong answer) is now shown on the login page
   and written to the log. It no longer ends in an internal server error.
 * An empty timeout in the settings ended in an internal server error on the login page on PHP 8.
@@ -53,12 +63,36 @@
   PassOnNoUser now continues the login without a click on a button.
 * The answer of a WebAuthn or passkey login was sent with the user agent of the HTTP client ("GuzzleHttp")
   and not with "ownCloud Plugin". A privacyIDEA policy with a user agent condition did not match this request.
+* Push and TiQR: A declined push (privacyIDEA 3.9 and later) or a push without an answer kept the page waiting
+  without end. The page now stops after a decline or after 120 seconds, shows the reason and offers "New challenge".
+* Push and TiQR: An error of privacyIDEA showed as the text of the push, and the page kept polling. The error is now
+  shown and logged, and the poll stops.
+* After a challenge expired, every answer failed until a new login. After a refused answer to a challenge, the page
+  now offers "New challenge". With "Trigger challenges", it triggers new challenges.
+* A user with only a TiQR token got the push page without the QR code. The page now opens in the TiQR mode.
+* WebAuthn: With several WebAuthn tokens, only the last one worked. The app now joins the sign requests.
+* Enroll via multichallenge: The QR code of a push token showed only after a click on "Push", and an enrollment
+  after a push or TiQR login did not show. The QR code now shows in every mode, with the otpauth link.
+* "Auto Submit OTP Length" also sent a new PIN, an email address or a phone number after this many characters.
+  It now applies only to a challenge that asks for an OTP.
+* A new challenge removes the buttons of the old challenge. Before, for example, the "Push" button of an old
+  challenge stayed after a PIN change.
+* Poll in browser: The page still reloaded every 2 to 4 seconds. While the browser polls, it now reloads every
+  30 seconds, so that ownCloud still notices an expired challenge.
+* The text of a challenge showed the HTML of the policies `challenge_text_header` and `challenge_text_footer`
+  as tags, and the answer to a check dropped the header and the footer. The text is now plain text with the
+  header and the footer.
+* WebAuthn: The answer no longer has the fields `userhandle` and `assertionclientextensions`. The app never filled
+  them in practice, and privacyIDEA 3.11.2 and later expect another encoding of the user handle.
 * The OTP field has `autocomplete="one-time-code"`. Chrome no longer fills the saved password of the user into it.
   Firefox 159 still does, because it ignores this value.
 * A successful login ended in "Failed to communicate with privacyIDEA." when the policy `no_detail_on_success`
   was set. The answer of privacyIDEA then has no details, and the app expected them.
 
 ### Changes that need action
+* The app needs privacyIDEA 3.7 or later. Before 3.7, privacyIDEA sends no `client_mode` with a challenge, and the app
+  did not show push, TiQR, WebAuthn or a triggered challenge. The README said 3.1.
+* With the policy `push_wait`, set "Timeout" to a higher value than `push_wait`. See the README.
 * The certificate check uses the CA bundle of ownCloud. Certificates that the admin imported with
   `occ security:certificates:import` now work.
   A private CA that exists only in the store of the operating system no longer works.
