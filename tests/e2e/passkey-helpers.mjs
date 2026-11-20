@@ -5,7 +5,12 @@ import { PRIVACYIDEA_URL } from "./helpers.mjs";
 async function pi(method, path, token, body, headers = {}) {
   const res = await fetch(PRIVACYIDEA_URL + path, {
     method,
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: token } : {}), ...headers },
+    // A GET with a JSON content type and no body gets "400 Bad Request" from privacyIDEA, so only a request with a body sets it.
+    headers: {
+      ...(method === "GET" ? {} : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: token } : {}),
+      ...headers,
+    },
     body: method === "GET" ? undefined : JSON.stringify(body ?? {}),
   });
   const json = await res.json().catch(() => ({}));
@@ -21,8 +26,12 @@ async function adminToken() {
 export async function removePasskeys(user) {
   const token = await adminToken();
   const list = await pi("GET", `/token/?user=${encodeURIComponent(user)}&realm=dev`, token);
+  // Fail loudly. A cleanup that finds nothing because the request failed hides leftover tokens.
+  if (list.status !== 200) throw new Error(`token list of ${user} failed with status ${list.status}`);
   for (const t of list.json.result?.value?.tokens ?? []) {
-    if (t.tokentype === "passkey") await pi("DELETE", `/token/${t.serial}`, token);
+    if (t.tokentype !== "passkey") continue;
+    const res = await pi("DELETE", `/token/${t.serial}`, token);
+    if (res.status !== 200) throw new Error(`delete of ${t.serial} failed with status ${res.status}`);
   }
 }
 
