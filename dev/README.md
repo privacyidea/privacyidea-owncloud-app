@@ -128,9 +128,11 @@ On Windows with Docker in WSL, use a path that WSL can read, for example `/mnt/c
 ## Continuous integration
 
 The workflows are in `.github/workflows/`. Every GitHub action is pinned by commit SHA.
-Dependabot updates the pins of the actions, the Composer and npm packages, and the Docker images
-(the Semgrep image in `semgrep.yml` and the images in `compose-dev.yml`).
+Dependabot updates the pins of the actions, the Composer and npm packages, and the images in `compose-dev.yml`.
+It does not read the image of the Semgrep job in `semgrep.yml`. It does not update an image with a variable in the tag, for example ownCloud.
+
 Before you pin a new action, compare the SHA with the release tag.
+To update the Semgrep image, get the new digest with `docker buildx imagetools inspect semgrep/semgrep:latest`. Then put it in `semgrep.yml`.
 
 | Workflow | When | What it does |
 | --- | --- | --- |
