@@ -48,7 +48,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired",
         "pi_uid", "pi_passkeyChallenge", "pi_passkeyTransactionId", "pi_passkeyFetchedAt", "pi_passkeyTriggeredAt",
         "pi_passkeyFailedAt", "pi_enrollImage", "pi_enrollLink", "pi_noAutoSubmit", "pi_offerNewChallenge",
-        "pi_challengeTime", "pi_pinChangeSeen"];
+        "pi_challengeTime", "pi_pinChangeSeen", "pi_passkeyMessage"];
     /** @var string[] Session keys of the challenges of one answer. An answer with new challenges replaces all of them. */
     private const CHALLENGE_KEYS = [
         "pi_u2fSignRequest", "pi_imgU2F", "pi_webAuthnSignRequest", "pi_imgWebauthn", "pi_pushAvailable", "pi_imgPush",
@@ -184,6 +184,14 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         if ($this->session->get("pi_passkeyChallenge") !== null)
         {
             $template->assign("passkeyChallenge", json_encode($this->session->get("pi_passkeyChallenge")));
+            // The text of the challenge of the button: the text of privacyIDEA, or a local text if it sends none.
+            // A triggered challenge shows its text in the message of the page already.
+            if ($this->session->get("pi_passkeyFetchedAt") !== null)
+            {
+                $passkeyMessage = (string)$this->session->get("pi_passkeyMessage");
+                $template->assign("passkeyMessage",
+                    $passkeyMessage !== "" ? $passkeyMessage : $this->trans->t("Log in with your passkey."));
+            }
         }
         if ($this->session->get("pi_pushAvailable"))
         {
@@ -739,6 +747,7 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $this->session->remove("pi_passkeyTransactionId");
         $this->session->remove("pi_passkeyFetchedAt");
         $this->session->remove("pi_passkeyTriggeredAt");
+        $this->session->remove("pi_passkeyMessage");
     }
 
     /**
@@ -811,6 +820,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                 "userVerification" => is_string($userVerification) ? $userVerification : ""]);
             $this->session->set("pi_passkeyTransactionId", $transactionID);
             $this->session->set("pi_passkeyFetchedAt", time());
+            // The text of the challenge, for example from the policy passkey_challenge_text.
+            $message = $passkey->message ?? "";
+            $this->session->set("pi_passkeyMessage", is_string($message) ? $this->plainText($message) : "");
             $this->session->remove("pi_passkeyFailedAt");
         }
         catch (\Throwable $e)
@@ -1104,6 +1116,17 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $messages = isset($detail->messages) && is_array($detail->messages) ? $detail->messages : [];
             $text = implode(", ", array_unique(array_filter($messages, "is_string")));
         }
+        return $this->plainText($text);
+    }
+
+    /**
+     * A text of privacyIDEA as plain text: HTML tags become spaces, and the spaces are joined.
+     *
+     * @param string $text
+     * @return string
+     */
+    private function plainText(string $text): string
+    {
         $text = html_entity_decode(strip_tags(str_replace("<", " <", $text)), ENT_QUOTES | ENT_HTML5, "UTF-8");
         // preg_replace() returns null for text that is not valid UTF-8.
         return trim(preg_replace('/\s+/u', " ", $text) ?? $text);

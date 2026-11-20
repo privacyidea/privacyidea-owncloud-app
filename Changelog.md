@@ -5,7 +5,8 @@
   The app gets the challenge from privacyIDEA with `/validate/initialize`, so the button needs no service account
   and no policy `passkey_trigger_by_pin`. The setting "Show the passkey button" in the admin settings hides it.
   This challenge belongs to no user, so the app compares the owner of the passkey that privacyIDEA names
-  with the ownCloud user, and refuses another user.
+  with the ownCloud user, and refuses another user. Below the button, the page shows the text of the challenge
+  from privacyIDEA (policy `passkey_challenge_text`), or a local text if privacyIDEA sends none.
   If privacyIDEA triggers a passkey challenge (policy `passkey_trigger_by_pin` and the setting "Trigger challenges"),
   the browser asks for the passkey by itself. The user needs a passkey token in privacyIDEA 3.11.1 or later.
   See the README.

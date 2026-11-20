@@ -140,6 +140,8 @@ The button is on by default. To hide it, clear "Show the passkey button" in the 
 Then the page shows the button only if privacyIDEA triggered a passkey challenge.
 The button is there for every user, also for a user without a passkey. If the browser finds no passkey,
 the page goes back to the OTP field.
+Below the button, the page shows the text of the challenge from privacyIDEA (policy `passkey_challenge_text`).
+If privacyIDEA sends no text, the page shows "Log in with your passkey.".
 
 The browser allows passkeys only on HTTPS or on `http://localhost`.
 The relying party id must be the host name that the user opens in the browser, or its parent domain.

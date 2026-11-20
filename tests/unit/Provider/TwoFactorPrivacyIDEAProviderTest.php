@@ -738,6 +738,48 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertSame("777", $this->session->get("pi_passkeyTransactionId"));
     }
 
+    public function testTheButtonShowsTheTextOfPrivacyIdea(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, self::INITIALIZE));
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertSame("Please authenticate with your passkey!", $template->vars["passkeyMessage"]);
+    }
+
+    public function testACustomTextOfTheButtonIsPlainText(): void
+    {
+        // The policy passkey_challenge_text sets the text. It can hold HTML.
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, str_replace("Please authenticate with your passkey!",
+            "Use <b>your</b> key", self::INITIALIZE)));
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertSame("Use your key", $template->vars["passkeyMessage"]);
+    }
+
+    public function testWithoutATextTheButtonShowsTheLocalText(): void
+    {
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, self::INITIALIZE_2)); // has no message
+
+        $template = $this->provider->getTemplate(new FakeUser("erin"));
+
+        $this->assertSame("Log in with your passkey.", $template->vars["passkeyMessage"]);
+    }
+
+    public function testATriggeredPasskeyChallengeHasNoExtraText(): void
+    {
+        // The text of a triggered challenge is in the message of the page already.
+        $this->turnOnThePasskeyButton();
+
+        $template = $this->templateAfterTrigger("erin", self::PASSKEY_CHALLENGE);
+
+        $this->assertArrayNotHasKey("passkeyMessage", $template->vars);
+    }
+
     public function testTheSettingTurnsThePasskeyButtonOff(): void
     {
         $this->config->values["passkeybutton"] = "0";

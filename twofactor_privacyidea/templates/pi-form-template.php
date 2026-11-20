@@ -122,6 +122,9 @@ if (!empty($_['enrollImage'])) : ?>
         <input class="alternateTokenButtons" id="tiqrButton" name="tiqrButton" type="button" value="TiQR"/>
         <input class="alternateTokenButtons" id="u2fButton" name="u2fButton" type="button" value="U2F"/>
         <input id="otpButton" name="otpButton" type="button" value="OTP"/>
+        <?php if (!empty($_['passkeyMessage'])) : ?>
+            <p id="passkeyMessage"><?php p($_['passkeyMessage']); ?></p>
+        <?php endif; ?>
     </div>
 
     <?php if (isset($_['autoSubmit']) && $_['autoSubmit']): ?>
