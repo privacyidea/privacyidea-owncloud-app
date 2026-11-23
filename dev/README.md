@@ -206,8 +206,11 @@ or when `Changelog.md` has no section for the version. In this case, fix the fil
 Then delete the tag with `git tag -d v3.3.0` and `git push --delete origin v3.3.0`, and set it again.
 The release is public at once. The subsection `### Note for the release` of the changelog is not part of the text.
 
-The workflow does not attach an archive and does not sign the app. The release for the ownCloud marketplace needs a signed archive.
-`appinfo/signature.json` is out of date at the moment. Sign the app before you upload an archive.
+The workflow attaches `twofactor_privacyidea-<version>.tar.gz`: the folder `twofactor_privacyidea` as it is in git
+at the tag. The archive is not signed. ownCloud 11.1 refuses an unsigned archive in its installer, but a manual
+install (extract the folder, then `occ app:enable`) does not check the signature.
+Git does not track `appinfo/signature.json`. The release for the ownCloud marketplace needs an archive that is
+signed with `ocsign` and the certificate of the app.
 
 ## Problems with Docker in WSL
 

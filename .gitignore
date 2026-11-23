@@ -9,3 +9,4 @@ dev/.state/
 dev/env.tls
 vendor/
 .phpunit.result.cache
+twofactor_privacyidea/appinfo/signature.json
