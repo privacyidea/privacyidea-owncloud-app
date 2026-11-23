@@ -1,276 +1,155 @@
 # privacyIDEA for ownCloud
 
-Add a second factor to the ownCloud login. The app sends the second factor to your own privacyIDEA server.
-The user gets in when privacyIDEA agrees.
+A two-factor authentication provider for ownCloud. After the password, ownCloud asks for a second factor
+and verifies it with your privacyIDEA server. Tokens and policies stay in privacyIDEA.
 
-## What you get
-
-* **Many second factors, one app.** privacyIDEA manages the tokens. The login page shows the right input for each token.
-* **Your server, your data.** privacyIDEA can run on your own servers.
-* **Control for admins.** You choose which groups and which IP addresses need a second factor.
-* **Passkeys.** A user can log in with the fingerprint, the face or the PIN of a device.
-
-| Second factor | What the user does | Needs |
-| --- | --- | --- |
-| One-time password (OTP), for example Google Authenticator, privacyIDEA Authenticator, YubiKey, key fob or OTP card | Types the code | privacyIDEA 3.7 |
-| Challenge-response, for example SMS or email | Receives a code and types it | The setting "Trigger challenges" |
-| Push | Confirms the login on the phone | privacyIDEA 3.7 |
-| TiQR | Scans the QR code with the TiQR app | privacyIDEA 3.7 |
-| WebAuthn and U2F | Touches a security key | HTTPS |
-| Passkey | Confirms with the device | privacyIDEA 3.11.1, HTTPS |
+Supported second factors: OTP tokens (HOTP, TOTP, YubiKey and others), challenge-response tokens (SMS, email),
+push, TiQR, WebAuthn security keys and passkeys.
 
 ## Requirements
 
-* ownCloud 10.11 or later (ownCloud 11 works too)
-* PHP 7.4 to 8.3
-* privacyIDEA 3.7 or later. Passkeys need 3.11.1.
-  Before 3.7, privacyIDEA sends no `client_mode` with a challenge, and the app cannot show push, TiQR, WebAuthn
-  or a triggered challenge.
+- ownCloud 10.11 or later, or ownCloud 11
+- PHP 7.4 to 8.3
+- privacyIDEA 3.7 or later. Passkeys need 3.11.1 or later.
+- HTTPS for WebAuthn and passkeys
 
-The app needs a subscription file from NetKnights GmbH to run in production.
-See the [product page](https://netknights.it/en/produkte/privacyidea-owncloud-app/).
-You can test the app in a test environment without it.
+A production setup needs a subscription file from NetKnights GmbH, see the
+[product page](https://netknights.it/en/produkte/privacyidea-owncloud-app/). For tests, the app runs without it.
+For Nextcloud, use the [privacyIDEA Nextcloud app](https://github.com/privacyidea/privacyidea-nextcloud-app).
 
-This app is for ownCloud. For Nextcloud, use the [privacyIDEA Nextcloud app](https://github.com/privacyidea/privacyidea-nextcloud-app).
+## Installation
 
-## Install
+Install the app from the [ownCloud marketplace](https://marketplace.owncloud.com/apps/twofactor_privacyidea),
+or copy the directory `twofactor_privacyidea` into an app directory (`apps_paths` in `config/config.php`) and run:
 
-From the marketplace: Install the app from the [ownCloud marketplace](https://marketplace.owncloud.com/apps/twofactor_privacyidea).
+```
+occ app:enable twofactor_privacyidea
+```
 
-By hand:
+In the official ownCloud 11 Docker image, the app directory is `/var/www/owncloud/custom` (volume `/mnt/data/apps`).
 
-1. Copy the directory `twofactor_privacyidea` to an app directory of your ownCloud.
-   The entry `apps_paths` in `config/config.php` lists the app directories.
-   In the official Docker image of ownCloud 11, the directory is `/var/www/owncloud/custom`.
-   The image stores it in the volume `/mnt/data/apps`.
-2. Run `occ app:enable twofactor_privacyidea`.
+## Configuration
 
-## Quick start
+The settings are under Settings > Admin > Additional > privacyIDEA 2FA.
 
-From install to the first login:
+1. Enter the URL of the privacyIDEA server, for example `https://pi.example.com`.
+2. Enter the realm if the users are not in the default realm of privacyIDEA.
+3. Check the connection with "Test authentication" (a user and an OTP of that user).
+4. Turn on "Activate two factor authentication with privacyIDEA".
 
-1. Log in as admin. Open "Settings", then "Admin", then "Additional". The section is "privacyIDEA 2FA".
-2. Enter the base URL of your privacyIDEA server in "URL of the privacyIDEA Server", for example `https://pi.example.com`.
-3. If your users are not in the default realm of privacyIDEA, enter the realm in "User Realm".
-4. Under "Test authentication", enter a user and the OTP of that user in the field "Password". Click "Test".
-   The message shows if privacyIDEA accepts them.
-5. Turn on "Activate two factor authentication with privacyIDEA".
-6. Open a private browser window and log in as a test user.
+Keep an admin session open while you test. To turn 2FA off from the command line:
 
-Keep one admin session open while you test. A wrong setting can lock users out.
-If it happens, run `occ config:app:set twofactor_privacyidea piactive --value=0` to turn the second factor off.
+```
+occ config:app:set twofactor_privacyidea piactive --value=0
+```
 
-## How the login works
-
-1. The user enters the ownCloud password. ownCloud checks it.
-2. ownCloud asks the app for the second factor. The app skips the users that you excluded.
-3. The app shows its page. With "Trigger challenges", the app first asks privacyIDEA to send the challenges of the user.
-4. The user answers on the page. The app sends the answer to privacyIDEA.
-5. If privacyIDEA accepts the answer, ownCloud opens the files.
-
-The page offers the second factors that the user has. The buttons under "Alternate Login Options" switch between them.
-Without "Trigger challenges", the user types the OTP or the PIN in the OTP field.
-privacyIDEA can answer with a challenge, and the page shows it.
-
-## Settings
-
-The settings are in "Settings", "Admin", "Additional", section "privacyIDEA 2FA".
-
-| Setting | What it does | Default |
+| Setting | Description | Default |
 | --- | --- | --- |
-| Activate two factor authentication with privacyIDEA | Turns the second factor on for all users that you did not exclude. | Off |
-| URL of the privacyIDEA Server | The base URL of privacyIDEA. The URL of `/validate/check` also works. | Empty |
-| Timeout | The seconds that the app waits for privacyIDEA. A value below 1 uses the default. With the policy `push_wait`, set a higher value than `push_wait`. | 5 |
-| Include groups or Exclude groups | Include: Only the listed groups need 2FA. Exclude: The listed groups skip 2FA. | Exclude, no group |
-| Exclude ip addresses | Clients at these addresses skip 2FA. Use single addresses, ranges like `10.0.1.12-10.0.1.113`, or a list with commas. IPv6 works too. See "Excluded IP addresses". | Empty |
-| User Realm | The privacyIDEA realm of the users, if it is not the default realm. | Empty |
-| Auto Submit OTP Length | The page sends the form by itself after this many characters. Digits only. Only for a challenge that asks for an OTP, not for a new PIN, an answer to a question, an email address or a phone number. | Off |
-| Verify the SSL certificate | Checks the certificate of privacyIDEA. Do not turn this off in production. | On |
-| Ignore the system wide proxy settings | Sends the requests to privacyIDEA directly, without the proxy of ownCloud. | Off |
-| Poll in browser, Poll in browser URL | Lets the browser ask privacyIDEA for the confirmation of a push token. See "Push tokens". | Off |
-| Test authentication | Sends a user and a password to privacyIDEA and shows the answer. | |
-| Trigger challenges | Asks privacyIDEA to send the challenges of the user. Needs the service account. | Off |
-| Let the user log in if the user is not found in privacyIDEA | See "Users who are not in privacyIDEA". | Off |
-| Service account | The account that triggers the challenges. | Empty |
-| Show the passkey button | Shows the "Passkey" button on the login page. See "Passkeys". | On |
+| Activate two factor authentication with privacyIDEA | 2FA for all users who are not excluded. | Off |
+| URL of the privacyIDEA Server | Base URL of privacyIDEA. | |
+| Timeout | Seconds to wait for privacyIDEA. With the policy `push_wait`, set a higher value than `push_wait`. | 5 |
+| Include groups / Exclude groups | Include: only the listed groups need 2FA. Exclude: the listed groups skip 2FA. | Exclude, no groups |
+| Exclude ip addresses | Clients from these addresses skip 2FA. Single addresses, ranges (`10.0.1.12-10.0.1.113`) or a comma-separated list, IPv4 and IPv6. Behind a proxy, see [Reverse proxy](#reverse-proxy). | |
+| User Realm | privacyIDEA realm of the users. Empty means the default realm. | |
+| Auto Submit OTP Length | Submits the form after this many characters. Applies only to challenges that ask for an OTP. | Off |
+| Verify the SSL certificate | Uses the CA bundle of ownCloud. Import a private CA with `occ security:certificates:import`. | On |
+| Ignore the system wide proxy settings | Connects to privacyIDEA without the HTTP proxy of ownCloud. | Off |
+| Poll in browser | The browser polls privacyIDEA for the push confirmation. See [Push and TiQR](#push-and-tiqr). | Off |
+| Trigger challenges | Triggers the challenges of the user before the login page shows. Needs a service account. | Off |
+| Let the user log in if the user is not found in privacyIDEA | See [Users unknown to privacyIDEA](#users-unknown-to-privacyidea). | Off |
+| Show the passkey button | See [Passkeys](#passkeys). | On |
 
-## Challenge-response and the service account
+## Triggered challenges
 
-"Trigger challenges" makes privacyIDEA send the code of an SMS or email token before the user types anything.
+With "Trigger challenges", the app triggers all challenges of the user (SMS, email, push and others) before
+the login page shows. This needs a service account in privacyIDEA with the right `triggerchallenge`.
+Enter its credentials in the settings and use "Check Credentials".
 
-1. In privacyIDEA, create an admin account with the right "triggerchallenge".
-2. In the settings of the app, enter its name and password under "Challenge Response".
-3. Click "Check Credentials". The message shows if the account works.
-4. Turn on "Trigger challenges".
+Without this setting, the user starts a challenge-response token with its PIN in the OTP field.
 
-privacyIDEA keeps a challenge for 120 seconds by default. If privacyIDEA refuses an answer to a challenge,
-for example because the challenge expired, the page shows the button "New challenge".
-With "Trigger challenges", a click triggers new challenges. Without it, the user types the PIN again.
-Nothing is sent without a click.
-
-### Enroll a token at the login
-
-With the policy `enroll_via_multichallenge`, privacyIDEA lets a user without a token enroll one at the login.
-The page shows the QR code of the new token in every mode, and a link that opens the token in the authenticator
-app on the same phone. The app handles these steps for HOTP, TOTP, email, SMS and push tokens.
-
-The login page cannot enroll a smartphone container or a passkey, and it cannot skip an optional enrollment
-(`enroll_via_multichallenge_optional`).
+After a declined, expired or refused challenge, the login page offers "New challenge". It triggers new
+challenges, or lets the user enter the PIN again.
 
 ## Passkeys
 
-A user can answer the second factor with a passkey. The user logs in with the password first.
-Then the user starts the passkey in one of two ways:
+The user logs in with the password, then with a passkey. In privacyIDEA:
 
-* The login page has a "Passkey" button. The user clicks it, and the browser asks for the passkey.
-  The app gets the challenge from privacyIDEA with `/validate/initialize`. This needs no service account.
-* privacyIDEA triggers a passkey challenge. The browser then asks for the passkey by itself.
-  If the user cancels, the "Passkey" button is there to try again.
+1. Set the policies `webauthn_relying_party_id` and `webauthn_relying_party_name` (scope enrollment).
+   The relying party ID is the host name of ownCloud or one of its parent domains.
+2. Enroll a passkey for the user.
+3. Optional: set the policy `passkey_trigger_by_pin` (scope authentication) and turn on "Trigger challenges".
+   The browser then asks for the passkey right after the password.
 
-To set this up:
+Without step 3, the user starts the passkey with the "Passkey" button. The button needs no service account.
+It shows for every user, and "Show the passkey button" turns it off. The text below the button comes from the
+policy `passkey_challenge_text`.
 
-1. In privacyIDEA, set the policies `webauthn_relying_party_id` and `webauthn_relying_party_name` (scope "enrollment").
-   The relying party id is the host name of ownCloud, for example `cloud.example.com`.
-2. Enroll a passkey for the user in privacyIDEA.
-3. Optional: For the automatic prompt, set the policy `passkey_trigger_by_pin` (scope "authentication") in privacyIDEA.
-   Without it, privacyIDEA sends no passkey challenge to the app.
-   Then turn on "Trigger challenges" in the settings of the app.
+The challenge of the button belongs to no user. The app therefore accepts a passkey only if privacyIDEA names
+the ownCloud user as its owner:
 
-The button is on by default. To hide it, clear "Show the passkey button" in the settings of the app.
-Then the page shows the button only if privacyIDEA triggered a passkey challenge.
-The button is there for every user, also for a user without a passkey. If the browser finds no passkey,
-the page goes back to the OTP field.
-Below the button, the page shows the text of the challenge from privacyIDEA (policy `passkey_challenge_text`).
-If privacyIDEA sends no text, the page shows "Log in with your passkey.".
+- The user name in privacyIDEA must equal the ownCloud user ID (case-sensitive).
+- The policy `no_detail_on_success` removes the owner from the answer. The button then refuses every login.
+- The answer has no realm. If two realms have users with the same name, set the policy `add_resolver_in_response`.
+  The app then also compares the realm with "User Realm". privacyIDEA 3.14 and later check the realm themselves.
 
-The browser allows passkeys only on HTTPS or on `http://localhost`.
-The relying party id must be the host name that the user opens in the browser, or its parent domain.
+## Push and TiQR
 
-### Which user logs in
+The login page polls privacyIDEA until the user confirms the login on the phone. It stops after a decline
+(privacyIDEA 3.9 and later), after 120 seconds or after an error, and offers "New challenge".
 
-The challenge of the button belongs to no user. privacyIDEA accepts the passkey of any user for it,
-and its answer names the owner of the passkey. The app compares this name with the name of the ownCloud user.
-It does this for every answer that accepts the passkey, also when privacyIDEA chains the enrollment of a new token
-to it (`enroll_via_multichallenge`):
+With "Poll in browser", the browser polls privacyIDEA directly at the "Poll in browser URL". If this URL has
+another origin than ownCloud, privacyIDEA must allow it with CORS headers.
 
-* If the names are equal, the login continues.
-* If the names are different, the app refuses the login and writes both names to the log.
-* If the answer has no user name, the app refuses the login. The policy `no_detail_on_success` removes the
-  user name, so do not use this policy together with the button.
+## Enrollment at login
 
-The names must be equal, also in upper and lower case.
-With the policy `add_resolver_in_response`, the answer also has the realm of the owner.
-If you set a realm in the settings of the app, the app then compares the realm too.
-Without this policy, and before privacyIDEA 3.14, the passkey of a user with the same name in another realm passes
-this check. privacyIDEA 3.14 and later also check the owner of the passkey, because the app sends the user name
-(and the realm, if you set one).
+The policy `enroll_via_multichallenge` works for HOTP, TOTP, email, SMS and push tokens. The login page shows
+the QR code and the otpauth link of the new token. The app cannot enroll smartphone containers or passkeys,
+and the user cannot skip an optional enrollment.
 
-A triggered challenge belongs to the passkeys of the user. privacyIDEA checks this, so the app does not compare names.
+## Reverse proxy
 
-### Old challenges
+Behind a reverse proxy, set these values in `config/config.php`:
 
-The app asks privacyIDEA for a new challenge after 60 seconds and after each answer.
-If the button is on, this also replaces a triggered challenge that is older than 60 seconds.
-privacyIDEA keeps a challenge for 120 seconds by default.
-If privacyIDEA gives no challenge for the button, the app asks again after 60 seconds.
+| Value | Needed for |
+| --- | --- |
+| `trusted_proxies` | Excluded IP addresses. Without it, ownCloud sees the address of the proxy for every client. |
+| `overwriteprotocol`, `overwritehost` | WebAuthn and passkeys. The app sends the origin of ownCloud to privacyIDEA, and the browser must sign for the same origin. |
 
-### Limits
+The proxy must replace the header `X-Forwarded-For`, not append to it. ownCloud uses the first address in the
+header. With an appended header, a client chooses its own address and skips 2FA.
+For nginx: `proxy_set_header X-Forwarded-For $remote_addr;`.
 
-* The login page cannot enroll a passkey (enroll via multichallenge). See "Enroll a token at the login".
-* Do not give one user a passkey and a WebAuthn token while `passkey_trigger_by_pin` is set.
-  privacyIDEA sends a separate challenge for each type, and a client can answer only one of them.
+## Users unknown to privacyIDEA
 
-## WebAuthn, passkeys and the address of ownCloud
+With "Let the user log in if the user is not found in privacyIDEA", users that privacyIDEA does not know log in
+without a second factor. A wrong "User Realm" makes every user unknown. Check the realm with "Test authentication"
+before you turn this on.
 
-privacyIDEA checks that the browser signed a WebAuthn or passkey login for the right page.
-For this check, the app sends privacyIDEA the address (origin) of ownCloud, for example `https://cloud.example.com`.
-The app takes the address from ownCloud, not from the browser. If the browser signed for another address,
-the app refuses the login.
+## Logging and troubleshooting
 
-Behind a reverse proxy, set `overwriteprotocol` and `overwritehost` in `config/config.php`,
-for example `'overwriteprotocol' => 'https'` and `'overwritehost' => 'cloud.example.com'`.
-Without them, ownCloud does not know its own address, and WebAuthn and passkey logins fail.
-The log then shows both addresses.
+The app logs under the app name `privacyIDEA`. For details, run `occ log:manage --level debug`.
+The log does not contain OTPs, PINs or the secrets of enrolled tokens.
 
-## Push tokens
-
-For a push token or a TiQR token, the page waits until the user confirms the login on the phone.
-By default, the page sends its form every 2 to 4 seconds. ownCloud then asks privacyIDEA for the result.
-
-The page stops the wait in these cases, shows the reason and the button "New challenge":
-
-* The user declined the login on the phone (privacyIDEA 3.9 and later).
-* Nobody confirmed the login within 120 seconds, the default validity of a challenge in privacyIDEA.
-* privacyIDEA answered with an error. The error also goes to the ownCloud log.
-
-With "Poll in browser", the browser of the user sends the poll requests to the URL that you set in the settings of the app.
-If this URL is not on the same origin as ownCloud, privacyIDEA must allow it with CORS headers.
-A reverse proxy that serves ownCloud and privacyIDEA under one origin also works.
-While the browser polls, the page sends its form only every 30 seconds, so that ownCloud still notices an expired challenge.
-If the browser poll fails, the page goes back to every 2 to 4 seconds.
-
-With the policy `push_wait`, privacyIDEA holds the request until the user confirms the login on the phone.
-Then set "Timeout" in the settings of the app to a higher value than `push_wait`. Otherwise the app stops
-the request too early and shows "Failed to communicate with privacyIDEA.".
-
-## Excluded IP addresses
-
-You can exclude client IP addresses from 2FA in the settings of the app.
-The app uses the address that ownCloud sees for the client.
-ownCloud only reads the header `X-Forwarded-For` when the connection comes from a proxy
-that is listed in `trusted_proxies` in `config/config.php`.
-If ownCloud runs behind a reverse proxy, set `trusted_proxies` to the address of the proxy.
-Without it, ownCloud sees the address of the proxy for every client.
-
-ownCloud uses the first address in the header. The proxy must replace the header with the address of its client.
-If the proxy appends the address of its client to a header that the client sent, the client can choose the first
-address and skip 2FA. For nginx, use `proxy_set_header X-Forwarded-For $remote_addr;`.
-
-## Users who are not in privacyIDEA
-
-If you turn on "Let the user log in if the user is not found in privacyIDEA", a user whom privacyIDEA does not know
-logs in without a second factor (PassOnNoUser).
-This works with and without "Trigger challenges". Without it, the user sends the OTP form once.
-The login then continues without a second factor.
-
-privacyIDEA also answers "user not found" for every user when the realm in the settings is wrong.
-Then all users log in without a second factor.
-Make sure that the realm is correct before you turn this on. Use the test button on the settings page.
-
-## Troubleshooting
-
-The app writes to the ownCloud log under the app name `privacyIDEA`.
-To see every request, run `occ log:manage --level debug`. The log does not contain the OTP, the PIN or the
-QR code and the seed of a token that a user enrolls.
-
-| Problem | Cause | What to do |
-| --- | --- | --- |
-| "Failed to communicate with privacyIDEA." | The server is not reachable, or the answer is wrong. | Check "URL of the privacyIDEA Server", "Timeout" and the proxy setting. Read the log. |
-| "Failed to fetch authentication token." or "Check if service account has correct permissions" | The service account is wrong, or it lacks the right `triggerchallenge`. | Click "Check Credentials". |
-| A certificate error | The app uses the CA bundle of ownCloud. A CA that exists only in the store of the operating system does not work. | Import the CA with `occ security:certificates:import`. |
-| Clients in an excluded IP range still need 2FA behind a proxy | ownCloud sees the address of the proxy. | Set `trusted_proxies` in `config/config.php`. |
-| Every user skips 2FA | "Let the user log in if the user is not found in privacyIDEA" is on, and the realm is wrong. | Correct "User Realm". Test again. |
-| The page has no "Passkey" button | privacyIDEA is older than 3.11.1, the policies for the relying party are missing, or "Show the passkey button" is off. | Check the policies and the setting. The debug log shows why privacyIDEA sent no challenge. |
-| The browser refuses a passkey or a security key | The page is not on HTTPS. | Use HTTPS. `http://localhost` also works for tests. |
-| WebAuthn and passkey logins fail behind a reverse proxy | ownCloud does not know its own address. | Set `overwriteprotocol` and `overwritehost` in `config/config.php`. The log shows both addresses. |
-| The "Passkey" button gives "Failed to authenticate." for the right passkey | The user name in privacyIDEA is not equal to the ownCloud user name (also in upper and lower case), or the policy `no_detail_on_success` is set. | Read the log. It shows both names, or that the answer had no user name. |
-| Firefox fills the saved password of the user into the OTP field | The field has `autocomplete="one-time-code"`. Chrome follows it. Firefox 159 does not. | Remove the saved login of the site in Firefox, or use another browser. |
+| Problem | Cause and fix |
+| --- | --- |
+| "Failed to communicate with privacyIDEA." | privacyIDEA is not reachable, or its answer is not valid. Check the URL, the timeout and the proxy setting. |
+| "Failed to fetch authentication token." | The service account is wrong, or it lacks the right `triggerchallenge`. Use "Check Credentials". |
+| Certificate error | The app uses the CA bundle of ownCloud. Import the CA with `occ security:certificates:import`. |
+| Excluded IP addresses have no effect behind a proxy | Set `trusted_proxies`. |
+| Every user logs in without 2FA | PassOnNoUser is on, and "User Realm" is wrong. |
+| No "Passkey" button | privacyIDEA is older than 3.11.1, the relying party policies are missing, or the button is off. The debug log shows the reason. |
+| WebAuthn or passkey login fails behind a proxy | Set `overwriteprotocol` and `overwritehost`. The log shows both origins. |
+| The "Passkey" button refuses the right passkey | The user name in privacyIDEA differs from the ownCloud user ID, or `no_detail_on_success` is set. The log shows the names. |
+| Firefox fills the saved password into the OTP field | Firefox ignores `autocomplete="one-time-code"`. Remove the saved login of the site. |
 
 ## Development
 
-See `dev/README.md` for the Docker test stack, the unit tests, the end-to-end tests and the release steps.
+See [dev/README.md](dev/README.md) for the Docker test stack, the tests and the release process.
 
-```
-./dev/setup.sh        # start ownCloud and privacyIDEA in Docker, with test users
-./dev/test-unit.sh    # unit tests on PHP 7.4 and 8.3
-./dev/test-e2e.sh     # browser tests against the stack
-```
+## License
 
-## Links
+AGPL-3.0, see `LICENSE`. Copyright NetKnights GmbH.
 
-* [privacyIDEA documentation](https://privacyidea.readthedocs.io)
-* [Product page](https://netknights.it/en/produkte/privacyidea-owncloud-app/)
-* [Report a problem](https://github.com/privacyidea/privacyidea-owncloud-app/issues)
-* [Changelog](Changelog.md)
-
-The app is free software under the AGPL-3.0 license. See `LICENSE`. Copyright NetKnights GmbH.
+[privacyIDEA documentation](https://privacyidea.readthedocs.io) ·
+[Report a problem](https://github.com/privacyidea/privacyidea-owncloud-app/issues) ·
+[Changelog](Changelog.md)
