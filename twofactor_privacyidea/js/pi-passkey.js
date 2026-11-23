@@ -105,3 +105,85 @@ window.piDoPasskey = function doPasskey()
         piChangeMode("otp");
     });
 };
+
+/**
+ * Convert a base64url string (with or without padding) to bytes.
+ *
+ * @param {string} text
+ * @returns {Uint8Array}
+ */
+function piPasskeyFromBase64Url(text)
+{
+    let base64 = String(text).replace(/-/g, "+").replace(/_/g, "/");
+    base64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const binary = window.atob(base64);
+    return Uint8Array.from(binary, function (c)
+    {
+        return c.charCodeAt(0);
+    });
+}
+
+/**
+ * Register a passkey for the user (enroll_via_multichallenge=passkey) and send the answer with the login form.
+ * The options come from privacyIDEA (passkey_registration). If the user cancels or the browser refuses, the page
+ * stays, and the button "Register passkey" tries again.
+ */
+window.piRegisterPasskey = function registerPasskey()
+{
+    if (!window.isSecureContext || !navigator.credentials)
+    {
+        window.alert("Unable to register a passkey because the context is insecure!");
+        return;
+    }
+
+    let data;
+    try
+    {
+        data = JSON.parse(piGetValue("passkeyRegistration"));
+    }
+    catch (err)
+    {
+        console.log("Could not read the passkey registration: " + err);
+        return;
+    }
+    const excludeCredentials = (data.excludeCredentials || []).map(function (credential)
+    {
+        return {id: piPasskeyFromBase64Url(credential.id), type: credential.type};
+    });
+
+    navigator.credentials.create({
+        publicKey: {
+            rp: data.rp,
+            // The user id is base64url. privacyIDEA verifies the challenge as the bytes of its text.
+            user: {id: piPasskeyFromBase64Url(data.user.id), name: data.user.name, displayName: data.user.displayName},
+            challenge: Uint8Array.from(data.challenge, function (c)
+            {
+                return c.charCodeAt(0);
+            }),
+            pubKeyCredParams: data.pubKeyCredParams,
+            excludeCredentials: excludeCredentials,
+            authenticatorSelection: data.authenticatorSelection,
+            timeout: data.timeout,
+            attestation: data.attestation
+        }
+    }).then(function (credential)
+    {
+        const response = {
+            credential_id: credential.id,
+            // credential.id is the raw id in base64url, the form that privacyIDEA documents for rawId.
+            rawId: credential.id,
+            authenticatorAttachment: credential.authenticatorAttachment,
+            attestationObject: piPasskeyToBase64(credential.response.attestationObject),
+            clientDataJSON: piPasskeyToBase64(credential.response.clientDataJSON)
+        };
+        piSetValue("passkeyRegistrationResponse", JSON.stringify(response));
+        piSetValue("origin", window.location.origin);
+        piSetValue("mode", "passkeyRegistration");
+        document.forms["piLoginForm"].submit();
+    }, function (error)
+    {
+        // The user canceled the prompt, or the browser refused. The page stays. The button tries again.
+        console.log("Error during passkey registration: " + error);
+        piEnableElement("passkeyRegistrationButton");
+    });
+};

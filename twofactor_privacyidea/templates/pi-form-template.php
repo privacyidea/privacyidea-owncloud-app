@@ -51,8 +51,13 @@ if (!empty($_['enrollImage'])) : ?>
 
     <?php if (!isset($_['hideOTPField']) || !$_['hideOTPField']) : ?>
         <label>
-            <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="one-time-code" required
-                   autofocus>
+            <?php if (!empty($_['plainInput'])) : ?>
+                <!-- The first step of an email or SMS enrollment asks for the address or the phone number. -->
+                <input id="otp" type="text" name="challenge" autocomplete="off" required autofocus>
+            <?php else : ?>
+                <input id="otp" type="password" name="challenge" placeholder="OTP" autocomplete="one-time-code" required
+                       autofocus>
+            <?php endif; ?>
         </label>
         <br>
         <input id="submitButton" type="submit" class="button"
@@ -62,6 +67,19 @@ if (!empty($_['enrollImage'])) : ?>
         <input id="newChallengeButton" type="button" class="button" value="<?php p($_['newChallenge']); ?>"/>
     <?php endif; ?>
     <input id="newChallenge" type="hidden" name="newChallenge" value="0"/>
+    <?php if (!empty($_['passkeyRegistration'])) : ?>
+        <input id="passkeyRegistrationButton" type="button" class="button"
+               value="<?php p($_['passkeyRegistrationLabel']); ?>"/>
+    <?php endif; ?>
+    <?php if (!empty($_['cancelEnrollment'])) : ?>
+        <input id="cancelEnrollmentButton" type="button" class="button" value="<?php p($_['cancelEnrollment']); ?>"/>
+    <?php endif; ?>
+    <input id="cancelEnrollment" type="hidden" name="cancelEnrollment" value="0"/>
+    <input id="passkeyRegistration" type="hidden" name="passkeyRegistration"
+           value="<?php if (isset($_['passkeyRegistration'])) : p($_['passkeyRegistration']); endif; ?>"/>
+    <input id="passkeyRegistrationAutoStart" type="hidden" name="passkeyRegistrationAutoStart"
+           value="<?php if (isset($_['passkeyRegistrationAutoStart'])) : p($_['passkeyRegistrationAutoStart']); endif; ?>"/>
+    <input id="passkeyRegistrationResponse" type="hidden" name="passkeyRegistrationResponse" value=""/>
 
     <!-- Hidden input that saves the changes -->
     <input id="mode" type="hidden" name="mode"
@@ -128,7 +146,7 @@ if (!empty($_['enrollImage'])) : ?>
     </div>
 
     <?php if (isset($_['autoSubmit']) && $_['autoSubmit']): ?>
-        <input type="submit" class="button" value="Login">
+        <input type="submit" class="button" value="<?php p($l->t('Log in')); ?>">
         <br>
     <?php endif; ?>
 </form>

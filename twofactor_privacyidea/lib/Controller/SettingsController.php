@@ -108,7 +108,7 @@ class SettingsController extends Controller
             }
             elseif (!$result->result->status)
             {
-                $message = $this->trans->t("Failed to authenticate. ") . $result->result->error->message;
+                $message = $this->trans->t("Failed to authenticate.") . " " . $result->result->error->message;
             }
             else
             {

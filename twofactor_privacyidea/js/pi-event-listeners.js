@@ -45,6 +45,25 @@ function piEventListeners()
             document.forms["piLoginForm"].submit();
         });
     }
+    // "Register passkey" tries the registration of a passkey again. Some browsers want a click for it.
+    const passkeyRegistrationButton = document.getElementById("passkeyRegistrationButton");
+    if (passkeyRegistrationButton)
+    {
+        passkeyRegistrationButton.addEventListener("click", function ()
+        {
+            window.piRegisterPasskey();
+        });
+    }
+    // "Cancel enrollment" skips an enrollment that privacyIDEA marked as optional.
+    const cancelEnrollmentButton = document.getElementById("cancelEnrollmentButton");
+    if (cancelEnrollmentButton)
+    {
+        cancelEnrollmentButton.addEventListener("click", function ()
+        {
+            piSetValue("cancelEnrollment", "1");
+            document.forms["piLoginForm"].submit();
+        });
+    }
     document.getElementById("u2fButton").addEventListener("click", function ()
     {
         piChangeMode("u2f");

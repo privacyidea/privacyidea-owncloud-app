@@ -1,14 +1,18 @@
-# privacyIDEA for ownCloud
+# privacyIDEA for ownCloud Classic
 
-A two-factor authentication provider for ownCloud. After the password, ownCloud asks for a second factor
-and verifies it with your privacyIDEA server. Tokens and policies stay in privacyIDEA.
+A two-factor authentication provider for ownCloud Classic, the PHP server of ownCloud (versions 10 and 11).
+After the password, ownCloud asks for a second factor and verifies it with your privacyIDEA server.
+Tokens and policies stay in privacyIDEA.
+
+The app does not work with ownCloud Infinite Scale (oCIS). oCIS is a different product and does not run
+ownCloud Classic apps.
 
 Supported second factors: OTP tokens (HOTP, TOTP, YubiKey and others), challenge-response tokens (SMS, email),
 push, TiQR, WebAuthn security keys and passkeys.
 
 ## Requirements
 
-- ownCloud 10.11 or later, or ownCloud 11
+- ownCloud Classic 10.11 or later, or ownCloud Classic 11. ownCloud Infinite Scale (oCIS) is not supported.
 - PHP 7.4 to 8.3
 - privacyIDEA 3.7 or later. Passkeys need 3.11.1 or later.
 - HTTPS for WebAuthn and passkeys
@@ -81,7 +85,7 @@ The user logs in with the password, then with a passkey. In privacyIDEA:
    The browser then asks for the passkey right after the password.
 
 Without step 3, the user starts the passkey with the "Passkey" button. The button needs no service account.
-It shows for every user, and "Show the passkey button" turns it off. The text below the button comes from the
+It shows for every user, but not during an enrollment at login. "Show the passkey button" turns it off. The text below the button comes from the
 policy `passkey_challenge_text`.
 
 The challenge of the button belongs to no user. The app therefore accepts a passkey only if privacyIDEA names
@@ -96,15 +100,30 @@ the ownCloud user as its owner:
 
 The login page polls privacyIDEA until the user confirms the login on the phone. It stops after a decline
 (privacyIDEA 3.9 and later), after 120 seconds or after an error, and offers "New challenge".
+For a new push token, the page waits up to 10 minutes (see [Enrollment at login](#enrollment-at-login)).
 
 With "Poll in browser", the browser polls privacyIDEA directly at the "Poll in browser URL". If this URL has
 another origin than ownCloud, privacyIDEA must allow it with CORS headers.
 
 ## Enrollment at login
 
-The policy `enroll_via_multichallenge` works for HOTP, TOTP, email, SMS and push tokens. The login page shows
-the QR code and the otpauth link of the new token. The app cannot enroll smartphone containers or passkeys,
-and the user cannot skip an optional enrollment.
+The policy `enroll_via_multichallenge` works for HOTP, TOTP, email, SMS, push and passkey tokens,
+and for smartphone containers.
+
+- HOTP, TOTP and push: the login page shows the QR code and the otpauth link of the new token.
+  The user enters the first OTP, or confirms the push on the phone.
+- Email and SMS: the user first enters the email address or the phone number. This field shows the text.
+  Then the user enters the OTP from the message.
+- Passkey: the browser asks for the new passkey at once. If the user closes the browser prompt, "Register passkey"
+  starts it again. Set the policies of step 1 in [Passkeys](#passkeys).
+- Smartphone container: the login page shows the QR code and the link for the privacyIDEA Authenticator app.
+  The login continues after the app registered the container. The registration needs the policy
+  `privacyIDEA_server_url` (scope container).
+
+The page waits up to 10 minutes for the answer of an enrollment, because the setup of a new token takes time.
+
+With the policy `enroll_via_multichallenge_optional`, the page also shows "Cancel enrollment". The user then logs in
+without the new token or container. privacyIDEA deletes it and asks again at the next login.
 
 ## Reverse proxy
 

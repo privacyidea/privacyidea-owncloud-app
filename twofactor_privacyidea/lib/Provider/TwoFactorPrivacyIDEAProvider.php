@@ -48,17 +48,21 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         "pi_pollInBrowserFailed", "pi_errorMessage", "pi_loadCounter", "pi_preferredClientMode", "pi_noAuthRequired",
         "pi_uid", "pi_passkeyChallenge", "pi_passkeyTransactionId", "pi_passkeyFetchedAt", "pi_passkeyTriggeredAt",
         "pi_passkeyFailedAt", "pi_enrollImage", "pi_enrollLink", "pi_noAutoSubmit", "pi_offerNewChallenge",
-        "pi_challengeTime", "pi_pinChangeSeen", "pi_passkeyMessage"];
+        "pi_challengeTime", "pi_pinChangeSeen", "pi_passkeyMessage", "pi_passkeyRegistration",
+        "pi_passkeyRegistrationSerial", "pi_passkeyRegistrationFailed", "pi_enrollOptional", "pi_enrolling", "pi_plainInput"];
     /** @var string[] Session keys of the challenges of one answer. An answer with new challenges replaces all of them. */
     private const CHALLENGE_KEYS = [
         "pi_u2fSignRequest", "pi_imgU2F", "pi_webAuthnSignRequest", "pi_imgWebauthn", "pi_pushAvailable", "pi_imgPush",
         "pi_tiqrAvailable", "pi_tiqrImage", "pi_otpAvailable", "pi_imgOTP", "pi_enrollImage", "pi_enrollLink",
-        "pi_noAutoSubmit", "pi_offerNewChallenge"];
+        "pi_noAutoSubmit", "pi_offerNewChallenge", "pi_passkeyRegistration", "pi_passkeyRegistrationSerial",
+        "pi_passkeyRegistrationFailed", "pi_enrollOptional", "pi_enrolling", "pi_plainInput"];
     /** @var string[] Token types that ask for an OTP. Auto submit is only for a challenge of these types. */
     private const OTP_TOKEN_TYPES = ["hotp", "totp", "email", "sms", "motp", "yubikey", "yubico", "daplug", "tan", "vasco"];
     /** @var int privacyIDEA keeps a challenge for 120 seconds by default. After this time, the page stops waiting
      *           for a push or TiQR confirmation. The time in the answer (valid_until) has no time zone. */
     private const CHALLENGE_VALIDITY = 120;
+    /** @var int The wait for the rollout of a push token on the phone. Scanning the QR code takes longer than a login. */
+    private const ENROLLMENT_WAIT = 600;
     /** @var int A passkey challenge (from /validate/initialize or triggered) is replaced after this many seconds.
      *           privacyIDEA keeps a challenge for 120 seconds by default. */
     private const PASSKEY_CHALLENGE_MAX_AGE = 60;
@@ -235,6 +239,24 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $template->assign("enrollLink", $this->session->get("pi_enrollLink"));
             $template->assign("enrollLinkLabel", $this->trans->t("Open the link in the authenticator app"));
         }
+        // The registration of a passkey at the login. It starts by itself, unless privacyIDEA refused an earlier try.
+        if ($this->session->get("pi_passkeyRegistration") !== null)
+        {
+            $template->assign("passkeyRegistration", json_encode($this->session->get("pi_passkeyRegistration")));
+            $template->assign("passkeyRegistrationAutoStart",
+                $this->session->get("pi_passkeyRegistrationFailed") === true ? "0" : "1");
+            $template->assign("passkeyRegistrationLabel", $this->trans->t("Register passkey"));
+        }
+        // privacyIDEA marked the enrollment as optional. The user can skip it.
+        if ($this->session->get("pi_enrollOptional") === true)
+        {
+            $template->assign("cancelEnrollment", $this->trans->t("Cancel enrollment"));
+        }
+        // The first step of an email or SMS enrollment asks for the address or the phone number.
+        if ($this->session->get("pi_plainInput") === true)
+        {
+            $template->assign("plainInput", true);
+        }
         // After a declined, expired or refused challenge, the user can ask for a new one.
         if ($this->session->get("pi_offerNewChallenge") === true)
         {
@@ -353,7 +375,37 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
 
         $ret = 0;
 
-        if ($mode === "push" || $mode === "tiqr")
+        if ($this->request->getParam("cancelEnrollment") === "1")
+        {
+            // The button "Cancel enrollment". It shows only if privacyIDEA marked the enrollment as optional.
+            $this->session->set("pi_mode", "otp");
+            if ($this->session->get("pi_enrollOptional") !== true || empty($transactionID))
+            {
+                $this->log("error", "[verifyChallenge] Cancel of an enrollment that is not optional. The app does not send it.");
+            }
+            else
+            {
+                $ret = $this->cancelEnrollment((string)$transactionID);
+            }
+        }
+        elseif ($mode === "passkeyRegistration")
+        {
+            // If privacyIDEA refuses the registration, the next page does not start it again by itself.
+            // The button "Register passkey" tries again.
+            $this->session->set("pi_passkeyRegistrationFailed", true);
+            $registrationResponse = json_decode((string)$this->request->getParam("passkeyRegistrationResponse"), true);
+            $origin = $this->checkedOrigin();
+            $serial = (string)$this->session->get("pi_passkeyRegistrationSerial");
+            if (!is_array($registrationResponse) || empty($transactionID) || $serial === "")
+            {
+                $this->log("error", "Incomplete data for the passkey registration: response, serial or transaction ID is missing!");
+            }
+            elseif ($origin !== "")
+            {
+                $ret = $this->completePasskeyRegistration($username, (string)$transactionID, $serial, $registrationResponse, $origin);
+            }
+        }
+        elseif ($mode === "push" || $mode === "tiqr")
         {
             if ($mode === "push")
             {
@@ -764,7 +816,10 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private function offerPasskey(): void
     {
         // Only "0" turns the button off. The settings page does the same, so an empty value shows a checked box.
-        if ($this->getAppValue("passkeybutton", "1") === "0" || $this->session->get("pi_noAuthRequired"))
+        // During an enrollment, the user passed privacyIDEA already, so the page offers no passkey login. The answer
+        // with the enrollment removed the challenge of the first page (storeChallenges).
+        if ($this->getAppValue("passkeybutton", "1") === "0" || $this->session->get("pi_noAuthRequired")
+            || $this->session->get("pi_enrolling") === true)
         {
             return;
         }
@@ -885,6 +940,69 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     }
 
     /**
+     * Cancel an optional enrollment (enroll_via_multichallenge_optional). privacyIDEA deletes the new token and
+     * answers with a success, because the user passed privacyIDEA before the enrollment started.
+     * The request does not name the user. With a user name, privacyIDEA treats the success like a login of a user
+     * without a token and starts a new enrollment at once. The transaction comes from the session of this login.
+     *
+     * @param string $transactionID The transaction of the enrollment, from the session
+     * @return mixed|string
+     * @throws ProcessPIResponseException|Exception
+     */
+    private function cancelEnrollment(string $transactionID)
+    {
+        $options["form_params"] = [
+            "transaction_id" => $transactionID,
+            "cancel_enrollment" => "true"];
+        $res = $this->sendRequest("validate/check", $options);
+        return $this->processPIResponse($res);
+    }
+
+    /**
+     * Complete the registration of a passkey (enroll_via_multichallenge=passkey) with the answer of the browser.
+     * The token (serial) and the transaction come from the session, so the registration belongs to this login.
+     *
+     * @param string $username
+     * @param string $transactionID
+     * @param string $serial The serial of the passkey token that privacyIDEA created for the registration
+     * @param array $response The answer of the browser: credential_id, rawId, attestationObject, clientDataJSON and
+     *                        authenticatorAttachment
+     * @param string $origin The origin of ownCloud
+     * @return mixed|string 0 for incomplete data
+     * @throws ProcessPIResponseException|Exception
+     */
+    private function completePasskeyRegistration(string $username, string $transactionID, string $serial, array $response,
+                                                 string $origin)
+    {
+        foreach (["credential_id", "rawId", "attestationObject", "clientDataJSON"] as $key)
+        {
+            if (empty($response[$key]) || !is_string($response[$key]))
+            {
+                $this->log("error", "Incomplete data for the passkey registration: " . $key . " is missing!");
+                return 0;
+            }
+        }
+        $options["form_params"] = [
+            "user" => $username,
+            "transaction_id" => $transactionID,
+            "serial" => $serial,
+            "type" => "passkey",
+            "credential_id" => $response["credential_id"],
+            "rawId" => $response["rawId"],
+            "attestationObject" => $response["attestationObject"],
+            "clientDataJSON" => $response["clientDataJSON"]];
+        // privacyIDEA 3.14 requires it. A browser that does not report it gets the error of privacyIDEA.
+        if (!empty($response["authenticatorAttachment"]) && is_string($response["authenticatorAttachment"]))
+        {
+            $options["form_params"]["authenticatorAttachment"] = $response["authenticatorAttachment"];
+        }
+        $options["headers"]["Origin"] = $origin;
+
+        $res = $this->sendRequest("validate/check", $options);
+        return $this->processPIResponse($res);
+    }
+
+    /**
      * Sends a request to /validate/check with the data required to authenticate a passkey.
      * The request has the user name. privacyIDEA 3.14 and later then refuse a passkey of another user.
      * Older versions ignore it for a challenge that belongs to no user (from /validate/initialize), so for such a
@@ -989,7 +1107,8 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
     private function challengeIsOld(): bool
     {
         $time = $this->session->get("pi_challengeTime");
-        return $time !== null && time() - (int)$time > self::CHALLENGE_VALIDITY;
+        $limit = $this->session->get("pi_enrolling") === true ? self::ENROLLMENT_WAIT : self::CHALLENGE_VALIDITY;
+        return $time !== null && time() - (int)$time > $limit;
     }
 
     /**
@@ -1206,6 +1325,15 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
             $this->session->set("pi_pinChangeSeen", true);
         }
         $noAutoSubmit = $enroll || $pinChange;
+        if ($enroll)
+        {
+            $this->session->set("pi_enrolling", true);
+            // privacyIDEA lets the user skip an optional enrollment (cancel_enrollment). This holds for every token type.
+            if (!empty($detail->enroll_via_multichallenge_optional))
+            {
+                $this->session->set("pi_enrollOptional", true);
+            }
+        }
 
         $preferred = "otp";
         if (property_exists($detail, "preferred_client_mode"))
@@ -1225,6 +1353,16 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
         $entryMode = null;
         foreach ($multiChallenge as $entry)
         {
+            // The registration of a passkey (enroll_via_multichallenge=passkey) has no client_mode. Its entry holds the
+            // options for navigator.credentials.create().
+            if (is_object($entry) && isset($entry->passkey_registration) && is_object($entry->passkey_registration))
+            {
+                $this->session->set("pi_passkeyRegistration", $entry->passkey_registration);
+                $this->session->set("pi_passkeyRegistrationSerial", (string)($entry->serial ?? $detail->serial ?? ""));
+                $noAutoSubmit = true;
+                $entryMode = $entryMode ?? "passkeyRegistration";
+                continue;
+            }
             if (!is_object($entry) || empty($entry->client_mode))
             {
                 continue;
@@ -1266,7 +1404,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     }
                     break;
                 case "poll":
-                    if ($type === "push")
+                    // The registration of a smartphone container (enroll_via_multichallenge=smartphone) works like the
+                    // enrollment of a push token: the page shows the QR code and polls until the app registered it.
+                    if ($type === "push" || ($enroll && $type === "smartphone"))
                     {
                         $this->session->set("pi_pushAvailable", "1");
                         if ($image !== null)
@@ -1284,7 +1424,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         }
                         $entryMode = $entryMode ?? "tiqr";
                     }
-                    // Other poll types, for example the registration of a smartphone container, are not supported.
                     break;
                 default:
                     if ($image !== null)
@@ -1298,11 +1437,19 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         // For example a question, an indexed secret or a PIN change. The answer is not an OTP.
                         $noAutoSubmit = true;
                     }
+                    // The first step of an email or SMS enrollment asks for the address or the phone number.
+                    // The user must see what they type. The next step (the OTP) has no enroll flag.
+                    if ($enroll && ($type === "email" || $type === "sms"))
+                    {
+                        $this->session->set("pi_plainInput", true);
+                    }
                     $entryMode = $entryMode ?? "otp";
             }
-            // The otpauth link of a new token lets a user enroll it on the same phone.
+            // The link lets a user enroll the new token (otpauth://) or register the new container (pia://container/)
+            // on the same phone. Other schemes do not show.
             $link = $entry->link ?? null;
-            if ($enroll && is_string($link) && strpos($link, "otpauth://") === 0)
+            if ($enroll && is_string($link)
+                && (strpos($link, "otpauth://") === 0 || strpos($link, "pia://container/") === 0))
             {
                 $this->session->set("pi_enrollLink", $link);
             }

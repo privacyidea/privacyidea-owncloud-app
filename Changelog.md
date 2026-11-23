@@ -10,6 +10,18 @@
   If privacyIDEA triggers a passkey challenge (policy `passkey_trigger_by_pin` and the setting "Trigger challenges"),
   the browser asks for the passkey by itself. The user needs a passkey token in privacyIDEA 3.11.1 or later.
   See the README.
+* Enrollment at login: The app registers a passkey with `enroll_via_multichallenge=passkey`. The browser asks for
+  the new passkey after the first step. The button "Register passkey" starts the browser prompt again.
+* Enrollment at login: The app registers a smartphone container with `enroll_via_multichallenge=smartphone`.
+  The page shows the QR code and the link for the privacyIDEA Authenticator app, and the login continues after the
+  registration.
+* Enrollment at login: With the policy `enroll_via_multichallenge_optional`, the page shows "Cancel enrollment".
+  The user then logs in without the new token or container, and privacyIDEA deletes it. This works for every token
+  type and for a smartphone container.
+* Enrollment at login: The page waits up to 10 minutes for the answer of an enrollment, for example the confirmation
+  of a new push token. A login challenge still expires after 120 seconds.
+* Translations: All 32 languages now have every text of the login page and the settings page. Before, many texts
+  showed in English. Native speakers did not review the new translations yet. Please report errors.
 * Support ownCloud 11. The app now needs ownCloud 10.11 or later.
 * Nextcloud 12 and 13 are no longer listed. They are out of support.
 
@@ -67,6 +79,8 @@
   without end. The page now stops after a decline or after 120 seconds, shows the reason and offers "New challenge".
 * Push and TiQR: An error of privacyIDEA showed as the text of the push, and the page kept polling. The error is now
   shown and logged, and the poll stops.
+* Enrollment at login: The field for the email address or the phone number of a new email or SMS token hid the text
+  like a password. It now shows the text.
 * After a challenge expired, every answer failed until a new login. After a refused answer to a challenge, the page
   now offers "New challenge". With "Trigger challenges", it triggers new challenges.
 * A user with only a TiQR token got the push page without the QR code. The page now opens in the TiQR mode.

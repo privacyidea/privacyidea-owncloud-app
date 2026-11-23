@@ -1352,15 +1352,246 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertSame("TOTPQR", $this->session->get("pi_enrollImage"));
     }
 
-    public function testASmartphoneEnrollmentIsNotOffered(): void
+    public function testASmartphoneContainerIsRegisteredLikeAPushToken(): void
     {
+        // multichallenge-enroll.md test_08: the page shows the QR code and polls. After the app registered the
+        // container, the poll answers "accept", and /validate/check with an empty pass completes the login.
+        $link = "pia://container/SMPH1?issuer=privacyIDEA&ttl=10&nonce=N&time=T&url=https%3A//pi.test/&serial=SMPH1";
         $this->client->queue($this->response(200, $this->challengeAnswer(
-            [["client_mode" => "poll", "type" => "smartphone", "image" => "CONTAINERQR"]], ["enroll_via_multichallenge" => true])));
+            [["client_mode" => "poll", "type" => "smartphone", "image" => "CONTAINERQR", "link" => $link,
+                "serial" => "SMPH1", "transaction_id" => "2222"]],
+            ["enroll_via_multichallenge" => true, "client_mode" => "poll", "type" => "smartphone",
+                "message" => "Please scan the QR code to register the container."])));
+        $this->assertSame("Please scan the QR code to register the container.", $this->failureOf("bob", "1234"));
+
+        $template = $this->provider->getTemplate(new FakeUser("bob"));
+        $this->assertSame("push", $template->vars["mode"]);
+        $this->assertSame("CONTAINERQR", $template->vars["enrollImage"]);
+        $this->assertSame($link, $template->vars["enrollLink"]);
+
+        $this->request->params = ["mode" => "push"];
+        $this->client->queue($this->response(200, '{"detail":{"challenge_status":"accept"},"result":{"authentication":"ACCEPT","status":true,"value":true}}'))
+            ->queue($this->response(200, '{"detail":{"message":"Found matching challenge","serial":"SMPH1"},"result":{"authentication":"ACCEPT","status":true,"value":true}}'));
+        $this->assertTrue($this->verify("bob", ""));
+        $this->assertSame(["user" => "bob", "transaction_id" => "2222", "pass" => ""],
+            $this->client->requests[2]["options"]["form_params"]);
+    }
+
+    public function testAContainerLinkShowsOnlyForAnEnrollment(): void
+    {
+        // Without the enroll flag, a smartphone entry is no challenge that the app knows.
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "poll", "type" => "smartphone", "image" => "CONTAINERQR", "link" => "pia://container/SMPH1"]])));
 
         $this->failureOf("bob", "1234");
 
-        $this->assertNull($this->session->get("pi_enrollImage"));
-        $this->assertSame("otp", $this->session->get("pi_mode"));
+        $this->assertNull($this->session->get("pi_enrollLink"));
+        $this->assertNull($this->session->get("pi_pushAvailable"));
+    }
+
+    // ---- Enrollment at the login: passkey registration, cancel, the address of email and SMS
+
+    /** The answer that asks for the registration of a passkey (passkey.md test_09, without the offline policy). */
+    private function passkeyRegistrationAnswer(array $detail = []): string
+    {
+        return $this->challengeAnswer([[
+            "serial" => "PIPK7", "rollout_state" => "clientwait", "transaction_id" => "2222",
+            "passkey_registration" => [
+                "rp" => ["id" => "localhost", "name" => "ownCloud"],
+                "user" => ["id" => "VVNFUklE", "name" => "alice", "displayName" => "alice"],
+                "challenge" => "REGCHALLENGE",
+                "pubKeyCredParams" => [["alg" => -7, "type" => "public-key"]],
+                "timeout" => 12000, "excludeCredentials" => [],
+                "authenticatorSelection" => ["residentKey" => "required", "userVerification" => "preferred"],
+                "attestation" => "none"]]],
+            array_merge(["enroll_via_multichallenge" => true, "enroll_via_multichallenge_optional" => false,
+                "message" => "Please confirm the registration with your passkey!"], $detail));
+    }
+
+    private const REGISTRATION_SIGNED = '{"credential_id":"CRED","rawId":"CRED","authenticatorAttachment":"platform","attestationObject":"ATT","clientDataJSON":"CDJ"}';
+
+    /** The browser answers the registration. */
+    private function answerTheRegistration(string $response = self::REGISTRATION_SIGNED): void
+    {
+        $this->request->params = ["mode" => "passkeyRegistration", "passkeyRegistrationResponse" => $response,
+            "origin" => "http://localhost:8080"];
+    }
+
+    public function testAPasskeyRegistrationStartsTheRegistrationMode(): void
+    {
+        $this->client->queue($this->response(200, $this->passkeyRegistrationAnswer()));
+
+        $this->assertSame("Please confirm the registration with your passkey!", $this->failureOf("alice", "anything"));
+        $template = $this->provider->getTemplate(new FakeUser("alice"));
+
+        $this->assertSame("passkeyRegistration", $template->vars["mode"]);
+        $this->assertSame("REGCHALLENGE", json_decode($template->vars["passkeyRegistration"], true)["challenge"]);
+        $this->assertSame("1", $template->vars["passkeyRegistrationAutoStart"]);
+        $this->assertSame("", $template->vars["autoSubmitOtpLength"]);
+        $this->assertArrayNotHasKey("cancelEnrollment", $template->vars, "The enrollment is not optional.");
+    }
+
+    public function testThePasskeyRegistrationSendsTheFieldsOfPrivacyIdea(): void
+    {
+        $this->config->values["realm"] = "dev";
+        $this->client->queue($this->response(200, $this->passkeyRegistrationAnswer()))
+            ->queue($this->response(200, '{"detail":{"message":"Found matching challenge","serial":"PIPK7","username":"alice"},"result":{"authentication":"ACCEPT","status":true,"value":true}}'));
+        $this->failureOf("alice", "anything");
+        $this->answerTheRegistration();
+
+        $this->assertTrue($this->verify("alice", ""));
+
+        $request = $this->client->requests[1];
+        $this->assertSame([
+            "user" => "alice", "transaction_id" => "2222", "serial" => "PIPK7", "type" => "passkey",
+            "credential_id" => "CRED", "rawId" => "CRED", "attestationObject" => "ATT", "clientDataJSON" => "CDJ",
+            "authenticatorAttachment" => "platform", "realm" => "dev"], $request["options"]["form_params"]);
+        $this->assertSame("http://localhost:8080", $request["options"]["headers"]["Origin"]);
+        $this->assertSame([], $this->session->data, "The login is done.");
+    }
+
+    public function testARefusedRegistrationDoesNotStartAgainByItself(): void
+    {
+        $this->client->queue($this->response(200, $this->passkeyRegistrationAnswer()))
+            ->queue($this->response(400, '{"result":{"status":false,"error":{"code":-1,"message":"The registration is not valid."}}}'));
+        $this->failureOf("alice", "anything");
+        $this->answerTheRegistration();
+
+        $this->assertSame("The registration is not valid.", $this->failureOf("alice", ""));
+        $template = $this->provider->getTemplate(new FakeUser("alice"));
+
+        $this->assertSame("0", $template->vars["passkeyRegistrationAutoStart"], "The button tries again.");
+        $this->assertSame("Register passkey", $template->vars["passkeyRegistrationLabel"]);
+    }
+
+    public function testARegistrationFromAnotherOriginIsRefused(): void
+    {
+        $this->client->queue($this->response(200, $this->passkeyRegistrationAnswer()));
+        $this->failureOf("alice", "anything");
+        $this->answerTheRegistration();
+        $this->request->params["origin"] = "https://evil.example.com";
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("alice", ""));
+        $this->assertCount(1, $this->client->requests);
+    }
+
+    public function testAnIncompleteRegistrationSendsNothing(): void
+    {
+        $this->client->queue($this->response(200, $this->passkeyRegistrationAnswer()));
+        $this->failureOf("alice", "anything");
+        $this->answerTheRegistration('{"credential_id":"CRED","attestationObject":"ATT","clientDataJSON":"CDJ"}');
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("alice", ""));
+        $this->assertCount(1, $this->client->requests, "No rawId, no request.");
+    }
+
+    public function testARegistrationWithoutASerialSendsNothing(): void
+    {
+        $answer = json_decode($this->passkeyRegistrationAnswer(), true);
+        unset($answer["detail"]["multi_challenge"][0]["serial"]);
+        $this->client->queue($this->response(200, json_encode($answer)));
+        $this->failureOf("alice", "anything");
+        $this->answerTheRegistration();
+
+        $this->assertSame("Failed to authenticate.", $this->failureOf("alice", ""));
+        $this->assertCount(1, $this->client->requests, "No serial, no request.");
+    }
+
+    public function testAnOptionalEnrollmentCanBeCancelled(): void
+    {
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "interactive", "type" => "hotp", "image" => "QR"]],
+            ["enroll_via_multichallenge" => true, "enroll_via_multichallenge_optional" => true])))
+            ->queue($this->response(200, '{"detail":{"message":"Cancelled enrollment via multichallenge"},"result":{"authentication":"ACCEPT","status":true,"value":true}}'));
+        $this->failureOf("alice", "anything");
+        $this->assertSame("Cancel enrollment", $this->provider->getTemplate(new FakeUser("alice"))->vars["cancelEnrollment"]);
+
+        $this->request->params = ["cancelEnrollment" => "1", "mode" => "otp"];
+        $this->assertTrue($this->verify("alice", ""));
+
+        // No user name: with it, privacyIDEA starts a new enrollment after the cancel (post policy
+        // multichallenge_enroll_via_validate).
+        $this->assertSame(["transaction_id" => "2222", "cancel_enrollment" => "true"],
+            $this->client->requests[1]["options"]["form_params"]);
+    }
+
+    public function testAMandatoryEnrollmentCannotBeCancelled(): void
+    {
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "interactive", "type" => "hotp", "image" => "QR"]], ["enroll_via_multichallenge" => true])));
+        $this->failureOf("alice", "anything");
+
+        $this->request->params = ["cancelEnrollment" => "1", "mode" => "otp"];
+        $this->assertSame("Failed to authenticate.", $this->failureOf("alice", ""));
+        $this->assertCount(1, $this->client->requests, "The app does not send the cancel.");
+    }
+
+    public function testAnOptionalPasskeyRegistrationCanBeCancelledToo(): void
+    {
+        $this->client->queue($this->response(200, $this->passkeyRegistrationAnswer(["enroll_via_multichallenge_optional" => true])))
+            ->queue($this->response(200, '{"detail":{"message":"Cancelled enrollment via multichallenge"},"result":{"authentication":"ACCEPT","status":true,"value":true}}'));
+        $this->failureOf("alice", "anything");
+        $this->assertSame("Cancel enrollment", $this->provider->getTemplate(new FakeUser("alice"))->vars["cancelEnrollment"]);
+
+        $this->request->params = ["cancelEnrollment" => "1", "mode" => "passkeyRegistration"];
+        $this->assertTrue($this->verify("alice", ""));
+        $this->assertSame("true", $this->client->requests[1]["options"]["form_params"]["cancel_enrollment"]);
+    }
+
+    public function testTheAddressOfAnEmailEnrollmentIsVisible(): void
+    {
+        // multichallenge-enroll.md test_03: the first step asks for the address. The next step asks for the OTP.
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "interactive", "type" => "email", "image" => null]], ["enroll_via_multichallenge" => true])));
+        $this->failureOf("alice", "anything");
+        $this->assertTrue($this->provider->getTemplate(new FakeUser("alice"))->vars["plainInput"]);
+
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "interactive", "type" => "email"]], ["preferred_client_mode" => "interactive"])));
+        $this->failureOf("alice", "alice@example.com");
+        $this->assertArrayNotHasKey("plainInput", $this->provider->getTemplate(new FakeUser("alice"))->vars);
+    }
+
+    public function testAnEnrollmentPageHasNoPasskeyButton(): void
+    {
+        // The first page has the button. After the first step, privacyIDEA asks for the enrollment of a token.
+        $this->turnOnThePasskeyButton();
+        $this->client->queue($this->response(200, '{"detail":{"passkey":{"challenge":"INIT","rpId":"localhost","transaction_id":"777"},"transaction_id":"777"},"result":{"authentication":"CHALLENGE","status":true,"value":false}}'));
+        $this->assertArrayHasKey("passkeyChallenge", $this->provider->getTemplate(new FakeUser("alice"))->vars);
+
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "interactive", "type" => "totp", "image" => "QR"]], ["enroll_via_multichallenge" => true])));
+        $this->failureOf("alice", "anything");
+
+        $this->assertArrayNotHasKey("passkeyChallenge", $this->provider->getTemplate(new FakeUser("alice"))->vars);
+        $this->assertCount(2, $this->client->requests, "The enrollment page does not ask for a new passkey challenge.");
+    }
+
+    public function testTheOtpOfAnOtpEnrollmentStaysHidden(): void
+    {
+        // Only the address of an email or SMS enrollment shows in clear text. The OTP of a new HOTP token does not.
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "interactive", "type" => "hotp", "image" => "QR"]], ["enroll_via_multichallenge" => true])));
+        $this->failureOf("alice", "anything");
+        $this->assertArrayNotHasKey("plainInput", $this->provider->getTemplate(new FakeUser("alice"))->vars);
+    }
+
+    public function testAPushEnrollmentWaitsLongerThanALogin(): void
+    {
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "poll", "type" => "push", "image" => "PUSHQR"]], ["enroll_via_multichallenge" => true])));
+        $this->failureOf("bob", "anything");
+
+        // The user scans the QR code and sets up the token on the phone. This takes longer than a login.
+        $this->request->params = ["mode" => "push"];
+        $this->session->set("pi_challengeTime", time() - 121);
+        $this->client->queue($this->response(200, self::POLL_PENDING));
+        $this->failureOf("bob", "");
+        $this->assertSame("push", $this->session->get("pi_mode"), "Still waiting.");
+
+        $this->session->set("pi_challengeTime", time() - 601);
+        $this->client->queue($this->response(200, self::POLL_PENDING));
+        $this->assertSame("The login was not confirmed in time.", $this->failureOf("bob", ""));
     }
 
     // ---- Auto submit

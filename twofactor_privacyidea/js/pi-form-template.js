@@ -83,6 +83,16 @@ function piFormTemplate()
         piDisableElement("passkeyButton");
         window.piDoPasskey();
     }
+    // The registration of a passkey at the login (enroll_via_multichallenge). The OTP field has no use here.
+    if (piGetValue("mode") === "passkeyRegistration" && piGetValue("passkeyRegistration").length > 0)
+    {
+        piDisableElement("otp");
+        piDisableElement("submitButton");
+        if (piGetValue("passkeyRegistrationAutoStart") === "1")
+        {
+            window.piRegisterPasskey();
+        }
+    }
     if (piGetValue("mode") === "u2f")
     {
         piDisableElement("otp");
