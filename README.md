@@ -24,11 +24,19 @@ For Nextcloud, use the [privacyIDEA Nextcloud app](https://github.com/privacyide
 ## Installation
 
 Install the app from the [ownCloud marketplace](https://marketplace.owncloud.com/apps/twofactor_privacyidea),
-or copy the directory `twofactor_privacyidea` into an app directory (`apps_paths` in `config/config.php`) and run:
+or install it by hand:
 
-```
-occ app:enable twofactor_privacyidea
-```
+1. Download `twofactor_privacyidea-<version>.tar.gz` from the
+   [GitHub releases](https://github.com/privacyidea/privacyidea-owncloud-app/releases).
+2. Extract it into an app directory (`apps_paths` in `config/config.php`). This gives the folder
+   `twofactor_privacyidea`.
+3. Run:
+
+   ```
+   occ app:enable twofactor_privacyidea
+   ```
+
+To update the app by hand, replace the folder and run `occ upgrade`.
 
 In the official ownCloud 11 Docker image, the app directory is `/var/www/owncloud/custom` (volume `/mnt/data/apps`).
 

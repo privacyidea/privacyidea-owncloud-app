@@ -1,4 +1,4 @@
-## Unreleased
+## 3.3.0 11/2026
 
 ### Features
 * Passkeys: A user can log in with a passkey as the second factor. The login page has a "Passkey" button.
@@ -118,7 +118,9 @@
   See the README.
 
 ### Note for the release
-* `appinfo/signature.json` is out of date. Sign the app again before the release.
+* The archive of the GitHub release is not signed. ownCloud 11.1 accepts it only as a manual install (copy the
+  folder, then `occ app:enable`). The marketplace release needs the archive signed with `ocsign` and the new
+  certificate from owncloud/developer-certificates.
 
 ## 3.2.0 02/2024
 

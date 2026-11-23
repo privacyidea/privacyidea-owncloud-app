@@ -2,7 +2,7 @@ name: Release
 
 # Set a tag "v<version>" and push it. The workflow makes a GitHub release for the tag.
 # The text of the release is the section of Changelog.md for the version.
-# The workflow does not attach an archive and does not sign the app. See dev/README.md.
+# The workflow attaches the unsigned archive twofactor_privacyidea-<version>.tar.gz. See dev/README.md.
 
 on:
   push:
@@ -47,8 +47,21 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: sh .github/scripts/changelog-section.sh "${TAG#v}" > "$RUNNER_TEMP/notes.md"
 
+      # The archive has the folder twofactor_privacyidea as it is in git at the tag. It is not signed.
+      - name: Build the app archive
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          archive="$RUNNER_TEMP/twofactor_privacyidea-${TAG#v}.tar.gz"
+          git archive --format=tar --prefix=twofactor_privacyidea/ HEAD:twofactor_privacyidea | gzip -n > "$archive"
+          if tar -tzf "$archive" | grep -q 'appinfo/signature.json$'; then
+            echo "::error::The archive contains appinfo/signature.json. Remove the file from git."
+            exit 1
+          fi
+          echo "ARCHIVE=$archive" >> "$GITHUB_ENV"
+
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
+        run: gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" "$ARCHIVE"
