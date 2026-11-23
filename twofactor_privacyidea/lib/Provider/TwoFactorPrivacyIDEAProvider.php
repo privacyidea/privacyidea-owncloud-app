@@ -1404,7 +1404,9 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     }
                     break;
                 case "poll":
-                    if ($type === "push")
+                    // The registration of a smartphone container (enroll_via_multichallenge=smartphone) works like the
+                    // enrollment of a push token: the page shows the QR code and polls until the app registered it.
+                    if ($type === "push" || ($enroll && $type === "smartphone"))
                     {
                         $this->session->set("pi_pushAvailable", "1");
                         if ($image !== null)
@@ -1422,7 +1424,6 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                         }
                         $entryMode = $entryMode ?? "tiqr";
                     }
-                    // Other poll types, for example the registration of a smartphone container, are not supported.
                     break;
                 default:
                     if ($image !== null)
@@ -1444,9 +1445,11 @@ class TwoFactorPrivacyIDEAProvider implements IProvider
                     }
                     $entryMode = $entryMode ?? "otp";
             }
-            // The otpauth link of a new token lets a user enroll it on the same phone.
+            // The link lets a user enroll the new token (otpauth://) or register the new container (pia://container/)
+            // on the same phone. Other schemes do not show.
             $link = $entry->link ?? null;
-            if ($enroll && is_string($link) && strpos($link, "otpauth://") === 0)
+            if ($enroll && is_string($link)
+                && (strpos($link, "otpauth://") === 0 || strpos($link, "pia://container/") === 0))
             {
                 $this->session->set("pi_enrollLink", $link);
             }

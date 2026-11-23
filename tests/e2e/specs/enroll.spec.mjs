@@ -5,9 +5,12 @@ import { test, expect } from "@playwright/test";
 import { totp } from "../../../dev/lib/totp.mjs";
 import { adminPage, loginPassword, resetAppConfig } from "../helpers.mjs";
 import { addAuthenticator } from "../passkey-helpers.mjs";
-import { deletePolicy, hexSecretFromLink, piTokens, removeTokens, setPolicy } from "../enroll-helpers.mjs";
+import {
+  deletePolicy, hexSecretFromLink, piContainers, piTokens, registerContainer, removeContainers, removeTokens, setPolicy,
+} from "../enroll-helpers.mjs";
 
 const POLICY = "e2e_enroll_carol";
+const CONTAINER_POLICY = "e2e_container_carol";
 
 let admin;
 test.beforeAll(async ({ browser }) => {
@@ -16,10 +19,13 @@ test.beforeAll(async ({ browser }) => {
 test.beforeEach(async () => {
   await resetAppConfig(admin);
   await removeTokens("carol");
+  await removeContainers("carol");
 });
 test.afterEach(async () => {
   await deletePolicy(POLICY);
+  await deletePolicy(CONTAINER_POLICY);
   await removeTokens("carol");
+  await removeContainers("carol");
 });
 
 /** privacyIDEA lets carol pass and then asks her to enroll a token of this type. */
@@ -27,6 +33,17 @@ async function enrollmentPolicy(type, optional = false) {
   await setPolicy(POLICY, {
     scope: "authentication",
     action: `passOnNoToken, enroll_via_multichallenge=${type}${optional ? ", enroll_via_multichallenge_optional" : ""}`,
+    user: "carol",
+    realm: "dev",
+    active: true,
+  });
+}
+
+/** The registration of a container needs the URL that the app contacts. The test registers through this URL. */
+async function containerPolicy() {
+  await setPolicy(CONTAINER_POLICY, {
+    scope: "container",
+    action: "privacyIDEA_server_url=http://localhost:8081/",
     user: "carol",
     realm: "dev",
     active: true,
@@ -91,4 +108,31 @@ test("N4: without an authenticator, the user skips an optional passkey registrat
   await page.click("#cancelEnrollmentButton");
   await page.waitForURL(/\/apps\/files/);
   expect(await piTokens("carol")).toEqual([]);
+});
+
+test("N5: a user without a token registers a smartphone container at the login", async ({ page }) => {
+  await enrollmentPolicy("smartphone");
+  await containerPolicy();
+  await startLogin(page);
+
+  await expect(page.locator("#enrollImage")).toBeVisible();
+  const link = await page.locator("#enrollLink").getAttribute("href");
+  expect(link).toMatch(/^pia:\/\/container\//);
+
+  // The app would scan the QR code. The test registers the container with the data of the link.
+  await registerContainer(link);
+  // The page polls privacyIDEA and continues the login after the registration.
+  await page.waitForURL(/\/apps\/files/, { timeout: 60000 });
+  expect((await piContainers("carol")).map((c) => c.type)).toEqual(["smartphone"]);
+});
+
+test("N6: the user skips an optional container registration", async ({ page }) => {
+  await enrollmentPolicy("smartphone", true);
+  await containerPolicy();
+  await startLogin(page);
+
+  await expect(page.locator("#enrollImage")).toBeVisible();
+  await page.click("#cancelEnrollmentButton");
+  await page.waitForURL(/\/apps\/files/);
+  expect(await piContainers("carol"), "privacyIDEA deleted the new container.").toEqual([]);
 });

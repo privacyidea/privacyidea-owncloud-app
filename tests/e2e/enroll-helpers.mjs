@@ -1,4 +1,6 @@
-// Helpers for the enrollment tests: policies and tokens in privacyIDEA, and the seed of a new token.
+// Helpers for the enrollment tests: policies, tokens and containers in privacyIDEA, the seed of a new token, and the
+// registration of a smartphone container in place of the privacyIDEA Authenticator app.
+import crypto from "node:crypto";
 import { PRIVACYIDEA_URL } from "./helpers.mjs";
 
 async function api(method, path, body) {
@@ -39,6 +41,50 @@ export async function piTokens(user) {
 /** Delete all tokens of a user in the realm dev. */
 export async function removeTokens(user) {
   for (const token of await piTokens(user)) await api("DELETE", `/token/${token.serial}`);
+}
+
+/** The containers of a user in the realm dev. */
+export async function piContainers(user) {
+  const json = await api("GET", `/container/?user=${encodeURIComponent(user)}&realm=dev`);
+  return json.result.value.containers;
+}
+
+/** Delete all containers of a user in the realm dev. */
+export async function removeContainers(user) {
+  for (const container of await piContainers(user)) await api("DELETE", `/container/${container.serial}`);
+}
+
+/**
+ * Register a smartphone container like the privacyIDEA Authenticator app does after it scanned the QR code.
+ * The app signs "nonce|time|serial|scope" with a new key (ECDSA, curve P-384, SHA-256). The scope is the URL of
+ * /container/register/finalize on the server of the link. The request goes to the test server.
+ */
+export async function registerContainer(link) {
+  const params = new URL(link).searchParams;
+  const serial = params.get("serial");
+  const base = params.get("url");
+  const scope = base.includes("container/register/finalize")
+    ? base
+    : base.replace(/\/?$/, "/") + "container/register/finalize";
+  const { publicKey, privateKey } = crypto.generateKeyPairSync("ec", { namedCurve: "secp384r1" });
+  const message = `${params.get("nonce")}|${params.get("time")}|${serial}|${scope}`;
+  // privacyIDEA decodes the signature with urlsafe_b64decode, which needs the padding.
+  const signature = crypto.sign("sha256", Buffer.from(message), privateKey).toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_");
+  const res = await fetch(PRIVACYIDEA_URL + "/container/register/finalize", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      container_serial: serial,
+      signature,
+      public_client_key: publicKey.export({ type: "spki", format: "pem" }),
+      scope,
+    }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (res.status !== 200 || json.result?.status !== true) {
+    throw new Error(`The registration of ${serial} failed with status ${res.status}: ${JSON.stringify(json)}`);
+  }
 }
 
 /** The seed (hex) from an otpauth link: the parameter "secret" in base32. */

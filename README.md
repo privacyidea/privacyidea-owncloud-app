@@ -107,8 +107,8 @@ another origin than ownCloud, privacyIDEA must allow it with CORS headers.
 
 ## Enrollment at login
 
-The policy `enroll_via_multichallenge` works for HOTP, TOTP, email, SMS, push and passkey tokens.
-The app cannot enroll smartphone containers.
+The policy `enroll_via_multichallenge` works for HOTP, TOTP, email, SMS, push and passkey tokens,
+and for smartphone containers.
 
 - HOTP, TOTP and push: the login page shows the QR code and the otpauth link of the new token.
   The user enters the first OTP, or confirms the push on the phone.
@@ -116,11 +116,14 @@ The app cannot enroll smartphone containers.
   Then the user enters the OTP from the message.
 - Passkey: the browser asks for the new passkey at once. If the user closes the browser prompt, "Register passkey"
   starts it again. Set the policies of step 1 in [Passkeys](#passkeys).
+- Smartphone container: the login page shows the QR code and the link for the privacyIDEA Authenticator app.
+  The login continues after the app registered the container. The registration needs the policy
+  `privacyIDEA_server_url` (scope container).
 
 The page waits up to 10 minutes for the answer of an enrollment, because the setup of a new token takes time.
 
 With the policy `enroll_via_multichallenge_optional`, the page also shows "Cancel enrollment". The user then logs in
-without the new token. privacyIDEA deletes the token and asks again at the next login.
+without the new token or container. privacyIDEA deletes it and asks again at the next login.
 
 ## Reverse proxy
 

@@ -12,8 +12,12 @@
   See the README.
 * Enrollment at login: The app registers a passkey with `enroll_via_multichallenge=passkey`. The browser asks for
   the new passkey after the first step. The button "Register passkey" starts the browser prompt again.
+* Enrollment at login: The app registers a smartphone container with `enroll_via_multichallenge=smartphone`.
+  The page shows the QR code and the link for the privacyIDEA Authenticator app, and the login continues after the
+  registration.
 * Enrollment at login: With the policy `enroll_via_multichallenge_optional`, the page shows "Cancel enrollment".
-  The user then logs in without the new token, and privacyIDEA deletes it. This works for every token type.
+  The user then logs in without the new token or container, and privacyIDEA deletes it. This works for every token
+  type and for a smartphone container.
 * Enrollment at login: The page waits up to 10 minutes for the answer of an enrollment, for example the confirmation
   of a new push token. A login challenge still expires after 120 seconds.
 * Support ownCloud 11. The app now needs ownCloud 10.11 or later.

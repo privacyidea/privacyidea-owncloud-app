@@ -1352,15 +1352,41 @@ class TwoFactorPrivacyIDEAProviderTest extends TestCase
         $this->assertSame("TOTPQR", $this->session->get("pi_enrollImage"));
     }
 
-    public function testASmartphoneEnrollmentIsNotOffered(): void
+    public function testASmartphoneContainerIsRegisteredLikeAPushToken(): void
     {
+        // multichallenge-enroll.md test_08: the page shows the QR code and polls. After the app registered the
+        // container, the poll answers "accept", and /validate/check with an empty pass completes the login.
+        $link = "pia://container/SMPH1?issuer=privacyIDEA&ttl=10&nonce=N&time=T&url=https%3A//pi.test/&serial=SMPH1";
         $this->client->queue($this->response(200, $this->challengeAnswer(
-            [["client_mode" => "poll", "type" => "smartphone", "image" => "CONTAINERQR"]], ["enroll_via_multichallenge" => true])));
+            [["client_mode" => "poll", "type" => "smartphone", "image" => "CONTAINERQR", "link" => $link,
+                "serial" => "SMPH1", "transaction_id" => "2222"]],
+            ["enroll_via_multichallenge" => true, "client_mode" => "poll", "type" => "smartphone",
+                "message" => "Please scan the QR code to register the container."])));
+        $this->assertSame("Please scan the QR code to register the container.", $this->failureOf("bob", "1234"));
+
+        $template = $this->provider->getTemplate(new FakeUser("bob"));
+        $this->assertSame("push", $template->vars["mode"]);
+        $this->assertSame("CONTAINERQR", $template->vars["enrollImage"]);
+        $this->assertSame($link, $template->vars["enrollLink"]);
+
+        $this->request->params = ["mode" => "push"];
+        $this->client->queue($this->response(200, '{"detail":{"challenge_status":"accept"},"result":{"authentication":"ACCEPT","status":true,"value":true}}'))
+            ->queue($this->response(200, '{"detail":{"message":"Found matching challenge","serial":"SMPH1"},"result":{"authentication":"ACCEPT","status":true,"value":true}}'));
+        $this->assertTrue($this->verify("bob", ""));
+        $this->assertSame(["user" => "bob", "transaction_id" => "2222", "pass" => ""],
+            $this->client->requests[2]["options"]["form_params"]);
+    }
+
+    public function testAContainerLinkShowsOnlyForAnEnrollment(): void
+    {
+        // Without the enroll flag, a smartphone entry is no challenge that the app knows.
+        $this->client->queue($this->response(200, $this->challengeAnswer(
+            [["client_mode" => "poll", "type" => "smartphone", "image" => "CONTAINERQR", "link" => "pia://container/SMPH1"]])));
 
         $this->failureOf("bob", "1234");
 
-        $this->assertNull($this->session->get("pi_enrollImage"));
-        $this->assertSame("otp", $this->session->get("pi_mode"));
+        $this->assertNull($this->session->get("pi_enrollLink"));
+        $this->assertNull($this->session->get("pi_pushAvailable"));
     }
 
     // ---- Enrollment at the login: passkey registration, cancel, the address of email and SMS
