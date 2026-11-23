@@ -1,14 +1,18 @@
-# privacyIDEA for ownCloud
+# privacyIDEA for ownCloud Classic
 
-A two-factor authentication provider for ownCloud. After the password, ownCloud asks for a second factor
-and verifies it with your privacyIDEA server. Tokens and policies stay in privacyIDEA.
+A two-factor authentication provider for ownCloud Classic, the PHP server of ownCloud (versions 10 and 11).
+After the password, ownCloud asks for a second factor and verifies it with your privacyIDEA server.
+Tokens and policies stay in privacyIDEA.
+
+The app does not work with ownCloud Infinite Scale (oCIS). oCIS is a different product and does not run
+ownCloud Classic apps.
 
 Supported second factors: OTP tokens (HOTP, TOTP, YubiKey and others), challenge-response tokens (SMS, email),
 push, TiQR, WebAuthn security keys and passkeys.
 
 ## Requirements
 
-- ownCloud 10.11 or later, or ownCloud 11
+- ownCloud Classic 10.11 or later, or ownCloud Classic 11. ownCloud Infinite Scale (oCIS) is not supported.
 - PHP 7.4 to 8.3
 - privacyIDEA 3.7 or later. Passkeys need 3.11.1 or later.
 - HTTPS for WebAuthn and passkeys
