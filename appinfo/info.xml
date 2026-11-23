@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!--
+  Not the app. The app is in the folder twofactor_privacyidea.
+  The code signing bot of owncloud/developer-certificates reads the app id from appinfo/info.xml at the root of the
+  repository. It must be the same as the <id> in twofactor_privacyidea/appinfo/info.xml.
+-->
+<info>
+	<id>twofactor_privacyidea</id>
+</info>
