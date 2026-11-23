@@ -146,7 +146,7 @@ if (!empty($_['enrollImage'])) : ?>
     </div>
 
     <?php if (isset($_['autoSubmit']) && $_['autoSubmit']): ?>
-        <input type="submit" class="button" value="Login">
+        <input type="submit" class="button" value="<?php p($l->t('Log in')); ?>">
         <br>
     <?php endif; ?>
 </form>

@@ -33,8 +33,7 @@ style('twofactor_privacyidea', 'settings-admin');
     <span id="pi_settings_msg" class="msg"></span>
     <p>
         <em>
-            <?php p($l->t('In a second step of authentication, the user is asked to provide a one time password. 
-            The users devices are managed in privacyIDEA. The authentication request is forwarded to privacyIDEA.')); ?>
+            <?php p($l->t('In a second step of authentication, the user is asked to provide a one time password. The users devices are managed in privacyIDEA. The authentication request is forwarded to privacyIDEA.')); ?>
         </em>
     </p>
     <hr>
@@ -45,13 +44,12 @@ style('twofactor_privacyidea', 'settings-admin');
                 <td colspan="2">
                     <input id="piactive" type="checkbox" class="checkbox">
                     <label for="piactive">
-                        <?php p($l->t('Activate two factor authentication with privacyIDEA ')); ?>
+                        <?php p($l->t('Activate two factor authentication with privacyIDEA')); ?>
                     </label>
                 </td>
                 <td>
                     <em>
-                        <?php p($l->t('Before activating two factor authentication with privacyIDEA, please assure, 
-                        that the connection to your privacyIDEA-server is configured correctly.')); ?>
+                        <?php p($l->t('Before activating two factor authentication with privacyIDEA, please assure, that the connection to your privacyIDEA-server is configured correctly.')); ?>
                     </em>
                 </td>
             </tr>
@@ -66,8 +64,7 @@ style('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-                        <?php p($l->t('Please use the base URL of your privacyIDEA instance. 
-                        For compatibility reasons, you may also specify the URL of the /validate/check endpoint.')); ?>
+                        <?php p($l->t('Please use the base URL of your privacyIDEA instance. For compatibility reasons, you may also specify the URL of the /validate/check endpoint.')); ?>
                     </em>
                 </td>
             </tr>
@@ -120,8 +117,7 @@ style('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-                        <?php p($l->t('You can either add single IPs like 10.0.1.12,10.0.1.13, 
-                        a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15')); ?>
+                        <?php p($l->t('You can either add single IPs like 10.0.1.12,10.0.1.13, a range like 10.0.1.12-10.0.1.113 or combinations like 10.0.1.12-10.0.1.113,192.168.0.15')); ?>
                     </em>
                 </td>
             </tr>
@@ -151,16 +147,14 @@ style('twofactor_privacyidea', 'settings-admin');
                 </td>
                 <td>
                     <em>
-                        <?php p($l->t('If you want to turn on the form-auto-submit function after x number of characters 
-                        are entered into the OTP input field, set the expected OTP length here. 
-                        Note: Only digits as the parameter\'s value allowed here.')); ?>
+                        <?php p($l->t('If you want to turn on the form-auto-submit function after x number of characters are entered into the OTP input field, set the expected OTP length here. Note: Only digits as the parameter\'s value allowed here.')); ?>
                     </em>
                 </td>
             </tr>
         </table>
         <input id="checkssl" type="checkbox" class="checkbox" checked>
         <label for="checkssl">
-            <?php p($l->t('Verify the SSL certificate ')); ?>
+            <?php p($l->t('Verify the SSL certificate')); ?>
             <em>
                 <?php p($l->t('Do not uncheck this in productive environments!')); ?>
             </em>
@@ -168,8 +162,7 @@ style('twofactor_privacyidea', 'settings-admin');
         <br>
         <input id="noproxy" type="checkbox" class="checkbox">
         <label for="noproxy">
-            <?php p($l->t('Ignore the system wide proxy settings and 
-            send authentication requests to privacyIDEA directly')); ?>
+            <?php p($l->t('Ignore the system wide proxy settings and send authentication requests to privacyIDEA directly')); ?>
         </label>
         <hr>
         <input id="pollInBrowser" type="checkbox" class="checkbox">
@@ -180,17 +173,15 @@ style('twofactor_privacyidea', 'settings-admin');
             </em>
         </label>
         <br>
-        <label for="pollInBrowserUrl"><?php p($l->t('Poll in browser URL: ')); ?></label>
+        <label for="pollInBrowserUrl"><?php p($l->t('Poll in browser URL:')); ?></label>
         <input id="pollInBrowserUrl" type="text" width="300px"/>
         <br>
         <em>
-            <?php p($l->t('The browser of the user sends the requests to this address. If it is not on the same origin as ownCloud,
-            privacyIDEA must allow it with CORS headers. A reverse proxy that serves both under one origin also works.')); ?>
+            <?php p($l->t('The browser of the user sends the requests to this address. If it is not on the same origin as ownCloud, privacyIDEA must allow it with CORS headers. A reverse proxy that serves both under one origin also works.')); ?>
         </em>
         <hr>
         <p>
-            <?php p($l->t('Test authentication by supplying username and password 
-            that should be checked against privacyIDEA:')); ?>
+            <?php p($l->t('Test authentication by supplying username and password that should be checked against privacyIDEA:')); ?>
         </p>
         <table>
             <tr>
@@ -221,8 +212,7 @@ style('twofactor_privacyidea', 'settings-admin');
         <p>
             <input id="triggerchallenges" type="checkbox" class="checkbox">
             <label for="triggerchallenges">
-                <?php p($l->t('Trigger challenges for challenge-response tokens. 
-                Check this if you employ, e.g., SMS or E-Mail tokens.')); ?>
+                <?php p($l->t('Trigger challenges for challenge-response tokens. Check this if you employ, e.g., SMS or E-Mail tokens.')); ?>
             </label>
         </p>
         <p>
@@ -262,8 +252,7 @@ style('twofactor_privacyidea', 'settings-admin');
         <p>
             <input id="passkeybutton" type="checkbox" class="checkbox">
             <label for="passkeybutton">
-                <?php p($l->t('Show the passkey button on the login page. The app asks privacyIDEA for a passkey
-                challenge. Without this setting, the button is there only if privacyIDEA triggered a passkey challenge.')); ?>
+                <?php p($l->t('Show the passkey button on the login page. The app asks privacyIDEA for a passkey challenge. Without this setting, the button is there only if privacyIDEA triggered a passkey challenge.')); ?>
             </label>
         </p>
         <hr>

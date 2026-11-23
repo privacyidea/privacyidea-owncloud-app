@@ -20,6 +20,8 @@
   type and for a smartphone container.
 * Enrollment at login: The page waits up to 10 minutes for the answer of an enrollment, for example the confirmation
   of a new push token. A login challenge still expires after 120 seconds.
+* Translations: All 32 languages now have every text of the login page and the settings page. Before, many texts
+  showed in English. Native speakers did not review the new translations yet. Please report errors.
 * Support ownCloud 11. The app now needs ownCloud 10.11 or later.
 * Nextcloud 12 and 13 are no longer listed. They are out of support.
 
